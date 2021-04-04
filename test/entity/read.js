@@ -44,9 +44,11 @@ const role = {
     collection: "role_read",
     primary_keys: ["name"],
     ref_label: "name",
+    ref_filter: { status: true },
     fields: [
         { name: "name", type: "string", required: true },
-        { name: "desc", type: "string" }
+        { name: "desc", type: "string" },
+        { name: "status", type: "boolean" }
     ]
 };
 const user_meta = new EntityMeta(user);
@@ -64,8 +66,11 @@ const init_db = async () => {
     await user_entity.delete({});
     await role_entity.delete({});
 
-    await role_entity.create_entity({ name: "admin" });
-    await role_entity.create_entity({ name: "user" });
+    await role_entity.create_entity({ name: "admin", status: true });
+    await role_entity.create_entity({ name: "user", status: true });
+    await role_entity.create_entity({ name: "user1", status: false });
+    await role_entity.create_entity({ name: "user2", status: true });
+    await role_entity.create_entity({ name: "user3", status: true });
 
     await department_entity.create_entity({ name: "dev" });
     await department_entity.create_entity({ name: "test" });
@@ -106,6 +111,15 @@ describe('Entity Query', function () {
             strictEqual(data[0].age, 20);
             strictEqual(data[0].name, "user15");
             strictEqual(data[0].status, undefined);
+        });
+
+
+        it('get filtered ref roles', async function () {
+            await init_db();
+
+            const ref_roles = await role_entity.get_filtered_ref_labels();
+            strictEqual(ref_roles.length, 4);
+            strictEqual(ref_roles[0].name, "admin");
         });
 
         it('search user test invisible attr', async function () {

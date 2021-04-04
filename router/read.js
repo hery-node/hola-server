@@ -20,6 +20,12 @@ const init_read_router = function (router, meta) {
         res.json({ code: SUCCESS, data: meta.non_sys_fields });
     }));
 
+    router.get('/ref', wrap_http(async function (req, res) {
+        const list = await entity.get_filtered_ref_labels();
+        const items = list.map(obj => ({ "text": obj[meta.ref_label], "value": obj["_id"] + "" }));
+        res.json({ code: SUCCESS, data: items });
+    }));
+
     router.post('/read', wrap_http(async function (req, res) {
         const query_params = required_post_params(req, ["_query"]);
         if (query_params === null) {

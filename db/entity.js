@@ -434,6 +434,10 @@ class Entity {
         if (query == null) {
             query = { [this.meta.ref_label]: value };
         }
+
+        if (this.meta.ref_filter) {
+            query = { ...query, ...this.meta.ref_filter };
+        }
         return this.find(query, attr);
     }
 
@@ -500,13 +504,22 @@ class Entity {
     }
 
     /**
+    * get ref labels of the object, use ref_filter
+    * @returns 
+    */
+    get_filtered_ref_labels() {
+        const query = this.meta.ref_filter ? this.meta.ref_filter : {};
+        return this.find_sort(query, { [this.meta.ref_label]: 1 }, { [this.meta.ref_label]: 1 });
+    }
+
+    /**
      * get ref labels of the object
      * @param {id array of objectid} id_array 
      * @returns 
      */
-    async get_ref_labels(id_array) {
+    get_ref_labels(id_array) {
         const query = oid_queries(id_array);
-        return await this.find(query, { [this.meta.ref_label]: 1 });
+        return this.find(query, { [this.meta.ref_label]: 1 });
     }
 
     /**

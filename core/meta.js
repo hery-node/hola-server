@@ -10,7 +10,7 @@ const meta_manager = {};
 const field_attrs = ["name", "type", "required", "ref", "searchable", "visible", "sys"];
 const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable",
     "before_create", "after_create", "before_update", "after_update", "before_delete", "after_delete", "create", "update", "delete",
-    "ref_label"];
+    "ref_label", "ref_filter"];
 
 /**
  * Validate the field attributes and keep them correct(also set default value)
@@ -131,6 +131,7 @@ class EntityMeta {
         this.editable = this.creatable || this.updatable;
 
         this.ref_label = this.meta.ref_label;
+        this.ref_filter = this.meta.ref_filter;
         this.ref_fields = this.meta.fields.filter(field => field.ref);
         this.ref_by_metas = [];
 
@@ -189,6 +190,10 @@ class EntityMeta {
 
         if (this.ref_label && !this.field_names.includes(this.ref_label)) {
             throw new Error("ref_label [" + this.ref_label + "] configured in meta:" + this.collection + " not found in field names");
+        }
+
+        if (this.ref_filter && (this.ref_filter.constructor != Object)) {
+            throw new Error("ref_filter [" + this.ref_filter + "] configured in meta:" + this.collection + " should be object");
         }
 
         return validate_fields(this.meta, this.fields);
