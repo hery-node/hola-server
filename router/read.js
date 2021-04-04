@@ -17,7 +17,7 @@ const init_read_router = function (router, meta) {
     }));
 
     router.get('/fields', wrap_http(async function (req, res) {
-        res.json({ code: SUCCESS, data: meta.fields });
+        res.json({ code: SUCCESS, data: meta.non_sys_fields });
     }));
 
     router.post('/read', wrap_http(async function (req, res) {
