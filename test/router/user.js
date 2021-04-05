@@ -12,6 +12,6 @@ module.exports = init_router({
         { name: "email", type: "string" },
         { name: "age", type: "uint" },
         { name: "role", type: "array", ref: "role", required: true },
-        { name: "status", type: "boolean" }
+        { name: "status", type: "boolean", sys: true }
     ]
 });

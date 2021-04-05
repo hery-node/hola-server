@@ -10,5 +10,6 @@ const date = require('./core/date');
 const number = require('./core/number');
 const obj = require('./core/obj');
 const validate = require('./core/validate');
+const code = require('./http/code');
 
-module.exports = { init_settings, init_express_server, init_router, register_type, Entity, EntityMeta, get_entity_meta, array, date, number, obj, validate }
+module.exports = { init_settings, init_express_server, init_router, register_type, Entity, EntityMeta, get_entity_meta, array, date, number, obj, validate, code }

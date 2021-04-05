@@ -5,7 +5,6 @@ const { strictEqual, deepStrictEqual } = require('assert');
 const { init_express_server } = require('../../http/express');
 const { get_entity_meta } = require('../../core/meta');
 const { Entity } = require('../../db/entity');
-const { get_settings } = require('../../setting');
 const { SUCCESS } = require('../../http/code');
 
 const server = init_express_server(__dirname + "/../");
@@ -50,6 +49,18 @@ describe('user router controller crud testing', () => {
                     strictEqual(db_user.name, "hery");
                     strictEqual(db_user.age, 10);
                     deepStrictEqual(db_user.role, db_roles.map(r => r["_id"] + ""));
+                    done();
+                });
+        });
+
+        it('it should get entity fields', async (done) => {
+            chai.request(server)
+                .get('/user/fields')
+                .end(async (err, res) => {
+                    strictEqual(res.status, 200);
+                    strictEqual(res.body.code, SUCCESS);
+                    strictEqual(res.body.data.length, 4);
+
                     done();
                 });
         });
