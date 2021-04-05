@@ -39,15 +39,13 @@ const boolean_type = {
 
 register_type(boolean_type);
 
+const is_int = (value) => {
+    return parseInt(value) == parseFloat(value);
+}
 const int_type = {
     name: "int",
     convert: function (value) {
-        const int_value = parseInt(value);
-        if (isNaN(int_value)) {
-            return { err: 'int convert error for value:' + value };
-        } else {
-            return { value: int_value };
-        }
+        return is_int(value) ? { value: parseInt(value) } : { err: 'int convert error for value:' + value };
     }
 }
 
@@ -57,11 +55,7 @@ const uint_type = {
     name: "uint",
     convert: function (value) {
         const int_value = parseInt(value);
-        if (isNaN(int_value) || int_value < 0) {
-            return { err: 'int convert error for value:' + value };
-        } else {
-            return { value: int_value };
-        }
+        return is_int(value) && int_value >= 0 ? { value: int_value } : { err: 'int convert error for value:' + value };
     }
 }
 
