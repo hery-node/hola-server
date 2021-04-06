@@ -142,7 +142,7 @@ class Entity {
                 query["$and"] = and_array;
                 return query;
             } else {
-                return null;
+                return {};
             }
         } else {
             return null;

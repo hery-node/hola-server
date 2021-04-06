@@ -45,7 +45,7 @@ const init_read_router = function (router, meta) {
             return;
         }
 
-        const { code, err, total, data } = await entity.list_entity(query_params, null, req.body);
+        const { code, err, total, data } = await entity.list_entity(query_params["_query"], null, req.body);
         if (!has_value(code)) {
             throw new Error("the list_entity method should return code");
         }
