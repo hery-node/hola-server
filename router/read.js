@@ -12,7 +12,7 @@ const { Entity } = require('../db/entity');
 const init_read_router = function (router, meta) {
     const entity = new Entity(meta);
 
-    router.get('/searchable', wrap_http(async function (req, res) {
+    router.get('/search_fields', wrap_http(async function (req, res) {
         res.json({ code: SUCCESS, data: meta.search_fields });
     }));
 

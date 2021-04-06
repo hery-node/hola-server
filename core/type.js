@@ -145,6 +145,69 @@ const array_type = {
 
 register_type(array_type);
 
+const lstr_type = {
+    name: "lstr",
+    convert: function (value) {
+        return { value: value + "" };
+    }
+}
+
+register_type(lstr_type);
+
+const text_type = {
+    name: "text",
+    convert: function (value) {
+        return { value: value + "" };
+    }
+}
+
+register_type(text_type);
+
+const date_type = {
+    name: "date",
+    convert: function (value) {
+        return { value: value + "" };
+    }
+}
+
+register_type(date_type);
+
+const age_type = {
+    name: "age",
+    convert: function (value) {
+        if (is_int(value)) {
+            const int_value = parseInt(value);
+            if (int_value < 0 || int_value > 200) {
+                return { err: "invalid age value:" + value };
+            } else {
+                return { value: int_value };
+            }
+        } else {
+            return { err: "age isn't int type:" + value };
+        }
+    }
+}
+
+register_type(age_type);
+
+const gender_type = {
+    name: "gender",
+    convert: function (value) {
+        if (is_int(value)) {
+            const int_value = parseInt(value);
+            if (int_value == 0 || int_value == 1) {
+                return { value: int_value };
+            } else {
+                return { err: "invalid gender value:" + value }
+            }
+        } else {
+            return { err: "gender isn't int type:" + value };
+        }
+    }
+}
+
+register_type(gender_type);
+
 const convert_type = function (obj, fields) {
     const result = {};
     const error_field_names = [];
