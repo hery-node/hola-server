@@ -30,6 +30,7 @@ const convert_search_value_by_type = (type_name, search_value) => {
  * @returns 
  */
 const parse_search_value = function (name, type_name, search_value) {
+    search_value = search_value + "";
     if (search_value.startsWith(">=")) {
         const value = search_value.substring(2);
         return { [name]: { "$gte": convert_search_value_by_type(type_name, value) } };
