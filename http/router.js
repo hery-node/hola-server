@@ -7,6 +7,7 @@ const { init_create_router } = require('../router/create');
 const { init_read_router } = require('../router/read');
 const { init_update_router } = require('../router/update');
 const { init_delete_router } = require('../router/delete');
+const { wrap_http } = require('./error');
 const { get_settings } = require('../setting');
 
 /**
@@ -38,6 +39,18 @@ const init_router_dirs = (app, base_dir) => {
 const init_router = function (meta) {
     const router = express.Router();
     const meta_entity = new EntityMeta(meta);
+
+    router.get('/operation', wrap_http(async function (req, res) {
+        const operation = {
+            create: meta.creatable,
+            update: meta.updatable,
+            delete: meta.deleteable,
+            import: meta.importable,
+            export: meta.exportable,
+            edit: meta.editable,
+        };
+        res.json({ code: SUCCESS, data: operation });
+    }));
 
     if (meta_entity.creatable) {
         init_create_router(router, meta_entity);

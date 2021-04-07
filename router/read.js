@@ -13,15 +13,7 @@ const init_read_router = function (router, meta) {
     const entity = new Entity(meta);
 
     router.get('/visible_fields', wrap_http(async function (req, res) {
-        const action = {
-            create: meta.creatable,
-            update: meta.updatable,
-            delete: meta.deleteable,
-            import: meta.importable,
-            export: meta.exportable,
-            edit: meta.editable,
-        };
-        res.json({ code: SUCCESS, data: meta.visible_fields, action: action });
+        res.json({ code: SUCCESS, data: meta.visible_fields });
     }));
 
     router.get('/search_fields', wrap_http(async function (req, res) {
