@@ -1,4 +1,4 @@
-const { required_post_params } = require('../http/params');
+const { required_post_params, post_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { NO_PARAMS, SUCCESS } = require('../http/code');
 const { wrap_http } = require('../http/error');
