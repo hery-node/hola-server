@@ -38,7 +38,7 @@ const init_read_router = function (router, meta) {
         res.json({ code: SUCCESS, data: items });
     }));
 
-    router.post('/read', wrap_http(async function (req, res) {
+    router.post('/list', wrap_http(async function (req, res) {
         const query_params = required_post_params(req, ["_query"]);
         if (query_params === null) {
             res.json({ code: NO_PARAMS, err: ["_query"] });
@@ -51,6 +51,25 @@ const init_read_router = function (router, meta) {
         }
 
         res.json({ code: code, err: err, total: total, data: data });
+    }));
+
+    router.post('/read', wrap_http(async function (req, res) {
+        let params = required_post_params(req, ["_id"]);
+        if (params === null) {
+            params = required_post_params(req, meta.primary_keys);
+            if (params === null) {
+                res.json({ code: NO_PARAMS, err: 'checking params are failed!' });
+                return;
+            }
+        }
+
+        const param_obj = post_params(req, meta.field_names);
+
+        const { code, err, data } = await entity.read_entity(params["_id"], param_obj);
+        if (!has_value(code)) {
+            throw new Error("the method should return code");
+        }
+        res.json({ code: code, err: err, data: data });
     }));
 }
 

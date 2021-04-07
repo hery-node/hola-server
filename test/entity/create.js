@@ -32,7 +32,8 @@ describe('Entity Create', function () {
             strictEqual(code, SUCCESS);
             strictEqual(err, undefined);
 
-            const db_user = await user_entity.find_one(user_entity.primary_key_query(user));
+            const result = await user_entity.read_entity(null, user);
+            const db_user = result.data;
             strictEqual(db_user.name, "user1");
             strictEqual(db_user.age, 10);
             strictEqual(db_user.status, undefined);// user can't set sys value

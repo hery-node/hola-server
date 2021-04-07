@@ -79,7 +79,7 @@ const init_db = async () => {
     strictEqual(err, undefined);
     strictEqual(code, SUCCESS);
 
-    await user_entity.create_entity({ "name": "user2", pwd: "pwd", age: "11", depart: "dev", role: "user", status: "true", email: "test@test.com", desc: "abcd" });
+    await user_entity.create_entity({ "name": "user2", pwd: "pwd", age: "11", depart: "dev", role: ["user", "admin"], status: "true", email: "test@test.com", desc: "abcd" });
     await user_entity.create_entity({ "name": "user3", pwd: "pwd", age: "12", depart: "dev", role: "user", status: "false", email: "test@test.com", desc: "abcd" });
     await user_entity.create_entity({ "name": "user4", pwd: "pwd", age: "13", depart: "dev", role: "user", status: "false", email: "test@test.com", desc: "abcd" });
     await user_entity.create_entity({ "name": "user5", pwd: "pwd", age: "14", depart: "dev", role: "user", status: "false", email: "test@test.com" });
@@ -251,19 +251,19 @@ describe('Entity Query', function () {
         strictEqual(data[0].status, undefined);
     });
 
-    it('search user age more than 15, status is true and role is admin or user', async function () {
+    it('search user age more than 15, status is true and role is admin and user', async function () {
         await init_db();
 
         const query = { "attr_names": "name,age", page: "1", limit: "5", sort_by: "age", desc: "false" };
-        const params = { age: ">15", status: "true", role: "admin,user" };
+        const params = { age: "<15", status: "true", role: "user,admin" };
 
         const { code, err, total, data } = await user_entity.list_entity(query, null, params);
         strictEqual(err, undefined);
         strictEqual(code, SUCCESS);
-        strictEqual(total, 7);
-        strictEqual(data.length, 5);
-        strictEqual(data[0].age, 16);
-        strictEqual(data[0].name, "user7");
+        strictEqual(total, 1);
+        strictEqual(data.length, 1);
+        strictEqual(data[0].age, 11);
+        strictEqual(data[0].name, "user2");
         strictEqual(data[0].status, undefined);
     });
 }

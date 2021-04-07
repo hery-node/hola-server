@@ -131,7 +131,7 @@ class Entity {
                         const refer_entity = new Entity(get_entity_meta(search_field.ref));
                         const oids = await refer_entity.find_by_ref_value(value, { _id: 1 });
                         if (oids.length > 0) {
-                            and_array.push({ [search_field.name]: { "$in": oids.map(o => o._id + "") } });
+                            and_array.push({ [search_field.name]: { "$all": oids.map(o => o._id + "") } });
                         }
                     } else {
                         and_array.push(parse_search_value(search_field.name, search_field.type, value));
@@ -141,6 +141,7 @@ class Entity {
 
             if (and_array.length > 0) {
                 query["$and"] = and_array;
+                // console.log("query: %j", query);
                 return query;
             } else {
                 return {};
@@ -310,6 +311,31 @@ class Entity {
     }
 
     /**
+     * Validate the param object and invoke the logic to read entity
+     * @param {object id of the entity} _id object id of the entity, if it is null, then use primary key
+     * @param {param object from user input} param_obj
+     *
+     */
+    async read_entity(_id, param_obj) {
+        const { obj, error_field_names } = convert_type(param_obj, this.meta.primary_key_fields);
+        if (error_field_names.length > 0) {
+            return { code: INVALID_PARAMS, err: error_field_names };
+        }
+
+        const query = _id ? oid_query(_id) : this.primary_key_query(obj);
+        if (query == null) {
+            return { code: INVALID_PARAMS, err: _id ? ["_id"] : this.meta.primary_keys };
+        }
+
+        const results = await this.find(query);
+        if (results && results.length == 1) {
+            return { code: SUCCESS, data: results[0] };
+        } else {
+            return { code: NOT_FOUND, err: _id ? ["_id"] : this.meta.primary_keys };
+        }
+    }
+
+    /**
      * Delete the objects using id array
      * @param {array of objectid} id_array 
      */
@@ -433,7 +459,16 @@ class Entity {
     find_by_ref_value(value, attr) {
         let query = oid_query(value);
         if (query == null) {
-            query = { [this.meta.ref_label]: value };
+            if (Array.isArray(value)) {
+                query = { [this.meta.ref_label]: { "$in": value } };
+            } else {
+                if (value.includes(",")) {
+                    const values = value.split(",");
+                    query = { [this.meta.ref_label]: { "$in": values } };
+                } else {
+                    query = { [this.meta.ref_label]: value };
+                }
+            }
         }
 
         if (this.meta.ref_filter) {
