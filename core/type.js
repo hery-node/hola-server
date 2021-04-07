@@ -208,6 +208,20 @@ const gender_type = {
 
 register_type(gender_type);
 
+const percentage_type = {
+    name: "percentage",
+    convert: function (value) {
+        const float_value = parseFloat(value);
+        if (isNaN(float_value)) {
+            return { err: 'percentage convert error for value:' + value };
+        } else {
+            return { value: parseFloat(float_value.toFixed(2)) };
+        }
+    }
+}
+
+register_type(percentage_type);
+
 const convert_type = function (obj, fields) {
     const result = {};
     const error_field_names = [];

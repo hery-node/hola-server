@@ -47,7 +47,7 @@ const parse_search_value = function (name, type_name, search_value) {
         const values = search_value.split(",").map(v => convert_search_value_by_type(type_name, v));
         return { [name]: { "$in": values } };
     } else if (type_name === "array") {
-        return { [name]: { "$in": [search_value] } };
+        return { [name]: { "$all": [search_value] } };
     } else {
         let value = convert_search_value_by_type(type_name, search_value);
         if (typeof value === "string") {
