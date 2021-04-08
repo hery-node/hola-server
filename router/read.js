@@ -12,16 +12,18 @@ const { Entity } = require('../db/entity');
 const init_read_router = function (router, meta) {
     const entity = new Entity(meta);
 
-    router.get('/visible_fields', wrap_http(async function (req, res) {
-        res.json({ code: SUCCESS, data: meta.visible_fields });
-    }));
-
-    router.get('/search_fields', wrap_http(async function (req, res) {
-        res.json({ code: SUCCESS, data: meta.search_fields });
-    }));
-
-    router.get('/fields', wrap_http(async function (req, res) {
-        res.json({ code: SUCCESS, data: meta.non_sys_fields });
+    router.get('/meta', wrap_http(async function (req, res) {
+        const entity_meta = {
+            creatable: meta.creatable,
+            readable: meta.readable,
+            updatable: meta.updatable,
+            deleteable: meta.deleteable,
+            importable: meta.importable,
+            exportable: meta.exportable,
+            editable: meta.editable,
+            fields: meta.fields
+        }
+        res.json({ code: SUCCESS, data: entity_meta });
     }));
 
     router.get('/ref', wrap_http(async function (req, res) {
