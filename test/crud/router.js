@@ -27,7 +27,7 @@ describe('user router controller crud testing', () => {
         it('it should POST a user successfully with all the valid values', async (done) => {
             await role_entity.create_entity({ "name": "admin", desc: "admin role" });
             await role_entity.create_entity({ "name": "user", desc: "user role" });
-            const role_count = await role_entity.count({});
+            const role_count = (await role_entity.find({})).length;
             strictEqual(role_count, 2);
 
             const user = {
@@ -53,13 +53,44 @@ describe('user router controller crud testing', () => {
                 });
         });
 
+        it('it should read the entity success', async (done) => {
+            await role_entity.create_entity({ "name": "admin", desc: "admin role" });
+            await role_entity.create_entity({ "name": "user", desc: "user role" });
+            await user_entity.create_entity({
+                name: "hery",
+                email: "hery@easyserver.com",
+                role: "admin,user",
+                age: "10",
+                status: "true"
+            });
+
+            const db_user = await user_entity.find_one(user_entity.primary_key_query({ "name": "hery" }));
+
+            chai.request(server)
+                .post('/user/read')
+                .send({ "_id": db_user._id + "", "attr_names": "name,age" })
+                .end(async (err, res) => {
+                    strictEqual(res.status, 200);
+                    strictEqual(res.body.err, undefined);
+                    strictEqual(res.body.code, SUCCESS);
+
+                    const user = res.body.data;
+                    strictEqual(user.name, "hery");
+                    strictEqual(user.age, 10);
+                    strictEqual(user.email, undefined);
+                    strictEqual(user.status, undefined);
+
+                    done();
+                });
+        });
+
         it('it should get entity fields', async (done) => {
             chai.request(server)
-                .get('/user/fields')
+                .get('/user/meta')
                 .end(async (err, res) => {
                     strictEqual(res.status, 200);
                     strictEqual(res.body.code, SUCCESS);
-                    strictEqual(res.body.data.length, 4);
+                    strictEqual(res.body.data.fields.length, 5);
 
                     done();
                 });
