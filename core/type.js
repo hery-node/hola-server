@@ -10,6 +10,24 @@ const register_type = type => {
     type_manager[type.name] = type;
 }
 
+const convert_number = (value, type) => {
+    const num_value = Number(value);
+    if (isNaN(num_value)) {
+        return { err: 'convert error for value:' + value + ",and type:" + type };
+    } else {
+        return { value: num_value };
+    }
+}
+
+const convert_float = (value, type) => {
+    const float_value = parseFloat(value);
+    if (isNaN(float_value)) {
+        return { err: 'convert error for value:' + value + ",and type:" + type };
+    } else {
+        return { value: parseFloat(float_value.toFixed(2)) };
+    }
+}
+
 /**
  * get your user type
  * @param {type name} name 
@@ -64,12 +82,7 @@ register_type(uint_type);
 const float_type = {
     name: "float",
     convert: function (value) {
-        const float_value = parseFloat(value);
-        if (isNaN(float_value)) {
-            return { err: 'float convert error for value:' + value };
-        } else {
-            return { value: parseFloat(float_value.toFixed(2)) };
-        }
+        return convert_float(value, "float");
     }
 }
 
@@ -92,12 +105,7 @@ register_type(ufloat_type);
 const number_type = {
     name: "number",
     convert: function (value) {
-        const num_value = Number(value);
-        if (isNaN(num_value)) {
-            return { err: 'number convert error for value:' + value };
-        } else {
-            return { value: num_value };
-        }
+        return convert_number(value, "number");
     }
 }
 
@@ -211,16 +219,34 @@ register_type(gender_type);
 const percentage_type = {
     name: "percentage",
     convert: function (value) {
-        const float_value = parseFloat(value);
-        if (isNaN(float_value)) {
-            return { err: 'percentage convert error for value:' + value };
-        } else {
-            return { value: parseFloat(float_value.toFixed(2)) };
-        }
+        return convert_float(value, "percentage");
     }
 }
 
 register_type(percentage_type);
+
+const currency_type = {
+    name: "currency",
+    convert: function (value) {
+        return convert_number(value, "currency");
+    }
+}
+
+register_type(currency_type);
+
+const email_type = {
+    name: "email",
+    convert: function (value) {
+        const pattern = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        if (pattern.test(value)) {
+            return value;
+        } else {
+            return { err: 'err email for value:' + value };
+        }
+    }
+}
+
+register_type(email_type);
 
 const convert_type = function (obj, fields) {
     const result = {};
