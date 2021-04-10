@@ -48,18 +48,14 @@ const init_read_router = function (router, meta) {
     }));
 
     router.post('/read', wrap_http(async function (req, res) {
-        let params = required_post_params(req, ["_id"]);
+        let params = required_post_params(req, ["_id", "attr_names"]);
         if (params === null) {
-            params = required_post_params(req, meta.primary_keys);
-            if (params === null) {
-                res.json({ code: NO_PARAMS, err: 'checking params are failed!' });
-                return;
-            }
+            res.json({ code: NO_PARAMS, err: 'checking params are failed!' });
+            return;
         }
 
-        const param_obj = post_params(req, meta.field_names);
-
-        const { code, err, data } = await entity.read_entity(params["_id"], param_obj);
+        const { _id, attr_names } = params;
+        const { code, err, data } = await entity.read_entity(_id, attr_names);
         if (!has_value(code)) {
             throw new Error("the method should return code");
         }

@@ -312,26 +312,30 @@ class Entity {
 
     /**
      * Validate the param object and invoke the logic to read entity
-     * @param {object id of the entity} _id object id of the entity, if it is null, then use primary key
-     * @param {param object from user input} param_obj
+     * this is used for update entity
+     * @param {object id of the entity} _id object id of the entity
+     * @param {attr names to retrieve} attr_names
      *
      */
-    async read_entity(_id, param_obj) {
-        const { obj, error_field_names } = convert_type(param_obj, this.meta.primary_key_fields);
-        if (error_field_names.length > 0) {
-            return { code: INVALID_PARAMS, err: error_field_names };
-        }
-
-        const query = _id ? oid_query(_id) : this.primary_key_query(obj);
+    async read_entity(_id, attr_names) {
+        const query = oid_query(_id);
         if (query == null) {
-            return { code: INVALID_PARAMS, err: _id ? ["_id"] : this.meta.primary_keys };
+            return { code: INVALID_PARAMS, err: ["_id"] };
         }
 
-        const results = await this.find(query);
+        const field_names = this.meta.non_sys_fields.map(f => f.name);
+        const attrs = {};
+        attr_names.split(",").forEach(function (attr) {
+            if (field_names.includes(attr)) {
+                attrs[attr] = 1;
+            }
+        });
+
+        const results = await this.find(query, attrs);
         if (results && results.length == 1) {
             return { code: SUCCESS, data: results[0] };
         } else {
-            return { code: NOT_FOUND, err: _id ? ["_id"] : this.meta.primary_keys };
+            return { code: NOT_FOUND, err: ["_id"] };
         }
     }
 
