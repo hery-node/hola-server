@@ -340,6 +340,38 @@ class Entity {
     }
 
     /**
+   * Validate the param object and invoke the logic to read entity properties
+   * this is used for update entity
+   * @param {object id of the entity} _id object id of the entity
+   * @param {attr names to retrieve} attr_names
+   *
+   */
+    async read_entity_properties(_id, attr_names) {
+        const query = oid_query(_id);
+        if (query == null) {
+            return { code: INVALID_PARAMS, err: ["_id"] };
+        }
+
+        const field_names = this.meta.property_fields.map(f => f.name);
+        const attrs = {};
+        attr_names.split(",").forEach(function (attr) {
+            if (field_names.includes(attr)) {
+                attrs[attr] = 1;
+            }
+        });
+
+        const results = await this.find(query, attrs);
+        if (results && results.length == 1) {
+            const converted = await this.convert_ref_attrs(results);
+            if (converted && converted.length == 1) {
+                return { code: SUCCESS, data: converted[0] };
+            }
+        }
+
+        return { code: NOT_FOUND, err: ["_id"] };
+    }
+
+    /**
      * Delete the objects using id array
      * @param {array of objectid} id_array 
      */

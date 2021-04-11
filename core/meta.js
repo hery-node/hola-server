@@ -142,6 +142,7 @@ class EntityMeta {
         this.primary_keys = meta.primary_keys;
         this.field_names = this.fields.map(field => field.name);
 
+        this.property_fields = this.fields.filter(field => field.sys != true);
         this.create_fields = this.fields.filter(field => field.create != false && field.sys != true);
         this.update_fields = this.fields.filter(field => field.create != false && field.update != false && field.sys != true);
         this.search_fields = this.fields.filter(field => field.search != false && field.sys != true);
