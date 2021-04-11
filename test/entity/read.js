@@ -12,13 +12,13 @@ const user = {
     primary_keys: ["name"],
     fields: [
         { name: "name", required: true },
-        { name: "pwd", type: "password", visible: false, required: true },
+        { name: "pwd", type: "password", list: false, required: true },
         { name: "email", type: "string" },
         { name: "age", type: "uint" },
         { name: "role", type: "array", ref: "role_read", required: true },
         { name: "depart", type: "string", ref: "department_read", required: true },
         { name: "status", type: "boolean" },
-        { name: "desc", type: "string", searchable: false }
+        { name: "desc", type: "string", search: false }
     ]
 };
 

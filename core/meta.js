@@ -3,11 +3,14 @@ const { get_type } = require('./type');
 
 const meta_manager = {};
 /**
- * searchable: this field can be quried by client side
- * visible: this field can be viewed in client side through attr_names
+ * create: this field can be shown in create form
+ * list: this field can be shown in table list
+ * search: this field can be shown in search form
+ * update: if is false, in update form, it will be readonly status
  * sys: this field is used to control the user can set the value or not. sys field can only be set in the server side(before callback is good place to do this)
- */
-const field_attrs = ["name", "type", "required", "ref", "searchable", "visible", "sys"];
+ * create is false, this attribute can be shown in property list but sys property can't be shown in property list 
+*/
+const field_attrs = ["name", "type", "required", "ref", "create", "list", "search", "update", "sys"];
 const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable",
     "before_create", "after_create", "before_update", "after_update", "before_delete", "after_delete", "create", "update", "delete",
     "ref_label", "ref_filter"];
@@ -138,9 +141,11 @@ class EntityMeta {
         this.fields = meta.fields;
         this.primary_keys = meta.primary_keys;
         this.field_names = this.fields.map(field => field.name);
-        this.search_fields = this.fields.filter(field => field.searchable != false);
-        this.visible_fields = this.fields.filter(field => field.visible != false);
-        this.non_sys_fields = this.fields.filter(field => field.sys != true);
+
+        this.create_fields = this.fields.filter(field => field.create != false && field.sys != true);
+        this.update_fields = this.fields.filter(field => field.create != false && field.update != false && field.sys != true);
+        this.search_fields = this.fields.filter(field => field.search != false && field.sys != true);
+        this.list_fields = this.fields.filter(field => field.list != false && field.sys != true);
         this.primary_key_fields = this.fields.filter(field => meta.primary_keys.includes(field.name));
         this.required_field_names = this.fields.filter(field => field.required == true || this.primary_keys.includes(field.name)).map(field => field.name);
 

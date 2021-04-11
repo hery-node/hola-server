@@ -171,10 +171,10 @@ class Entity {
             sort[value] = descs[index] === "false" ? 1 : -1;
         });
 
-        const visible_field_names = this.meta.visible_fields.map(f => f.name);
+        const list_field_names = this.meta.list_fields.map(f => f.name);
         const attrs = {};
         attr_names.split(",").forEach(function (attr) {
-            if (visible_field_names.includes(attr)) {
+            if (list_field_names.includes(attr)) {
                 attrs[attr] = 1;
             }
         });
@@ -201,7 +201,7 @@ class Entity {
      * @returns object with code and err
      */
     async create_entity(param_obj) {
-        const { obj, error_field_names } = convert_type(param_obj, this.meta.non_sys_fields);
+        const { obj, error_field_names } = convert_type(param_obj, this.meta.create_fields);
         if (error_field_names.length > 0) {
             return { code: INVALID_PARAMS, err: error_field_names };
         }
@@ -259,7 +259,7 @@ class Entity {
      * 
      */
     async update_entity(_id, param_obj) {
-        const { obj, error_field_names } = convert_type(param_obj, this.meta.non_sys_fields);
+        const { obj, error_field_names } = convert_type(param_obj, this.meta.update_fields);
         if (error_field_names.length > 0) {
             return { code: INVALID_PARAMS, err: error_field_names };
         }
@@ -323,7 +323,7 @@ class Entity {
             return { code: INVALID_PARAMS, err: ["_id"] };
         }
 
-        const field_names = this.meta.non_sys_fields.map(f => f.name);
+        const field_names = this.meta.create_fields.map(f => f.name);
         const attrs = {};
         attr_names.split(",").forEach(function (attr) {
             if (field_names.includes(attr)) {
