@@ -1,0 +1,25 @@
+{
+  "user": {
+    "_label": "User test",
+    "name": "Name",
+    "name_hint": "",
+    "age": "Age",
+    "age_hint": "",
+    "gender": "Gender",
+    "gender_hint": "",
+    "email": "Email",
+    "email_hint": "",
+    "currency": "Currency",
+    "currency_hint": "",
+    "birthday": "Birthday",
+    "birthday_hint": "",
+    "rate": "Rate",
+    "rate_hint": "",
+    "summary": "Summary",
+    "summary_hint": "",
+    "introduction": "Introduction",
+    "introduction_hint": "",
+    "role": "Role",
+    "role_hint": ""
+  }
+}

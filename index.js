@@ -12,4 +12,6 @@ const obj = require('./core/obj');
 const validate = require('./core/validate');
 const code = require('./http/code');
 
-module.exports = { init_settings, init_express_server, init_router, register_type, Entity, EntityMeta, get_entity_meta, array, date, number, obj, validate, code }
+const { gen_i18n } = require('./tool/gen_i18n');
+
+module.exports = { init_settings, init_express_server, init_router, register_type, Entity, EntityMeta, get_entity_meta, array, date, number, obj, validate, code, gen_i18n };

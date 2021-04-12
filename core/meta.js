@@ -115,6 +115,14 @@ const get_entity_meta = (collection) => {
 }
 
 /**
+ * Get all the meta name
+ * @returns 
+ */
+const get_all_metas = () => {
+    return Object.keys(meta_manager);
+}
+
+/**
  * Wrap the meta info from user side:
  * 1) validate the meta structure and keep it is valid
  * 2) set the default values of the meta
@@ -206,4 +214,4 @@ class EntityMeta {
     }
 }
 
-module.exports = { EntityMeta, validate_all_metas, get_entity_meta }
+module.exports = { EntityMeta, validate_all_metas, get_entity_meta, get_all_metas }
