@@ -9,11 +9,13 @@ const meta_manager = {};
  * update: if is false, in update form, it will be readonly status
  * sys: this field is used to control the user can set the value or not. sys field can only be set in the server side(before callback is good place to do this)
  * create is false, this attribute can be shown in property list but sys property can't be shown in property list 
+ * 
+ * routes: configure customer defined routes
 */
 const field_attrs = ["name", "type", "required", "ref", "create", "list", "search", "update", "sys"];
 const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable",
     "before_create", "after_create", "before_update", "after_update", "before_delete", "after_delete", "create", "update", "delete",
-    "ref_label", "ref_filter"];
+    "ref_label", "ref_filter", "routes"];
 
 /**
  * Validate the field attributes and keep them correct(also set default value)

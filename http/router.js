@@ -55,6 +55,12 @@ const init_router = function (meta) {
         init_delete_router(router, meta_entity);
     }
 
+    if (meta.routes) {
+        meta.routes.forEach(route => {
+            route(router, meta_entity);
+        });
+    }
+
     return router;
 }
 
