@@ -239,7 +239,7 @@ const email_type = {
     convert: function (value) {
         const pattern = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
         if (pattern.test(value)) {
-            return value;
+            return { value: value };
         } else {
             return { err: 'err email for value:' + value };
         }
