@@ -493,7 +493,7 @@ class Entity {
      * @returns array of the objects that are found
      */
     find_by_ref_value(value, attr) {
-        let query = oid_query(value);
+        let query = Array.isArray(value) ? oid_queries(value) : oid_query(value);
         if (query == null) {
             if (Array.isArray(value)) {
                 query = { [this.meta.ref_label]: { "$in": value } };
