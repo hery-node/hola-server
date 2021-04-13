@@ -19,7 +19,9 @@ const gen_i18n = (file_path, keep_hint) => {
         for (let j = 0; j < fields.length; j++) {
             const field = fields[j];
             json[meta.collection][field.name] || (json[meta.collection][field.name] = capitalize(field.name));
-            keep_hint && json[meta.collection][field.name + "_hint"] || (json[meta.collection][field.name + "_hint"] = "");
+            if (keep_hint) {
+                json[meta.collection][field.name + "_hint"] || (json[meta.collection][field.name + "_hint"] = "")
+            }
         }
     }
     fs.writeFileSync(file_path, JSON.stringify(json, null, 2));
