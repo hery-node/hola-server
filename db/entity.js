@@ -706,6 +706,24 @@ class Entity {
      */
     col() {
         return this.db.col(this.meta.collection);
+    };
+
+    /**
+     * Add oid query to entity
+     * @param {object id} _id 
+     * @returns 
+     */
+    oid_query(_id) {
+        return oid_query(_id);
+    }
+
+    /**
+     * Object ID array 
+     * @param {object id array} _ids 
+     * @returns 
+     */
+    oid_queries(_ids) {
+        return oid_queries(_ids);
     }
 }
 
