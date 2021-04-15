@@ -352,6 +352,10 @@ class Entity {
             return { code: INVALID_PARAMS, err: ["_id"] };
         }
 
+        if (!attr_names) {
+            return { code: INVALID_PARAMS, err: ["attr_names"] };
+        }
+
         const field_names = this.meta.property_fields.map(f => f.name);
         const attrs = {};
         attr_names.split(",").forEach(function (attr) {
