@@ -171,6 +171,8 @@ class EntityMeta {
         set_callback(this, "after_delete", meta.after_delete);
         set_callback(this, "create", meta.create);
         set_callback(this, "update", meta.update);
+        set_callback(this, "batch_update", meta.batch_update);
+        set_callback(this, "after_batch_update", meta.after_batch_update);
         set_callback(this, "delete", meta.delete);
 
         if (meta_manager[meta.collection]) {

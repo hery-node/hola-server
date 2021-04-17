@@ -22,7 +22,7 @@ const init_update_router = function (router, meta) {
         if (params === null) {
             params = required_post_params(req, meta.primary_keys);
             if (params === null) {
-                res.json({ code: NO_PARAMS, err: 'checking params are failed!' });
+                res.json({ code: NO_PARAMS, err: '[_id] checking params are failed!' });
                 return;
             }
         }
@@ -45,7 +45,7 @@ const init_update_router = function (router, meta) {
     router.post('/batch_update', cp_upload, wrap_http(async function (req, res) {
         let params = required_post_params(req, ["_ids"]);
         if (params === null) {
-            res.json({ code: NO_PARAMS, err: 'checking params are failed!' });
+            res.json({ code: NO_PARAMS, err: '[_ids] checking params are failed!' });
             return;
         }
 

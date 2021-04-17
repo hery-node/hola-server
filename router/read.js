@@ -50,7 +50,7 @@ const init_read_router = function (router, meta) {
     router.post('/read', wrap_http(async function (req, res) {
         let params = required_post_params(req, ["_id", "attr_names"]);
         if (params === null) {
-            res.json({ code: NO_PARAMS, err: 'checking params are failed!' });
+            res.json({ code: NO_PARAMS, err: '[_id,attr_names] checking params are failed!' });
             return;
         }
 
@@ -65,7 +65,7 @@ const init_read_router = function (router, meta) {
     router.post('/read_properties', wrap_http(async function (req, res) {
         let params = required_post_params(req, ["_id", "attr_names"]);
         if (params === null) {
-            res.json({ code: NO_PARAMS, err: 'checking params are failed!' });
+            res.json({ code: NO_PARAMS, err: '[_id,attr_names] checking params are failed!' });
             return;
         }
 
