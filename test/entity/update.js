@@ -82,7 +82,7 @@ describe('Entity Update', function () {
                 { name: "email", type: "string" },
                 { name: "age", type: "uint" }
             ],
-            before_update: async function (entity, obj) {
+            before_update: async function (_id, entity, obj) {
                 obj.age = 100;
                 return { code: SUCCESS };
             },
@@ -158,7 +158,7 @@ describe('Entity Update', function () {
                 { name: "age", type: "uint" },
                 { name: "status", type: "boolean" }
             ],
-            after_update: async function (entity, obj) {
+            after_update: async function (_id, entity, obj) {
                 const query = entity.primary_key_query(obj);
                 await entity.update(query, { "status": true });
                 return { code: SUCCESS };

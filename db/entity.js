@@ -265,7 +265,7 @@ class Entity {
         }
 
         if (this.meta.before_update) {
-            const { code, err } = await this.meta.before_update(this, obj);
+            const { code, err } = await this.meta.before_update(_id, this, obj);
             if (err || code != SUCCESS) {
                 return { code: code, err: err };
             }
@@ -289,7 +289,7 @@ class Entity {
         }
 
         if (this.meta.update) {
-            const { code, err } = await this.meta.update(this, obj);
+            const { code, err } = await this.meta.update(_id, this, obj);
             if (err || code != SUCCESS) {
                 return { code: code, err: err };
             }
@@ -301,7 +301,53 @@ class Entity {
         }
 
         if (this.meta.after_update) {
-            const { code, err } = await this.meta.after_update(this, obj);
+            const { code, err } = await this.meta.after_update(_id, this, obj);
+            if (err || code != SUCCESS) {
+                return { code: code, err: err };
+            }
+        }
+
+        return { code: SUCCESS };
+    }
+
+    /**
+     * Validate the param object and invoke the logic to batch update entity
+     * @param {object id array of the entity} _ids
+     * @param {param object from user input} param_obj 
+     * 
+     */
+    async batch_update_entity(_ids, param_obj) {
+        const { obj, error_field_names } = convert_type(param_obj, this.meta.update_fields);
+        if (error_field_names.length > 0) {
+            return { code: INVALID_PARAMS, err: error_field_names };
+        }
+
+        const query = oid_queries(_ids);
+        if (query == null) {
+            return { code: INVALID_PARAMS, err: ["_ids"] };
+        }
+
+        if (this.meta.ref_fields) {
+            const { code, err } = await this.validate_ref(obj);
+            if (err || code != SUCCESS) {
+                return { code: code, err: err };
+            }
+        }
+
+        if (this.meta.batch_update) {
+            const { code, err } = await this.meta.batch_update(_ids, this, obj);
+            if (err || code != SUCCESS) {
+                return { code: code, err: err };
+            }
+        } else {
+            const result = await this.update(query, obj);
+            if (result.ok != 1) {
+                return { code: ERROR, err: "batch update record is failed" };
+            }
+        }
+
+        if (this.meta.after_batch_update) {
+            const { code, err } = await this.meta.after_batch_update(_ids, this, obj);
             if (err || code != SUCCESS) {
                 return { code: code, err: err };
             }

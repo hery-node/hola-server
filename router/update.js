@@ -41,6 +41,28 @@ const init_update_router = function (router, meta) {
 
         res.json({ code: code, err: err });
     }));
+
+    router.post('/batch_update', cp_upload, wrap_http(async function (req, res) {
+        let params = required_post_params(req, ["_ids"]);
+        if (params === null) {
+            res.json({ code: NO_PARAMS, err: 'checking params are failed!' });
+            return;
+        }
+
+        const param_obj = post_params(req, meta.field_names);
+        set_file_fields(meta, req, param_obj);
+
+        const { code, err } = await entity.batch_update_entity(params["_ids"], param_obj);
+        if (!has_value(code)) {
+            throw new Error("the batch_update_entity method should return code");
+        }
+
+        if (code == SUCCESS) {
+            await save_file_fields_to_db(meta.collection, meta.file_fields, req, param_obj);
+        }
+
+        res.json({ code: code, err: err });
+    }));
 }
 
 module.exports = { init_update_router }
