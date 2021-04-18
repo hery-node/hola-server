@@ -564,6 +564,34 @@ class Entity {
     }
 
     /**
+     * Get the ref entity by the ref value
+     * @param {field name of the ref} field_name 
+     * @param {the value of the field} value 
+     * @param {which attrs to show} attr 
+     * @returns 
+     */
+    find_one_ref_entity(field_name, value, attr) {
+        const fields = this.meta.fields.filter(field => field.name == field_name);
+        if (fields.length == 1) {
+            const field = fields[0];
+            if (field.ref) {
+                const ref_meta = get_entity_meta(field.ref);
+                const ref_entity = new Entity(ref_meta);
+                let query = oid_query(value);
+                if (query == null) {
+                    query = { [ref_meta.ref_label]: value };
+                }
+                return ref_entity.find_one(query, attr);
+
+            } else {
+                throw new Error("the field:" + field_name + " is not ref field,in entity:" + this.meta.collection);
+            }
+        } else {
+            throw new Error("not found the field by name:" + field_name + ",in entity:" + this.meta.collection);
+        }
+    }
+
+    /**
      * check whether this entity has refered the entity_id value
      * @param {entity collection} entity_name 
      * @param {entity object id} entity_id 

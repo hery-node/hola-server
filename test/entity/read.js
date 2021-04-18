@@ -122,6 +122,14 @@ describe('Entity Query', function () {
             strictEqual(ref_roles[0].name, "admin");
         });
 
+        it('find ref entity', async function () {
+            await init_db();
+
+            const role = await user_entity.find_one_ref_entity("role", "admin");
+            strictEqual(role.name, "admin");
+            strictEqual(role.status, true);
+        });
+
         it('search user test invisible attr', async function () {
             await init_db();
 
