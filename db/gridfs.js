@@ -4,24 +4,30 @@ const { get_settings } = require('../setting');
 
 let gridfs_instance;
 
-const get_gridfs_instance = () => {
+const get_gridfs_instance = async () => {
     if (gridfs_instance) {
         return gridfs_instance;
     } else {
         const mongo = get_settings().mongo;
-        gridfs_instance = new GridFS(mongo.url);
+        gridfs_instance = new GridFS();
+        const client = await gridfs_instance.connect(mongo.url);
+        gridfs_instance.db = client.db();
         return gridfs_instance;
     }
 }
 
 class GridFS {
-    constructor(url) {
-        MongoClient.connect(url, { useUnifiedTopology: true, useNewUrlParser: true }, async function (err, client) {
-            if (err) {
-                console.log('Sorry unable to connect to MongoDB Error:', err);
-            } else {
-                this.db = client.db();
-            }
+    /**
+     * Connect to mongodb
+     * @param {url of mongo} url 
+     * @returns 
+     */
+    connect(url) {
+        return new Promise((resolve, reject) => {
+            MongoClient.connect(url, { useUnifiedTopology: true, useNewUrlParser: true }, (err, client) => {
+                if (err) return reject(err);
+                resolve(client);
+            });
         });
     }
 
@@ -130,7 +136,7 @@ const save_file_fields_to_db = async function (collection, file_fields, req, obj
             const field = file_fields[i];
             if (obj[field.name]) {
                 const file = req.files[field.name][0];
-                const instance = get_gridfs_instance();
+                const instance = await get_gridfs_instance();
                 await instance.save_file(collection, obj[field.name], file.path);
                 fs.unlinkSync(file.path);
             }
@@ -145,7 +151,7 @@ const save_file_fields_to_db = async function (collection, file_fields, req, obj
  * @param {file full path} filepath 
  */
 const save_file = async (collection, filename, filepath) => {
-    const instance = get_gridfs_instance();
+    const instance = await get_gridfs_instance();
     await instance.save_file(collection, filename, filepath);
 }
 
@@ -157,7 +163,7 @@ const save_file = async (collection, filename, filepath) => {
  * @param {http response} response
  */
 const read_file = async (collection, filename, response) => {
-    const instance = get_gridfs_instance();
+    const instance = await get_gridfs_instance();
     await instance.read_file(collection, filename, response);
 }
 
