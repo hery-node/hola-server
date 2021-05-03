@@ -78,6 +78,19 @@ class GridFS {
     }
 
     /**
+     * Delete the files by file name
+     * @param {bucket name} bucketname 
+     * @param {file name} filename 
+     */
+    async delete_files(bucketname, filename) {
+        const bucket = new GridFSBucket(this.db, { chunkSizeBytes: 1024 * 1024, bucketName: bucketname });
+        const files = await bucket.find({ filename: filename }).toArray();
+        if (files && files.length > 0) {
+            await delete_file(bucket, files[0]._id);
+        }
+    }
+
+    /**
      * Delete the file using id
      * @param {mongodb bucket name} bucket 
      * @param {id of the file} id 
@@ -155,7 +168,6 @@ const save_file = async (collection, filename, filepath) => {
     await instance.save_file(collection, filename, filepath);
 }
 
-
 /**
  * read file from gridfs
  * @param {collection name} collection 
@@ -167,4 +179,14 @@ const read_file = async (collection, filename, response) => {
     await instance.read_file(collection, filename, response);
 }
 
-module.exports = { set_file_fields, save_file_fields_to_db, save_file, read_file };
+/**
+ * delete file from gridfs
+ * @param {collection name} collection 
+ * @param {file name} filename 
+ */
+const delete_file = async (collection, filename) => {
+    const instance = await get_gridfs_instance();
+    await instance.delete_files(collection, filename);
+}
+
+module.exports = { set_file_fields, save_file_fields_to_db, save_file, read_file, delete_file };
