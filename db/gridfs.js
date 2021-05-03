@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { GridFSBucket, MongoClient } = require('mongodb');
+const { get_settings } = require('../setting');
 
 let gridfs_instance;
 
@@ -7,7 +8,8 @@ const get_gridfs_instance = () => {
     if (gridfs_instance) {
         return gridfs_instance;
     } else {
-        gridfs_instance = new GridFS();
+        const mongo = get_settings().mongo;
+        gridfs_instance = new GridFS(mongo.url);
         return gridfs_instance;
     }
 }
@@ -136,4 +138,27 @@ const save_file_fields_to_db = async function (collection, file_fields, req, obj
     }
 }
 
-module.exports = { set_file_fields, save_file_fields_to_db };
+/**
+ * Save file to gridfs file
+ * @param {collection name} collection 
+ * @param {file name} filename 
+ * @param {file full path} filepath 
+ */
+const save_file = async (collection, filename, filepath) => {
+    const instance = get_gridfs_instance();
+    await instance.save_file(collection, filename, filepath);
+}
+
+
+/**
+ * read file from gridfs
+ * @param {collection name} collection 
+ * @param {file name} filename 
+ * @param {http response} response
+ */
+const read_file = async (collection, filename, response) => {
+    const instance = get_gridfs_instance();
+    await instance.read_file(collection, filename, response);
+}
+
+module.exports = { set_file_fields, save_file_fields_to_db, save_file, read_file };
