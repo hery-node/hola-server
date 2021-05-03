@@ -426,16 +426,16 @@ class Entity {
      * @param {array of objectid} id_array 
      */
     async delete_entity(id_array) {
+        const query = oid_queries(id_array);
+        if (query == null) {
+            return { code: INVALID_PARAMS, err: ["ids"] };
+        }
+
         if (this.meta.before_delete) {
             const { code, err } = await this.meta.before_delete(this, id_array);
             if (err || code != SUCCESS) {
                 return { code: code, err: err };
             }
-        }
-
-        const query = oid_queries(id_array);
-        if (query == null) {
-            return { code: INVALID_PARAMS, err: ["ids"] };
         }
 
         const has_refer_by_array = [];
