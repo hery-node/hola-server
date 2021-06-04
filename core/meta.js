@@ -13,7 +13,7 @@ const meta_manager = {};
  * routes: configure customer defined routes
 */
 const field_attrs = ["name", "type", "required", "ref", "create", "list", "search", "update", "clone", "sys"];
-const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable"
+const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable",
     "before_create", "after_create", "before_update", "after_update", "before_delete", "after_delete", "create", "update", "batch_update", "after_batch_update", "delete",
     "ref_label", "ref_filter", "route"];
 

@@ -201,7 +201,7 @@ class Entity {
     * @returns object with code and err
     */
     async create_entity(param_obj) {
-        this._create_entity(param_obj, this.meta.create_fields);
+        return this._create_entity(param_obj, this.meta.create_fields);
     }
 
     /**
@@ -210,7 +210,7 @@ class Entity {
     * @returns object with code and err
     */
     async clone_entity(param_obj) {
-        this._create_entity(param_obj, this.meta.clone_fields);
+        return this._create_entity(param_obj, this.meta.clone_fields);
     }
 
     /**
