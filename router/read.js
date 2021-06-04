@@ -1,6 +1,7 @@
-const { required_post_params, post_params } = require('../http/params');
+const { required_post_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { NO_PARAMS, SUCCESS } = require('../http/code');
+const { get_session_userid } = require('../http/session');
 const { wrap_http } = require('../http/error');
 const { Entity } = require('../db/entity');
 
@@ -40,7 +41,16 @@ const init_read_router = function (router, meta) {
             return;
         }
 
-        const { code, err, total, data } = await entity.list_entity(query_params["_query"], null, req.body);
+        const param_obj = req.body;
+        if (meta.user_field) {
+            const user_id = get_session_userid(req);
+            if (user_id == null) {
+                throw new Error("no user is found in session");
+            }
+            param_obj[meta.user_field] = user_id;
+        }
+
+        const { code, err, total, data } = await entity.list_entity(query_params["_query"], null, param_obj);
         if (!has_value(code)) {
             throw new Error("the list_entity method should return code");
         }

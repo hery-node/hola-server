@@ -19,4 +19,9 @@ const init_session = (app) => {
     }
 }
 
-module.exports = { init_session };
+const get_session_userid = (req) => {
+    const user = req.session ? req.session.user : null;
+    return user ? user.id : null;
+}
+
+module.exports = { init_session, get_session_userid };

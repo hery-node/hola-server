@@ -15,7 +15,7 @@ const meta_manager = {};
 const field_attrs = ["name", "type", "required", "ref", "create", "list", "search", "update", "clone", "sys"];
 const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable",
     "before_create", "after_create", "before_update", "after_update", "before_delete", "after_delete", "create", "update", "batch_update", "after_batch_update", "delete",
-    "ref_label", "ref_filter", "route"];
+    "ref_label", "ref_filter", "route", "user_field"];
 
 /**
  * Validate the field attributes and keep them correct(also set default value)
@@ -152,6 +152,7 @@ class EntityMeta {
         this.fields = meta.fields;
         this.primary_keys = meta.primary_keys;
         this.field_names = this.fields.map(field => field.name);
+        this.user_field = meta.user_field;
 
         this.property_fields = this.fields.filter(field => field.sys != true);
         this.create_fields = this.fields.filter(field => field.create != false && field.sys != true);
@@ -210,6 +211,10 @@ class EntityMeta {
 
         if (this.ref_label && !this.field_names.includes(this.ref_label)) {
             throw new Error("ref_label [" + this.ref_label + "] configured in meta:" + this.collection + " not found in field names");
+        }
+
+        if (this.user_field && !this.field_names.includes(this.user_field)) {
+            throw new Error("user_field [" + this.user_field + "] configured in meta:" + this.collection + " not found in field names");
         }
 
         if (this.ref_filter && (this.ref_filter.constructor != Object)) {
