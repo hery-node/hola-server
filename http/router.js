@@ -6,6 +6,7 @@ const { EntityMeta, validate_all_metas } = require('../core/meta');
 const { init_create_router } = require('../router/create');
 const { init_read_router } = require('../router/read');
 const { init_update_router } = require('../router/update');
+const { init_clone_router } = require('../router/clone');
 const { init_delete_router } = require('../router/delete');
 const { get_settings } = require('../setting');
 
@@ -49,6 +50,10 @@ const init_router = function (meta) {
 
     if (meta_entity.updatable) {
         init_update_router(router, meta_entity);
+    }
+
+    if (meta_entity.cloneable) {
+        init_clone_router(router, meta_entity);
     }
 
     if (meta_entity.deleteable) {
