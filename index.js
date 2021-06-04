@@ -1,7 +1,7 @@
 const { init_settings } = require('./setting');
 const { init_express_server } = require('./http/express');
 const { init_router } = require('./http/router');
-const { register_type } = require('./core/type');
+const { register_type, get_type } = require('./core/type');
 const { EntityMeta, get_entity_meta } = require('./core/meta');
 const { Entity } = require('./db/entity');
 
@@ -17,4 +17,4 @@ const gridfs = require('./db/gridfs');
 
 const { gen_i18n } = require('./tool/gen_i18n');
 
-module.exports = { init_settings, init_express_server, init_router, register_type, Entity, EntityMeta, get_entity_meta, array, date, number, obj, validate, code, err, params, gridfs, gen_i18n };
+module.exports = { init_settings, init_express_server, init_router, register_type, get_type, Entity, EntityMeta, get_entity_meta, array, date, number, obj, validate, code, err, params, gridfs, gen_i18n };
