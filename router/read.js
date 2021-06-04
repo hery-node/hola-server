@@ -18,6 +18,7 @@ const init_read_router = function (router, meta) {
             readable: meta.readable,
             updatable: meta.updatable,
             deleteable: meta.deleteable,
+            cloneable: meta.cloneable,
             importable: meta.importable,
             exportable: meta.exportable,
             editable: meta.editable,

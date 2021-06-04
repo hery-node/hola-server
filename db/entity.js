@@ -196,12 +196,31 @@ class Entity {
     }
 
     /**
+    * Validate the param object and invoke the logic to save it to db
+    * @param {param obj from user input} param_obj
+    * @returns object with code and err
+    */
+    async create_entity(param_obj) {
+        this._create_entity(param_obj, this.meta.create_fields);
+    }
+
+    /**
+    * Validate the param object and invoke the logic to clone the entity and sae it to db
+    * @param {param obj from user input} param_obj
+    * @returns object with code and err
+    */
+    async clone_entity(param_obj) {
+        this._create_entity(param_obj, this.meta.clone_fields);
+    }
+
+    /**
      * Validate the param object and invoke the logic to save it to db
      * @param {param obj from user input} param_obj 
+     * @param {fields used to convert value} fields
      * @returns object with code and err
      */
-    async create_entity(param_obj) {
-        const { obj, error_field_names } = convert_type(param_obj, this.meta.create_fields);
+    async _create_entity(param_obj, fields) {
+        const { obj, error_field_names } = convert_type(param_obj, fields);
         if (error_field_names.length > 0) {
             return { code: INVALID_PARAMS, err: error_field_names };
         }

@@ -32,6 +32,22 @@ const init_create_router = function (router, meta) {
 
         res.json({ code: code, err: err });
     }));
+
+    router.post('/clone', cp_upload, wrap_http(async function (req, res) {
+        const param_obj = post_params(req, meta.field_names);
+        set_file_fields(meta, req, param_obj);
+
+        const { code, err } = await entity.clone_entity(param_obj);
+        if (!has_value(code)) {
+            throw new Error("the method should return code");
+        }
+
+        if (code == SUCCESS) {
+            await save_file_fields_to_db(meta.collection, meta.file_fields, req, param_obj);
+        }
+
+        res.json({ code: code, err: err });
+    }));
 }
 
 module.exports = { init_create_router }
