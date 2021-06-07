@@ -1,5 +1,6 @@
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
 const { SUCCESS } = require('../http/code');
+const { get_session_userid } = require('../http/session');
 const { wrap_http } = require('../http/error');
 const { post_params } = require('../http/params');
 const { has_value } = require('../core/validate');
@@ -20,6 +21,14 @@ const init_clone_router = function (router, meta) {
     router.post('/clone', cp_upload, wrap_http(async function (req, res) {
         const param_obj = post_params(req, meta.field_names);
         set_file_fields(meta, req, param_obj);
+
+        if (meta.user_field) {
+            const user_id = get_session_userid(req);
+            if (user_id == null) {
+                throw new Error("no user is found in session");
+            }
+            param_obj[meta.user_field] = user_id;
+        }
 
         const { code, err } = await entity.clone_entity(param_obj);
         if (!has_value(code)) {
