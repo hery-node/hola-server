@@ -23,6 +23,7 @@ const init_read_router = function (router, meta) {
             importable: meta.importable,
             exportable: meta.exportable,
             editable: meta.editable,
+            user_field: meta.user_field,
             fields: meta.fields
         }
         res.json({ code: SUCCESS, data: entity_meta });
