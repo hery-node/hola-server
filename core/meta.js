@@ -71,7 +71,7 @@ const validate_fields = (meta, fields) => {
     fields.forEach(field => {
         validate_field(meta, field);
         if (field_names.includes(field.name)) {
-            throw new Error("Duplicate field defined [" + field + "] for meta:" + meta.collection);
+            throw new Error("Duplicate field defined [" + JSON.stringify(field) + "] for meta:" + meta.collection);
         } else {
             field_names.push(field.name);
         }
