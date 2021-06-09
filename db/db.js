@@ -147,10 +147,6 @@ class DB {
      * @returns 
      */
     create(code, obj) {
-        if (is_log_debug()) {
-            log_debug(LOG_DB, "creating obj:" + JSON.stringify(obj) + ", for [" + code + "]");
-        }
-
         const col = this.db[code];
         return col.insert(obj);
     }
