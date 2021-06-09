@@ -10,6 +10,7 @@ let settings = {
     },
     log: {
         col_log: 'log',
+        log_level: 0,
         save_db: dev_mode == false,
     },
     server: {

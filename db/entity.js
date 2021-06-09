@@ -1,5 +1,6 @@
 const { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, NOT_FOUND, REF_NOT_FOUND, REF_NOT_UNIQUE, HAS_REF } = require('../http/code');
 const { validate_required_fields, has_value } = require('../core/validate');
+const { LOG_ENTITY, is_log_debug, is_log_error, log_debug, log_error } = require('../http/error');
 const { required_params } = require('../http/params');
 const { convert_type, get_type } = require('../core/type');
 const { get_entity_meta } = require('../core/meta');
@@ -141,7 +142,11 @@ class Entity {
 
             if (and_array.length > 0) {
                 query["$and"] = and_array;
-                // console.log("query: %j", query);
+
+                if (is_log_debug()) {
+                    log_debug(LOG_ENTITY, "search query:" + JSON.stringify(query));
+                }
+
                 return query;
             } else {
                 return {};
@@ -160,6 +165,10 @@ class Entity {
     async list_entity(query_params, query, param_obj) {
         const error_required_field_names = validate_required_fields(query_params, ["attr_names", "sort_by", "desc"]);
         if (error_required_field_names.length > 0) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "error required fields:" + JSON.stringify(error_required_field_names));
+            }
+
             return { code: NO_PARAMS, err: error_required_field_names };
         }
 
@@ -186,13 +195,22 @@ class Entity {
 
         const search_query = query ? query : await this.get_search_query(param_obj);
         if (!search_query) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "no search query is set for param:" + JSON.stringify(param_obj));
+            }
+
             return { code: INVALID_PARAMS, err: "no search query is set" };
         }
 
         const total = await this.count(search_query);
         const list = await this.find_page(search_query, sort, page_int, page_limit, attrs);
+        const data = await this.convert_ref_attrs(list);
 
-        return { code: SUCCESS, total: total, data: await this.convert_ref_attrs(list) };
+        if (is_log_debug()) {
+            log_debug(LOG_ENTITY, "total:" + total + ",data:" + JSON.stringify(data));
+        }
+
+        return { code: SUCCESS, total: total, data: data };
     }
 
     /**
@@ -222,18 +240,28 @@ class Entity {
     async _create_entity(param_obj, fields) {
         const { obj, error_field_names } = convert_type(param_obj, fields);
         if (error_field_names.length > 0) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "error fields:" + JSON.stringify(error_field_names));
+            }
+
             return { code: INVALID_PARAMS, err: error_field_names };
         }
 
         if (this.meta.before_create) {
             const { code, err } = await this.meta.before_create(this, obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "before_create error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         }
 
         const error_required_field_names = validate_required_fields(obj, this.meta.required_field_names);
         if (error_required_field_names.length > 0) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "error required fields:" + JSON.stringify(error_required_field_names));
+            }
             return { code: NO_PARAMS, err: error_required_field_names };
         }
 
@@ -245,6 +273,9 @@ class Entity {
         if (this.meta.ref_fields) {
             const { code, err } = await this.validate_ref(obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "validate_ref error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         }
@@ -252,11 +283,17 @@ class Entity {
         if (this.meta.create) {
             const { code, err } = await this.meta.create(this, obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "create error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         } else {
             const db_obj = await this.create(obj);
             if (!db_obj["_id"]) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "create error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: ERROR, err: "creating record is failed" };
             }
         }
@@ -264,6 +301,9 @@ class Entity {
         if (this.meta.after_create) {
             const { code, err } = await this.meta.after_create(this, obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "after_create error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         }
@@ -280,29 +320,44 @@ class Entity {
     async update_entity(_id, param_obj) {
         const { obj, error_field_names } = convert_type(param_obj, this.meta.update_fields);
         if (error_field_names.length > 0) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "update_entity error fields:" + JSON.stringify(error_field_names));
+            }
             return { code: INVALID_PARAMS, err: error_field_names };
         }
 
         if (this.meta.before_update) {
             const { code, err } = await this.meta.before_update(_id, this, obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "before_update error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         }
 
         const query = _id ? oid_query(_id) : this.primary_key_query(obj);
         if (query == null) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "error query _id:" + _id + ", with obj:" + JSON.stringify(obj));
+            }
             return { code: INVALID_PARAMS, err: _id ? ["_id"] : this.meta.primary_keys };
         }
 
         const total = await this.count(query);
         if (total != 1) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "update_entity not found with query:" + JSON.stringify(query) + ", and total:" + total);
+            }
             return { code: NOT_FOUND, err: _id ? ["_id"] : this.meta.primary_keys };
         }
 
         if (this.meta.ref_fields) {
             const { code, err } = await this.validate_ref(obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "update_entity validate_ref error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         }
@@ -310,11 +365,17 @@ class Entity {
         if (this.meta.update) {
             const { code, err } = await this.meta.update(_id, this, obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "meta update error:" + JSON.stringify(err) + ", with code:" + code + ",_id:" + _id + ",obj:" + JSON.stringify(obj));
+                }
                 return { code: code, err: err };
             }
         } else {
             const result = await this.update(query, obj);
             if (result.ok != 1) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "update record is failed with query:" + JSON.stringify(query) + ",obj:" + JSON.stringify(obj) + ",result:" + JSON.stringify(result));
+                }
                 return { code: ERROR, err: "update record is failed" };
             }
         }
@@ -322,6 +383,9 @@ class Entity {
         if (this.meta.after_update) {
             const { code, err } = await this.meta.after_update(_id, this, obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "after_update is failed with _id:" + JSON.stringify(_id) + ",obj:" + JSON.stringify(obj) + ",err:" + JSON.stringify(err) + ",code:" + code);
+                }
                 return { code: code, err: err };
             }
         }
@@ -338,17 +402,26 @@ class Entity {
     async batch_update_entity(_ids, param_obj) {
         const { obj, error_field_names } = convert_type(param_obj, this.meta.update_fields);
         if (error_field_names.length > 0) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "batch_update_entity error fields:" + JSON.stringify(error_field_names));
+            }
             return { code: INVALID_PARAMS, err: error_field_names };
         }
 
         const query = oid_queries(_ids);
         if (query == null) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "batch_update_entity invalid ids:" + JSON.stringify(_ids));
+            }
             return { code: INVALID_PARAMS, err: ["_ids"] };
         }
 
         if (this.meta.ref_fields) {
             const { code, err } = await this.validate_ref(obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "batch_update_entity validate_ref error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         }
@@ -356,11 +429,17 @@ class Entity {
         if (this.meta.batch_update) {
             const { code, err } = await this.meta.batch_update(_ids, this, obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "batch_update_entity batch_update error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         } else {
             const result = await this.update(query, obj);
             if (result.ok != 1) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "batch_update_entity update record is failed with query:" + JSON.stringify(query) + ",obj:" + JSON.stringify(obj) + ",result:" + JSON.stringify(result));
+                }
                 return { code: ERROR, err: "batch update record is failed" };
             }
         }
@@ -368,6 +447,9 @@ class Entity {
         if (this.meta.after_batch_update) {
             const { code, err } = await this.meta.after_batch_update(_ids, this, obj);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "after_batch_update  error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         }
@@ -385,6 +467,9 @@ class Entity {
     async read_entity(_id, attr_names) {
         const query = oid_query(_id);
         if (query == null) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "read_entity invalid id:" + _id);
+            }
             return { code: INVALID_PARAMS, err: ["_id"] };
         }
 
@@ -398,6 +483,9 @@ class Entity {
 
         const results = await this.find(query, attrs);
         if (results && results.length == 1) {
+            if (is_log_debug()) {
+                log_debug("read entity with query:" + JSON.stringify(query) + ",attrs:" + JSON.stringify(attrs) + ",result:" + JSON.stringify(results));
+            }
             return { code: SUCCESS, data: results[0] };
         } else {
             return { code: NOT_FOUND, err: ["_id"] };
@@ -414,10 +502,16 @@ class Entity {
     async read_entity_properties(_id, attr_names) {
         const query = oid_query(_id);
         if (query == null) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "read_entity_properties invalid id:" + _id);
+            }
             return { code: INVALID_PARAMS, err: ["_id"] };
         }
 
         if (!attr_names) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "read_entity_properties invalid attr_names:" + attr_names);
+            }
             return { code: INVALID_PARAMS, err: ["attr_names"] };
         }
 
@@ -433,6 +527,9 @@ class Entity {
         if (results && results.length == 1) {
             const converted = await this.convert_ref_attrs(results);
             if (converted && converted.length == 1) {
+                if (is_log_debug()) {
+                    log_debug("read_entity_properties with query:" + JSON.stringify(query) + ",attrs:" + JSON.stringify(attrs) + ",converted:" + JSON.stringify(converted));
+                }
                 return { code: SUCCESS, data: converted[0] };
             }
         }
@@ -447,12 +544,18 @@ class Entity {
     async delete_entity(id_array) {
         const query = oid_queries(id_array);
         if (query == null) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "delete_entity invalid id_array:" + JSON.stringify(id_array));
+            }
             return { code: INVALID_PARAMS, err: ["ids"] };
         }
 
         if (this.meta.before_delete) {
             const { code, err } = await this.meta.before_delete(this, id_array);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "before_delete error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         }
@@ -470,17 +573,26 @@ class Entity {
         }
 
         if (has_refer_by_array.length > 0) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "has_refer_by_array:" + JSON.stringify(has_refer_by_array));
+            }
             return { code: HAS_REF, err: has_refer_by_array };
         }
 
         if (this.meta.delete) {
             const { code, err } = await this.meta.delete(this, id_array);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "delete error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         } else {
             const result = await this.delete(query);
             if (result.ok != 1) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "delete records is failed with query:" + JSON.stringify(query) + ", result:" + JSON.stringify(result));
+                }
                 return { code: ERROR, err: "delete record is failed" };
             }
         }
@@ -488,6 +600,9 @@ class Entity {
         if (this.meta.after_delete) {
             const { code, err } = await this.meta.after_delete(this, id_array);
             if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "after_delete error:" + JSON.stringify(err) + ", with code:" + code);
+                }
                 return { code: code, err: err };
             }
         }

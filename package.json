@@ -1,6 +1,6 @@
 {
   "name": "hola-server",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "description": "a meta programming framework used to build nodejs restful api",
   "main": "index.js",
   "scripts": {
@@ -13,6 +13,7 @@
     "cors": "^2.8.5",
     "dateformat": "^4.5.1",
     "express": "^4.17.1",
+    "express-http-context": "^1.2.4",
     "express-sanitizer": "^1.0.5",
     "express-session": "^1.17.1",
     "mongodb": "^3.6.5",

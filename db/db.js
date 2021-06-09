@@ -1,5 +1,6 @@
 const mongoist = require('mongoist');
 const { get_settings } = require('../setting');
+const { LOG_DB, is_log_debug, is_log_error, log_debug, log_error } = require('../http/error');
 
 /**
  * Construct mongodb ObjectId
@@ -56,7 +57,6 @@ const bulk_update = async (col, items, attrs) => {
     return await bulk.execute();
 };
 
-
 class DB {
 
     constructor(url, poolSize) {
@@ -67,7 +67,9 @@ class DB {
         this.db = mongoist(url, { autoReconnect: true, poolSize: poolSize });
 
         this.db.on('error', function (err) {
-            console.log('database error', err);
+            if (is_log_error()) {
+                log_error(LOG_DB, err);
+            }
         });
     }
 
@@ -78,6 +80,10 @@ class DB {
      * @returns 
      */
     create(code, obj) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "creating obj:" + JSON.stringify(obj) + ", for [" + code + "]");
+        }
+
         const col = this.db[code];
         return col.insert(obj);
     }
@@ -90,6 +96,10 @@ class DB {
      * @returns 
      */
     update(code, query, obj) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "updating obj:" + JSON.stringify(obj) + ", for [" + code + "] with query:" + JSON.stringify(query));
+        }
+
         const col = this.db[code];
         return col.update(query, { "$set": obj }, { upsert: true, multi: true });
     }
@@ -101,6 +111,10 @@ class DB {
      * @returns 
      */
     delete(code, query) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "deleting objects for [" + code + "] with query:" + JSON.stringify(query));
+        }
+
         const col = this.db[code];
         return col.remove(query);
     }
@@ -113,6 +127,10 @@ class DB {
      * @returns 
      */
     find(code, query, attr) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "find objects for [" + code + "] with query:" + JSON.stringify(query) + " and attr:" + JSON.stringify(attr));
+        }
+
         const col = this.db[code];
         return col.find(query, attr);
     }
@@ -125,6 +143,10 @@ class DB {
      * @returns 
      */
     find_one(code, query, attr) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "find_one for [" + code + "] with query:" + JSON.stringify(query) + " and attr:" + JSON.stringify(attr));
+        }
+
         const col = this.db[code];
         return col.findOne(query, attr);
     }
@@ -138,6 +160,10 @@ class DB {
      * @returns 
      */
     find_sort(code, query, sort, attr) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "find_sort for [" + code + "] with query:" + JSON.stringify(query) + " and attr:" + JSON.stringify(attr) + " and sort:" + JSON.stringify(sort));
+        }
+
         const col = this.db[code];
         return col.find(query, attr, { sort: sort });
     }
@@ -153,6 +179,10 @@ class DB {
      * @returns 
      */
     find_page(code, query, sort, page, limit, attr) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "find_page for [" + code + "] with query:" + JSON.stringify(query) + " and attr:" + JSON.stringify(attr) + " and sort:" + JSON.stringify(sort) + ", page:" + page + ",limit:" + limit);
+        }
+
         const skip = (page - 1) * limit > 0 ? (page - 1) * limit : 0;
         const col = this.db[code];
         return col.find(query, attr, { sort: sort, skip: skip, limit: limit });
@@ -165,6 +195,10 @@ class DB {
      * @returns 
      */
     count(code, query) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "count for [" + code + "] with query:" + JSON.stringify(query));
+        }
+
         const col = this.db[code];
         return col.count(query);
     }
@@ -177,6 +211,10 @@ class DB {
      * @returns 
      */
     sum(code, query, field) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "sum for [" + code + "] with query:" + JSON.stringify(query) + ", and field:" + JSON.stringify(field));
+        }
+
         const col = this.db[code];
         return col.aggregate([{ "$match": query }, { "$group": { _id: null, total: { "$sum": "$" + field + "" } } }])
             .then(result => result.length > 0 ? result[0].total : 0);
@@ -190,6 +228,10 @@ class DB {
      * @returns 
      */
     pull(code, query, ele) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "pull ele [" + JSON.stringify(ele) + "] with query:" + JSON.stringify(query) + ",code:" + code);
+        }
+
         const col = this.db[code];
         return col.update(query, { "$pull": ele }, { multi: true });
     }
@@ -202,6 +244,10 @@ class DB {
      * @returns 
      */
     push(code, query, ele) {
+        if (is_log_debug()) {
+            log_debug(LOG_DB, "push ele [" + JSON.stringify(ele) + "] with query:" + JSON.stringify(query) + ",code:" + code);
+        }
+
         const col = this.db[code];
         return col.update(query, { "$push": ele });
     }

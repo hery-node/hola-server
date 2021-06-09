@@ -225,6 +225,24 @@ const gender_type = {
 
 register_type(gender_type);
 
+const log_level_type = {
+    name: "level",
+    convert: function (value) {
+        if (is_int(value)) {
+            const int_value = parseInt(value);
+            if (int_value == 0 || int_value == 1 || int_value == 2 || int_value == 3) {
+                return { value: int_value };
+            } else {
+                return { err: "invalid level value:" + value }
+            }
+        } else {
+            return { err: "log level isn't int type:" + value };
+        }
+    }
+}
+
+register_type(log_level_type);
+
 const percentage_type = {
     name: "percentage",
     convert: function (value) {

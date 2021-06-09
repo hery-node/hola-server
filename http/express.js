@@ -1,4 +1,6 @@
 const express = require('express');
+const http_context = require('express-http-context');
+
 const { init_cors } = require('./cors');
 const { init_session } = require('./session');
 const { init_router_dirs } = require('./router');
@@ -18,8 +20,14 @@ const init_express_server = (base_dir, callback) => {
 
     init_cors(app);
 
+    app.use(http_context.middleware);
     app.use(express.json({ limit: threshold.body_limit, extended: true }));
     app.use(express.urlencoded({ limit: threshold.body_limit, extended: true }));
+
+    app.use((req, res, next) => {
+        http_context.set('req', req)
+        next();
+    });
 
     init_session(app);
     init_router_dirs(app, base_dir);
