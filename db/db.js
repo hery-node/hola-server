@@ -47,25 +47,25 @@ const is_log_error = () => {
 
 const log_debug = (category, msg) => {
     if (is_log_debug()) {
-        log_msg(category, msg, LOG_LEVEL_DEBUG);
+        log_msg(category, LOG_LEVEL_DEBUG, msg);
     }
 }
 
 const log_info = (category, msg) => {
     if (is_log_info()) {
-        log_msg(category, msg, LOG_LEVEL_INFO);
+        log_msg(category, LOG_LEVEL_INFO, msg);
     }
 }
 
 const log_warn = (category, msg) => {
     if (is_log_warn()) {
-        log_msg(category, msg, LOG_LEVEL_WARN);
+        log_msg(category, LOG_LEVEL_WARN, msg);
     }
 }
 
 const log_error = (category, msg) => {
     if (is_log_error()) {
-        log_msg(category, msg, LOG_LEVEL_ERROR);
+        log_msg(category, LOG_LEVEL_ERROR, msg);
     }
 }
 
