@@ -2,7 +2,6 @@ const mongoist = require('mongoist');
 const http_context = require('express-http-context');
 
 const { get_settings } = require('../setting');
-const { save_db, log_level, col_log } = get_settings().log;
 const { format_date_time } = require('../core/date');
 
 const LOG_LEVEL_DEBUG = 0;
@@ -17,6 +16,7 @@ const LOG_SYSTEM = "system";
 const log_msg = (category, level, msg) => {
     const time = format_date_time(new Date());
     const db = get_db();
+    const { col_log } = get_settings().log;
 
     const req = http_context.get("req");
     const path = req ? req.path : '';
@@ -26,18 +26,22 @@ const log_msg = (category, level, msg) => {
 }
 
 const is_log_debug = () => {
+    const { save_db, log_level } = get_settings().log;
     return save_db && log_level >= LOG_LEVEL_DEBUG;
 }
 
 const is_log_info = () => {
+    const { save_db, log_level } = get_settings().log;
     return save_db && log_level >= LOG_LEVEL_INFO;
 }
 
 const is_log_warn = () => {
+    const { save_db, log_level } = get_settings().log;
     return save_db && log_level >= LOG_LEVEL_WARN;
 }
 
 const is_log_error = () => {
+    const { save_db, log_level } = get_settings().log;
     return save_db && log_level >= LOG_LEVEL_ERROR;
 }
 
