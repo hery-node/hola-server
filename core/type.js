@@ -226,7 +226,7 @@ const gender_type = {
 register_type(gender_type);
 
 const log_level_type = {
-    name: "level",
+    name: "log_level",
     convert: function (value) {
         if (is_int(value)) {
             const int_value = parseInt(value);
@@ -242,6 +242,15 @@ const log_level_type = {
 }
 
 register_type(log_level_type);
+
+const log_category_type = {
+    name: "log_category",
+    convert: function (value) {
+        return { value: value + "" };
+    }
+}
+
+register_type(log_category_type);
 
 const percentage_type = {
     name: "percentage",
