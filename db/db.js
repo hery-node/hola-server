@@ -1,6 +1,69 @@
 const mongoist = require('mongoist');
+const http_context = require('express-http-context');
+
 const { get_settings } = require('../setting');
-const { LOG_DB, is_log_debug, is_log_error, log_debug, log_error } = require('../http/error');
+const { save_db, log_level, col_log } = get_settings().log;
+const { format_date_time } = require('../core/date');
+
+const LOG_LEVEL_DEBUG = 0;
+const LOG_LEVEL_INFO = 1;
+const LOG_LEVEL_WARN = 2;
+const LOG_LEVEL_ERROR = 3;
+
+const LOG_DB = "database";
+const LOG_ENTITY = "entity";
+const LOG_SYSTEM = "system";
+
+const log_msg = (category, level, msg) => {
+    const time = format_date_time(new Date());
+    const db = get_db();
+
+    const req = http_context.get("req");
+    const path = req ? req.path : '';
+    const user = req && req.session && req.session.user ? req.session.user.id : '';
+
+    db.create(col_log, { time: time, category: category, level: level, msg: msg, user: user, path: path }).then(() => { });
+}
+
+const is_log_debug = () => {
+    return save_db && log_level >= LOG_LEVEL_DEBUG;
+}
+
+const is_log_info = () => {
+    return save_db && log_level >= LOG_LEVEL_INFO;
+}
+
+const is_log_warn = () => {
+    return save_db && log_level >= LOG_LEVEL_WARN;
+}
+
+const is_log_error = () => {
+    return save_db && log_level >= LOG_LEVEL_ERROR;
+}
+
+const log_debug = (category, msg) => {
+    if (is_log_debug()) {
+        log_msg(category, msg, LOG_LEVEL_DEBUG);
+    }
+}
+
+const log_info = (category, msg) => {
+    if (is_log_info()) {
+        log_msg(category, msg, LOG_LEVEL_INFO);
+    }
+}
+
+const log_warn = (category, msg) => {
+    if (is_log_warn()) {
+        log_msg(category, msg, LOG_LEVEL_WARN);
+    }
+}
+
+const log_error = (category, msg) => {
+    if (is_log_error()) {
+        log_msg(category, msg, LOG_LEVEL_ERROR);
+    }
+}
 
 /**
  * Construct mongodb ObjectId
@@ -291,4 +354,4 @@ const get_db = () => {
     }
 }
 
-module.exports = { oid, oid_query, oid_queries, bulk_update, get_db };
+module.exports = { oid, oid_query, oid_queries, bulk_update, get_db, log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info, is_log_warn, is_log_error, LOG_DB, LOG_SYSTEM, LOG_ENTITY };

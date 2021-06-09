@@ -1,11 +1,10 @@
 const { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, NOT_FOUND, REF_NOT_FOUND, REF_NOT_UNIQUE, HAS_REF } = require('../http/code');
 const { validate_required_fields, has_value } = require('../core/validate');
-const { LOG_ENTITY, is_log_debug, is_log_error, log_debug, log_error } = require('../http/error');
 const { required_params } = require('../http/params');
 const { convert_type, get_type } = require('../core/type');
 const { get_entity_meta } = require('../core/meta');
 const { unique, map_array_to_obj } = require('../core/array');
-const { get_db, oid_query, oid_queries } = require('./db');
+const { LOG_ENTITY, get_db, oid_query, oid_queries, is_log_debug, is_log_error, log_debug, log_error } = require('./db');
 
 /**
  * Convert search value type, if there is error, keep it
