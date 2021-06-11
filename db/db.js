@@ -13,6 +13,11 @@ const LOG_DB = "database";
 const LOG_ENTITY = "entity";
 const LOG_SYSTEM = "system";
 
+const get_session_userid = () => {
+    const req = get_context_value("req");
+    return req && req.session && req.session.user ? req.session.user.id : '';
+}
+
 const log_msg = (category, level, msg) => {
     const time = format_date_time(new Date());
     const db = get_db();
@@ -354,4 +359,4 @@ const get_db = () => {
     }
 }
 
-module.exports = { oid, oid_query, oid_queries, bulk_update, get_db, log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info, is_log_warn, is_log_error, LOG_DB, LOG_SYSTEM, LOG_ENTITY };
+module.exports = { oid, oid_query, oid_queries, bulk_update, get_db, log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info, is_log_warn, is_log_error, LOG_DB, LOG_SYSTEM, LOG_ENTITY, get_session_userid };
