@@ -22,6 +22,7 @@ const init_express_server = (base_dir, callback) => {
     init_cors(app);
     app.use(express.json({ limit: threshold.body_limit, extended: true }));
     app.use(express.urlencoded({ limit: threshold.body_limit, extended: true }));
+    init_session(app);
 
     app.use((req, res, next) => {
         const exclude_urls = server.exclude_urls;
@@ -44,7 +45,6 @@ const init_express_server = (base_dir, callback) => {
         }
     });
 
-    init_session(app);
     init_router_dirs(app, base_dir);
     handle_exception(app);
 
