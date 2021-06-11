@@ -472,7 +472,7 @@ class Entity {
             return { code: INVALID_PARAMS, err: ["_id"] };
         }
 
-        const field_names = this.meta.create_fields.map(f => f.name);
+        const field_names = this.meta.property_fields.map(f => f.name);
         const attrs = {};
         attr_names.split(",").forEach(function (attr) {
             if (field_names.includes(attr)) {
