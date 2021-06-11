@@ -1,7 +1,8 @@
 const express = require('express');
 
 const { init_cors } = require('./cors');
-const { init_session } = require('./session');
+const { NO_SESSION } = require('./code');
+const { init_session, get_session_userid } = require('./session');
 const { init_router_dirs } = require('./router');
 const { handle_exception } = require('./error');
 const { get_settings } = require('../setting');
@@ -23,10 +24,24 @@ const init_express_server = (base_dir, callback) => {
     app.use(express.urlencoded({ limit: threshold.body_limit, extended: true }));
 
     app.use((req, res, next) => {
-        asyncLocalStorage.run({}, () => {
-            set_context_value("req", req);
-            next();
-        });
+        const exclude_urls = server.exclude_urls;
+
+        if (server.check_user && !exclude_urls.includes(req.originalUrl)) {
+            const user_id = get_session_userid(req);
+            if (user_id == null) {
+                res.json({ code: NO_SESSION, err: "no session found" });
+            } else {
+                asyncLocalStorage.run({}, () => {
+                    set_context_value("req", req);
+                    next();
+                });
+            }
+        } else {
+            asyncLocalStorage.run({}, () => {
+                set_context_value("req", req);
+                next();
+            });
+        }
     });
 
     init_session(app);

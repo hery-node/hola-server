@@ -17,6 +17,8 @@ let settings = {
         service_port: 8088,
         client_web_url: ['http://localhost:8080'],
         keep_session: true,
+        check_user: true,
+        exclude_urls: ["/"],
         session: {
             cookie_max_age: 1000 * 60 * 60 * 24 * 256 * 10,// ten years
             secret: 'BGTDYWJ*)#*$&*%(%#'
