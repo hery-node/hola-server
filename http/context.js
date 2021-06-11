@@ -1,11 +1,14 @@
-const http_context = require('express-http-context');
+const { AsyncLocalStorage } = require('async_hooks');
+const asyncLocalStorage = new AsyncLocalStorage();
 
 const set_context_value = (key, obj) => {
-    http_context.set(key, obj);
+    const store = asyncLocalStorage.getStore();
+    store[key] = obj;
 }
 
 const get_context_value = (key) => {
-    return http_context.get(key);
+    const store = asyncLocalStorage.getStore();
+    return store[key];
 }
 
-module.exports = { set_context_value, get_context_value }
+module.exports = { asyncLocalStorage, set_context_value, get_context_value }

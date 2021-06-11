@@ -1,7 +1,7 @@
 const mongoist = require('mongoist');
-const http_context = require('express-http-context');
 
 const { get_settings } = require('../setting');
+const { get_context_value } = require('../http/context');
 const { format_date_time } = require('../core/date');
 
 const LOG_LEVEL_DEBUG = 0;
@@ -18,7 +18,7 @@ const log_msg = (category, level, msg) => {
     const db = get_db();
     const { col_log } = get_settings().log;
 
-    const req = http_context.get("req");
+    const req = get_context_value.get("req");
     const path = req ? req.path : '';
     const user = req && req.session && req.session.user ? req.session.user.id : '';
 

@@ -1,11 +1,11 @@
 const express = require('express');
-const http_context = require('express-http-context');
 
 const { init_cors } = require('./cors');
 const { init_session } = require('./session');
 const { init_router_dirs } = require('./router');
 const { handle_exception } = require('./error');
 const { get_settings } = require('../setting');
+const { asyncLocalStorage, set_context_value } = require('./context');
 
 const app = express();
 let server_initialized = false;
@@ -19,14 +19,14 @@ const init_express_server = (base_dir, callback) => {
     const threshold = server.threshold;
 
     init_cors(app);
-
-    app.use(http_context.middleware);
     app.use(express.json({ limit: threshold.body_limit, extended: true }));
     app.use(express.urlencoded({ limit: threshold.body_limit, extended: true }));
 
     app.use((req, res, next) => {
-        http_context.set('req', req)
-        next();
+        asyncLocalStorage.run({}, () => {
+            set_context_value("req", req);
+            next();
+        });
     });
 
     init_session(app);
