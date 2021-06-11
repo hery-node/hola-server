@@ -27,22 +27,22 @@ const log_msg = (category, level, msg) => {
 
 const is_log_debug = () => {
     const { save_db, log_level } = get_settings().log;
-    return save_db && log_level >= LOG_LEVEL_DEBUG;
+    return save_db && log_level <= LOG_LEVEL_DEBUG;
 }
 
 const is_log_info = () => {
     const { save_db, log_level } = get_settings().log;
-    return save_db && log_level >= LOG_LEVEL_INFO;
+    return save_db && log_level <= LOG_LEVEL_INFO;
 }
 
 const is_log_warn = () => {
     const { save_db, log_level } = get_settings().log;
-    return save_db && log_level >= LOG_LEVEL_WARN;
+    return save_db && log_level <= LOG_LEVEL_WARN;
 }
 
 const is_log_error = () => {
     const { save_db, log_level } = get_settings().log;
-    return save_db && log_level >= LOG_LEVEL_ERROR;
+    return save_db && log_level <= LOG_LEVEL_ERROR;
 }
 
 const log_debug = (category, msg) => {
