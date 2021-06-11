@@ -18,8 +18,8 @@ const log_msg = (category, level, msg) => {
     const db = get_db();
     const { col_log } = get_settings().log;
 
-    const req = get_context_value.get("req");
-    const path = req ? req.path : '';
+    const req = get_context_value("req");
+    const path = req ? req.originalUrl : '';
     const user = req && req.session && req.session.user ? req.session.user.id : '';
 
     db.create(col_log, { time: time, category: category, level: level, msg: msg, user: user, path: path }).then(() => { });
