@@ -4,7 +4,7 @@ const { required_params } = require('../http/params');
 const { convert_type, get_type } = require('../core/type');
 const { get_entity_meta } = require('../core/meta');
 const { unique, map_array_to_obj } = require('../core/array');
-const { LOG_ENTITY, get_db, oid_query, oid_queries, is_log_debug, is_log_error, log_debug, log_error } = require('./db');
+const { LOG_ENTITY, get_db, oid_query, oid_queries, is_log_debug, is_log_error, log_debug, log_error, get_session_userid } = require('./db');
 
 /**
  * Convert search value type, if there is error, keep it
@@ -791,7 +791,13 @@ class Entity {
     * @returns 
     */
     get_filtered_ref_labels() {
-        const query = this.meta.ref_filter ? this.meta.ref_filter : {};
+        let query = {};
+        if (this.meta.user_field) {
+            query[this.meta.user_field] = get_session_userid();
+        }
+        if (this.meta.ref_filter) {
+            query = { ...query, ...this.meta.ref_filter };
+        }
         return this.find_sort(query, { [this.meta.ref_label]: 1 }, { [this.meta.ref_label]: 1 });
     }
 
