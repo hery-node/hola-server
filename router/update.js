@@ -1,5 +1,5 @@
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
-const { required_post_params, post_params } = require('../http/params');
+const { required_post_params, post_update_params } = require('../http/params');
 const { SUCCESS, NO_PARAMS } = require('../http/code');
 const { has_value } = require('../core/validate');
 const { wrap_http } = require('../http/error');
@@ -27,7 +27,7 @@ const init_update_router = function (router, meta) {
             }
         }
 
-        const param_obj = post_params(req, meta.field_names);
+        const param_obj = post_update_params(req, meta.field_names);
         set_file_fields(meta, req, param_obj);
 
         const { code, err } = await entity.update_entity(params["_id"], param_obj);
@@ -49,7 +49,7 @@ const init_update_router = function (router, meta) {
             return;
         }
 
-        const param_obj = post_params(req, meta.field_names);
+        const param_obj = post_update_params(req, meta.field_names);
         set_file_fields(meta, req, param_obj);
 
         const { code, err } = await entity.batch_update_entity(params["_ids"], param_obj);

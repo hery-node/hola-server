@@ -1,7 +1,7 @@
 const { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, NOT_FOUND, REF_NOT_FOUND, REF_NOT_UNIQUE, HAS_REF } = require('../http/code');
 const { validate_required_fields, has_value } = require('../core/validate');
 const { required_params } = require('../http/params');
-const { convert_type, get_type } = require('../core/type');
+const { convert_type, convert_update_type, get_type } = require('../core/type');
 const { get_entity_meta } = require('../core/meta');
 const { unique, map_array_to_obj } = require('../core/array');
 const { LOG_ENTITY, get_db, oid_query, oid_queries, is_log_debug, is_log_error, log_debug, log_error, get_session_userid } = require('./db');
@@ -317,7 +317,7 @@ class Entity {
      * 
      */
     async update_entity(_id, param_obj) {
-        const { obj, error_field_names } = convert_type(param_obj, this.meta.update_fields);
+        const { obj, error_field_names } = convert_update_type(param_obj, this.meta.update_fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "update_entity error fields:" + JSON.stringify(error_field_names));
@@ -399,7 +399,7 @@ class Entity {
      * 
      */
     async batch_update_entity(_ids, param_obj) {
-        const { obj, error_field_names } = convert_type(param_obj, this.meta.update_fields);
+        const { obj, error_field_names } = convert_update_type(param_obj, this.meta.update_fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "batch_update_entity error fields:" + JSON.stringify(error_field_names));

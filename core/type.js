@@ -1,4 +1,4 @@
-const { has_value } = require('./validate');
+const { has_value, is_undefined } = require('./validate');
 const { encrypt_pwd } = require('./encrypt');
 const type_manager = {};
 
@@ -304,4 +304,26 @@ const convert_type = function (obj, fields) {
     return { obj: result, error_field_names: error_field_names };
 }
 
-module.exports = { register_type, convert_type, get_type }
+const convert_update_type = function (obj, fields) {
+    const result = {};
+    const error_field_names = [];
+
+    fields.forEach(function (field) {
+        const field_value = obj[field.name];
+        if (has_value(field_value)) {
+            const type_name = field.type ? field.type : "string";
+            const type = get_type(type_name);
+            const { value, err } = type.convert(field_value);
+            if (err) {
+                error_field_names.push(field.name);
+            } else {
+                result[field.name] = value;
+            }
+        } else if (!is_undefined(field_value)) {
+            result[field.name] = "";
+        }
+    });
+    return { obj: result, error_field_names: error_field_names };
+}
+
+module.exports = { register_type, convert_type, convert_update_type, get_type }
