@@ -524,6 +524,16 @@ class Entity {
 
         const results = await this.find(query, attrs);
         if (results && results.length == 1) {
+            if (this.meta.after_read) {
+                const { code, err } = await this.meta.after_read(_id, attr_names, results[0]);
+                if (err || code != SUCCESS) {
+                    if (is_log_error()) {
+                        log_error(LOG_ENTITY, "after_read error:" + JSON.stringify(err) + ", with code:" + code);
+                    }
+                    return { code: code, err: err };
+                }
+            }
+
             const converted = await this.convert_ref_attrs(results);
             if (converted && converted.length == 1) {
                 if (is_log_debug()) {
