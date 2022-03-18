@@ -166,6 +166,7 @@ class EntityMeta {
         this.file_fields = meta.fields.filter(f => f.type === 'file');
         this.upload_fields = this.file_fields && this.file_fields.length > 0 ? this.file_fields.map(f => ({ name: f.name, maxCount: f.max ? f.max : 1 })) : [];
 
+        set_callback(this, "after_read", meta.after_read);
         set_callback(this, "before_create", meta.before_create);
         set_callback(this, "before_update", meta.before_update);
         set_callback(this, "before_delete", meta.before_delete);
