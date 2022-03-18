@@ -525,7 +525,7 @@ class Entity {
         const results = await this.find(query, attrs);
         if (results && results.length == 1) {
             if (this.meta.after_read) {
-                const { code, err } = await this.meta.after_read(_id, attr_names, results[0]);
+                const { code, err } = await this.meta.after_read(_id, this, attr_names, results[0]);
                 if (err || code != SUCCESS) {
                     if (is_log_error()) {
                         log_error(LOG_ENTITY, "after_read error:" + JSON.stringify(err) + ", with code:" + code);
