@@ -123,7 +123,7 @@ register_type(number_type);
 const string_type = {
     name: "string",
     convert: function (value) {
-        return { value: value + "" };
+        return { value: value ? (value + "").trim() : "" };
     }
 }
 
