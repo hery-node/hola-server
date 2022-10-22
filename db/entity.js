@@ -633,8 +633,8 @@ class Entity {
         }
 
         //check all the ref by array first
-        const has_ref = await this.check_refer_entity();
-        if (has_ref) {
+        const has_refer_by_array = await this.check_refer_entity(id_array);
+        if (has_refer_by_array.length > 0) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "has_refer_by_array:" + JSON.stringify(has_refer_by_array));
             }
@@ -662,11 +662,14 @@ class Entity {
         //delete other ref_by entity based on delete mode
         for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
             const ref_by_meta = this.meta.ref_by_metas[i];
-            const ref_field = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
-            if (ref_field.delete == DELETE_MODE.cascade) {
-                const refer_by_entity = new Entity(ref_by_meta);
-                for (let j = 0; j < id_array.length; j++) {
-                    await refer_by_entity.delete_refer_entity(this.meta.collection, id_array[j])
+            const ref_fields = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
+            for (let j = 0; j < ref_fields.length; j++) {
+                const ref_field = ref_fields[j];
+                if (ref_field.delete == DELETE_MODE.cascade) {
+                    const refer_by_entity = new Entity(ref_by_meta);
+                    for (let j = 0; j < id_array.length; j++) {
+                        await refer_by_entity.delete_refer_entity(this.meta.collection, id_array[j])
+                    }
                 }
             }
         }
@@ -805,28 +808,33 @@ class Entity {
        * @param {entity object id} entity_id 
        * @returns true if has refered
        */
-    async check_refer_entity() {
+    async check_refer_entity(id_array) {
         const has_refer_by_array = [];
-        const has_ref = false;
         for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
             const ref_by_meta = this.meta.ref_by_metas[i];
-            const ref_field = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
             const refer_by_entity = new Entity(ref_by_meta);
-            if (!ref_field.delete) {
-                for (let j = 0; j < id_array.length; j++) {
-                    const has_refer_by = await refer_by_entity.has_refer_entity(this.meta.collection, id_array[j]);
-                    if (has_refer_by) {
-                        has_refer_by_array.push(id_array[j]);
+            const ref_fields = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
+
+            for (let j = 0; j < ref_fields.length; j++) {
+                const ref_field = ref_fields[j];
+                if (ref_field.delete != DELETE_MODE.keep) {
+                    for (let j = 0; j < id_array.length; j++) {
+                        const entities = await refer_by_entity.get_refer_entities(this.meta.collection, id_array[j], {});
+                        if (entities && entities.length > 0) {
+                            if (ref_field.delete == DELETE_MODE.cascade) {
+                                const ref_id_array = await refer_by_entity.check_refer_entity(entities.map(o => o._id + ""));
+                                if (ref_id_array && ref_id_array.length > 0) {
+                                    has_refer_by_array.push(id_array[j]);
+                                }
+                            } else {
+                                has_refer_by_array.push(id_array[j]);
+                            }
+                        }
                     }
-                }
-            } else if (ref_field.delete == DELETE_MODE.cascade) {
-                const result = refer_by_entity.check_refer_entity();
-                if (result) {
-                    has_ref = true;
                 }
             }
         }
-        return has_refer_by_array.length == 0 && !has_ref;
+        return has_refer_by_array;
     }
 
     /**
@@ -835,21 +843,20 @@ class Entity {
      * @param {entity object id} entity_id 
      * @returns true if has refered
      */
-    async has_refer_entity(entity_name, entity_id) {
+    async get_refer_entities(entity_name, entity_id, attr) {
+        const array = [];
         if (this.meta.ref_fields) {
             const fields = this.meta.ref_fields.filter(f => f.ref === entity_name);
             if (fields.length > 0) {
                 for (let i = 0; i < fields.length; i++) {
                     const field = fields[i];
                     const query = { [field.name]: entity_id + "" };
-                    const count = await this.count(query);
-                    if (count > 0) {
-                        return true;
-                    }
+                    const founed = await this.find(query, attr);
+                    array.push(...founed);
                 }
             }
         }
-        return false;
+        return array;
     }
 
     /**
@@ -859,17 +866,8 @@ class Entity {
      * @returns 
      */
     async delete_refer_entity(entity_name, entity_id) {
-        if (this.meta.ref_fields) {
-            const fields = this.meta.ref_fields.filter(f => f.ref === entity_name);
-            if (fields.length > 0) {
-                for (let i = 0; i < fields.length; i++) {
-                    const field = fields[i];
-                    const query = { [field.name]: entity_id + "" };
-                    const id_array = (await this.find(query, {})).map(o => o._id + "");
-                    await this.delete_entity(id_array);
-                }
-            }
-        }
+        const entities = await this.get_refer_entities(entity_name, entity_id, {});
+        await this.delete_entity(entities.map(o => o._id + ""));
     }
 
     /**

@@ -5,7 +5,7 @@ let settings = {
         key: "AhBWt15WFj8PrMnnZhX8AF1IM4V2x0A3"
     },
     mongo: {
-        url: 'mongodb://localhost/hola',
+        url: 'mongodb://127.0.0.1/hola',
         pool: 10
     },
     log: {

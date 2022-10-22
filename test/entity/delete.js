@@ -270,6 +270,210 @@ describe('Entity Delete', function () {
             });
         });
 
+        describe('delete entity with ref and keep delete fields', function () {
+            const user_meta = new EntityMeta({
+                creatable: true,
+                readable: true,
+                updatable: true,
+                deleteable: true,
+                collection: "user_entity_delete_eight",
+                primary_keys: ["name"],
+                ref_label: "name",
+                fields: [
+                    { name: "name", required: true },
+                    { name: "age", type: "uint" },
+                    { name: "role", type: "string", ref: "role_delete_eight", delete: "keep", required: true },
+                ]
+            });
+
+            const role_meta = new EntityMeta({
+                creatable: true,
+                readable: true,
+                updatable: true,
+                deleteable: true,
+                collection: "role_delete_eight",
+                primary_keys: ["name"],
+                ref_label: "name",
+                fields: [
+                    { name: "name", required: true },
+                    { name: "desc", type: "string" }
+                ]
+            });
+
+            const log_meta = new EntityMeta({
+                creatable: true,
+                readable: true,
+                updatable: true,
+                deleteable: true,
+                collection: "log_one",
+                primary_keys: ["name"],
+                ref_label: "name",
+                fields: [
+                    { name: "name", required: true },
+                    { name: "user", type: "string", ref: "user_entity_delete_eight", delete: "cascade", required: true },
+                ]
+            });
+
+            user_meta.validate_meta_info();
+            role_meta.validate_meta_info();
+            log_meta.validate_meta_info();
+
+            const user_entity = new Entity(user_meta);
+            const role_entity = new Entity(role_meta);
+            const log_entity = new Entity(log_meta);
+
+            it('should delete user successfully with role', async function () {
+                await user_entity.delete({});
+                await role_entity.delete({});
+                await log_entity.delete({});
+                await role_entity.create({ "name": "role1" });
+                await role_entity.create({ "name": "role2", desc: "role 2" });
+                const db_role = await role_entity.find_one(user_entity.primary_key_query({ "name": "role1" }));
+
+                const user = { "name": "user1", age: "10", role: "role1" };
+                const { code, err } = await user_entity.create_entity(user);
+                const query = user_entity.primary_key_query(user);
+                const db_user = await user_entity.find_one(query);
+                strictEqual(code, SUCCESS);
+                strictEqual(err, undefined);
+                strictEqual(db_user.role, db_role["_id"] + "");
+
+                const user2 = { "name": "user2", age: "20", role: db_role["_id"] + "" };
+                const result = await user_entity.create_entity(user2);
+                const query2 = user_entity.primary_key_query(user2);
+                const db_user2 = await user_entity.find_one(query2);
+                strictEqual(result.code, SUCCESS);
+                strictEqual(result.err, undefined);
+                strictEqual(db_user2.role, db_role["_id"] + "");
+
+                const log1 = { "name": "log1", user: db_user2["_id"] + "" };
+                const resultlog = await log_entity.create_entity(log1);
+                const db_log = await log_entity.find_one(log_entity.primary_key_query(log1));
+                strictEqual(resultlog.code, SUCCESS);
+                strictEqual(resultlog.err, undefined);
+                strictEqual(db_log.user, db_user2["_id"] + "");
+
+                const delete_ids = [db_role["_id"] + ""];
+                const result3 = await role_entity.delete_entity(delete_ids);
+                strictEqual(result3.code, SUCCESS);
+                deepStrictEqual(result3.err, undefined);
+
+                strictEqual(await user_entity.count({}), 2);
+                strictEqual(await role_entity.count({}), 1);
+                strictEqual(await log_entity.count({}), 1);
+
+                const result4 = await user_entity.delete_entity([db_user2["_id"] + ""]);
+                strictEqual(result4.code, SUCCESS);
+                deepStrictEqual(result4.err, undefined);
+
+                strictEqual(await user_entity.count({}), 1);
+                strictEqual(await role_entity.count({}), 1);
+                strictEqual(await log_entity.count({}), 0);
+
+                await user_entity.delete({});
+                await role_entity.delete({});
+                await log_entity.delete({});
+            });
+        });
+
+
+        describe('delete entity with ref and cascade delete fields', function () {
+            const user_meta = new EntityMeta({
+                creatable: true,
+                readable: true,
+                updatable: true,
+                deleteable: true,
+                collection: "user_entity_delete_nine",
+                primary_keys: ["name"],
+                ref_label: "name",
+                fields: [
+                    { name: "name", required: true },
+                    { name: "age", type: "uint" },
+                    { name: "role", type: "string", ref: "role_delete_nine", delete: "cascade", required: true },
+                ]
+            });
+
+            const role_meta = new EntityMeta({
+                creatable: true,
+                readable: true,
+                updatable: true,
+                deleteable: true,
+                collection: "role_delete_nine",
+                primary_keys: ["name"],
+                ref_label: "name",
+                fields: [
+                    { name: "name", required: true },
+                    { name: "desc", type: "string" }
+                ]
+            });
+
+            const log_meta = new EntityMeta({
+                creatable: true,
+                readable: true,
+                updatable: true,
+                deleteable: true,
+                collection: "log_nine",
+                primary_keys: ["name"],
+                ref_label: "name",
+                fields: [
+                    { name: "name", required: true },
+                    { name: "user", type: "string", ref: "user_entity_delete_nine", delete: "cascade", required: true },
+                ]
+            });
+
+            user_meta.validate_meta_info();
+            role_meta.validate_meta_info();
+            log_meta.validate_meta_info();
+
+            const user_entity = new Entity(user_meta);
+            const role_entity = new Entity(role_meta);
+            const log_entity = new Entity(log_meta);
+
+            it('should delete user successfully with role', async function () {
+                await user_entity.delete({});
+                await role_entity.delete({});
+                await log_entity.delete({});
+                await role_entity.create({ "name": "role1" });
+                await role_entity.create({ "name": "role2", desc: "role 2" });
+                const db_role = await role_entity.find_one(user_entity.primary_key_query({ "name": "role1" }));
+
+                const user = { "name": "user1", age: "10", role: "role1" };
+                const { code, err } = await user_entity.create_entity(user);
+                const query = user_entity.primary_key_query(user);
+                const db_user = await user_entity.find_one(query);
+                strictEqual(code, SUCCESS);
+                strictEqual(err, undefined);
+                strictEqual(db_user.role, db_role["_id"] + "");
+
+                const user2 = { "name": "user2", age: "20", role: db_role["_id"] + "" };
+                const result = await user_entity.create_entity(user2);
+                const query2 = user_entity.primary_key_query(user2);
+                const db_user2 = await user_entity.find_one(query2);
+                strictEqual(result.code, SUCCESS);
+                strictEqual(result.err, undefined);
+                strictEqual(db_user2.role, db_role["_id"] + "");
+
+                const log1 = { "name": "log1", user: db_user2["_id"] + "" };
+                const resultlog = await log_entity.create_entity(log1);
+                const db_log = await log_entity.find_one(log_entity.primary_key_query(log1));
+                strictEqual(resultlog.code, SUCCESS);
+                strictEqual(resultlog.err, undefined);
+                strictEqual(db_log.user, db_user2["_id"] + "");
+
+                const delete_ids = [db_role["_id"] + ""];
+                const result3 = await role_entity.delete_entity(delete_ids);
+                strictEqual(result3.code, SUCCESS);
+                deepStrictEqual(result3.err, undefined);
+
+                strictEqual(await user_entity.count({}), 0);
+                strictEqual(await role_entity.count({}), 1);
+                strictEqual(await log_entity.count({}), 0);
+
+                await user_entity.delete({});
+                await role_entity.delete({});
+                await log_entity.delete({});
+            });
+        });
     });
 }
 );
