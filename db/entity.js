@@ -635,10 +635,11 @@ class Entity {
         //check all the ref by array first
         const has_refer_by_array = await this.check_refer_entity(id_array);
         if (has_refer_by_array.length > 0) {
+            const array = [...new Set(has_refer_by_array)];
             if (is_log_error()) {
-                log_error(LOG_ENTITY, "has_refer_by_array:" + JSON.stringify(has_refer_by_array));
+                log_error(LOG_ENTITY, "has_refer_by_array:" + JSON.stringify(array));
             }
-            return { code: HAS_REF, err: has_refer_by_array };
+            return { code: HAS_REF, err: array };
         }
 
         if (this.meta.delete) {
@@ -832,9 +833,9 @@ class Entity {
                                 }
                             } else {
                                 if (ref_by_meta.ref_label) {
-                                    has_refer_by_array.push(...entities.map(o => o[ref_by_meta.ref_label]));
+                                    has_refer_by_array.push(...entities.map(o => ref_by_meta.collection + ":" + o[ref_by_meta.ref_label]));
                                 } else {
-                                    has_refer_by_array.push(...entities.map(o => o["_id"] + ""));
+                                    has_refer_by_array.push(...entities.map(o => ref_by_meta.collection + ":" + o["_id"] + ""));
                                 }
                             }
                         }

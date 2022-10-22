@@ -260,7 +260,7 @@ describe('Entity Delete', function () {
                 const delete_ids = [db_role["_id"] + ""];
                 const result3 = await role_entity.delete_entity(delete_ids);
                 strictEqual(result3.code, HAS_REF);
-                deepStrictEqual(result3.err, ["user1", "user2"]);
+                deepStrictEqual(result3.err, ["user_entity_delete_seven:user1", "user_entity_delete_seven:user2"]);
 
                 const result4 = await role_entity.delete_entity([db_role2["_id"] + ""]);
                 strictEqual(result4.code, SUCCESS);
