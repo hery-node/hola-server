@@ -7,7 +7,7 @@ const meta_manager = {};
  * list: this field can be shown in table list
  * search: this field can be shown in search form
  * update: if is false, in update form, it will be readonly status
- * delete_mode: delete_mode is only used for ref field, it decide when the ref entity will be deleted, how to handle this entity,no value, will not let the refered entity be deleted, keep: keep this entity(no data consistency), cascade: also delete this entity also,
+ * delete: delete is only used for ref field, it decide when the ref entity will be deleted, how to handle this entity,no value, will not let the refered entity be deleted, keep: keep this entity(no data consistency), cascade: also delete this entity also,
  * sys: this field is used to control the user can set the value or not. sys field can only be set in the server side(before callback is good place to do this)
  * create is false, this attribute can be shown in property list but sys property can't be shown in property list 
  * 
@@ -60,14 +60,14 @@ const validate_field = (meta, field) => {
         }
     }
 
-    if (field.delete_mode) {
+    if (field.delete) {
         if (!field.ref) {
-            throw new Error("meta:" + meta.collection + ",field:" + field.name + " doesn't let define delete_mode in none ref field.");
+            throw new Error("meta:" + meta.collection + ",field:" + field.name + " doesn't let define delete in none ref field.");
         }
 
         const all_modes = DELETE_MODE.all;
-        if (!all_modes.includes(field.delete_mode)) {
-            throw new Error("meta:" + meta.collection + ",field:" + field.name + " has invalid delete_mode:" + field.delete_mode + ", valid values:" + JSON.stringify(all_modes));
+        if (!all_modes.includes(field.delete)) {
+            throw new Error("meta:" + meta.collection + ",field:" + field.name + " has invalid delete:" + field.delete + ", valid values:" + JSON.stringify(all_modes));
         }
     }
 
