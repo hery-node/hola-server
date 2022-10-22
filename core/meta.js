@@ -7,15 +7,22 @@ const meta_manager = {};
  * list: this field can be shown in table list
  * search: this field can be shown in search form
  * update: if is false, in update form, it will be readonly status
+ * delete_mode: delete_mode is only used for ref field, it decide when the ref entity will be deleted, how to handle this entity,no value, will not let the refered entity be deleted, keep: keep this entity(no data consistency), cascade: also delete this entity also,
  * sys: this field is used to control the user can set the value or not. sys field can only be set in the server side(before callback is good place to do this)
  * create is false, this attribute can be shown in property list but sys property can't be shown in property list 
  * 
  * routes: configure customer defined routes
 */
-const field_attrs = ["name", "type", "required", "ref", "create", "list", "search", "update", "clone", "sys"];
+const field_attrs = ["name", "type", "required", "ref", "delete", "create", "list", "search", "update", "clone", "sys"];
 const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read",
-    "before_create", "after_create", "before_update", "after_update", "before_delete", "after_delete", "create", "update", "batch_update", "after_batch_update", "delete",
+    "before_create", "after_create", "before_clone", "after_clone", "before_update", "after_update", "before_delete", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete",
     "ref_label", "ref_filter", "route", "user_field"];
+
+const DELETE_MODE = Object.freeze({
+    all: ["keep", "cascade"],
+    keep: "keep",
+    cascade: "cascade"
+});
 
 /**
  * Validate the field attributes and keep them correct(also set default value)
@@ -44,12 +51,23 @@ const validate_field = (meta, field) => {
         }
 
         if (!ref_meta.ref_label) {
-            throw new Error("meta:" + meta.collection + ",field:" + field.name + " refers an meta:" + field.ref + " without ref_label]");
+            throw new Error("meta:" + meta.collection + ",field:" + field.name + " refers an meta:" + field.ref + " without ref_label");
         }
 
         const ref_by_collections = ref_meta.ref_by_metas.map(m => m.collection);
         if (!ref_by_collections.includes(this.collection)) {
             ref_meta.ref_by_metas.push(meta_manager[meta.collection]);
+        }
+    }
+
+    if (field.delete_mode) {
+        if (!field.ref) {
+            throw new Error("meta:" + meta.collection + ",field:" + field.name + " doesn't let define delete_mode in none ref field.");
+        }
+
+        const all_modes = DELETE_MODE.all;
+        if (!all_modes.includes(field.delete_mode)) {
+            throw new Error("meta:" + meta.collection + ",field:" + field.name + " has invalid delete_mode:" + field.delete_mode + ", valid values:" + JSON.stringify(all_modes));
         }
     }
 
@@ -168,12 +186,15 @@ class EntityMeta {
 
         set_callback(this, "after_read", meta.after_read);
         set_callback(this, "before_create", meta.before_create);
+        set_callback(this, "before_clone", meta.before_clone);
         set_callback(this, "before_update", meta.before_update);
         set_callback(this, "before_delete", meta.before_delete);
         set_callback(this, "after_create", meta.after_create);
+        set_callback(this, "after_clone", meta.after_clone);
         set_callback(this, "after_update", meta.after_update);
         set_callback(this, "after_delete", meta.after_delete);
         set_callback(this, "create", meta.create);
+        set_callback(this, "clone", meta.clone);
         set_callback(this, "update", meta.update);
         set_callback(this, "batch_update", meta.batch_update);
         set_callback(this, "after_batch_update", meta.after_batch_update);
@@ -226,4 +247,4 @@ class EntityMeta {
     }
 }
 
-module.exports = { EntityMeta, validate_all_metas, get_entity_meta, get_all_metas }
+module.exports = { EntityMeta, validate_all_metas, get_entity_meta, get_all_metas, DELETE_MODE }

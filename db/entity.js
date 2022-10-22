@@ -2,7 +2,7 @@ const { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, NOT_FOUND, REF
 const { validate_required_fields, has_value } = require('../core/validate');
 const { required_params } = require('../http/params');
 const { convert_type, convert_update_type, get_type } = require('../core/type');
-const { get_entity_meta } = require('../core/meta');
+const { get_entity_meta, DELETE_MODE } = require('../core/meta');
 const { unique, map_array_to_obj } = require('../core/array');
 const { LOG_ENTITY, get_db, oid_query, oid_queries, is_log_debug, is_log_error, log_debug, log_error, get_session_userid } = require('./db');
 
@@ -218,25 +218,7 @@ class Entity {
     * @returns object with code and err
     */
     async create_entity(param_obj) {
-        return this._create_entity(param_obj, this.meta.create_fields);
-    }
-
-    /**
-    * Validate the param object and invoke the logic to clone the entity and sae it to db
-    * @param {param obj from user input} param_obj
-    * @returns object with code and err
-    */
-    async clone_entity(param_obj) {
-        return this._create_entity(param_obj, this.meta.clone_fields);
-    }
-
-    /**
-     * Validate the param object and invoke the logic to save it to db
-     * @param {param obj from user input} param_obj 
-     * @param {fields used to convert value} fields
-     * @returns object with code and err
-     */
-    async _create_entity(param_obj, fields) {
+        const fields = this.meta.create_fields
         const { obj, error_field_names } = convert_type(param_obj, fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
@@ -309,6 +291,87 @@ class Entity {
 
         return { code: SUCCESS };
     }
+
+    /**
+    * Validate the param object and invoke the logic to clone the entity and sae it to db
+    * @param {param obj from user input} param_obj
+    * @returns object with code and err
+    */
+    async clone_entity(param_obj) {
+        const fields = this.meta.clone_fields
+        const { obj, error_field_names } = convert_type(param_obj, fields);
+        if (error_field_names.length > 0) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "error fields:" + JSON.stringify(error_field_names));
+            }
+
+            return { code: INVALID_PARAMS, err: error_field_names };
+        }
+
+        if (this.meta.before_clone) {
+            const { code, err } = await this.meta.before_clone(this, obj);
+            if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "before_clone error:" + JSON.stringify(err) + ", with code:" + code);
+                }
+                return { code: code, err: err };
+            }
+        }
+
+        const error_required_field_names = validate_required_fields(obj, this.meta.required_field_names);
+        if (error_required_field_names.length > 0) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "error required fields:" + JSON.stringify(error_required_field_names));
+            }
+            return { code: NO_PARAMS, err: error_required_field_names };
+        }
+
+        const entity_count = await this.count_by_primary_keys(obj);
+        if (entity_count > 0) {
+            return { code: DUPLICATE_KEY, err: "entity already exist in db" };
+        }
+
+        if (this.meta.ref_fields) {
+            const { code, err } = await this.validate_ref(obj);
+            if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "validate_ref error:" + JSON.stringify(err) + ", with code:" + code);
+                }
+                return { code: code, err: err };
+            }
+        }
+
+        if (this.meta.clone) {
+            const { code, err } = await this.meta.clone(this, obj);
+            if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "clone error:" + JSON.stringify(err) + ", with code:" + code);
+                }
+                return { code: code, err: err };
+            }
+        } else {
+            const db_obj = await this.create(obj);
+            if (!db_obj["_id"]) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "create error:" + JSON.stringify(err) + ", with code:" + code);
+                }
+                return { code: ERROR, err: "creating record is failed" };
+            }
+        }
+
+        if (this.meta.after_clone) {
+            const { code, err } = await this.meta.after_clone(this, obj);
+            if (err || code != SUCCESS) {
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "after_clone error:" + JSON.stringify(err) + ", with code:" + code);
+                }
+                return { code: code, err: err };
+            }
+        }
+
+        return { code: SUCCESS };
+    }
+
 
     /**
      * Validate the param object and invoke the logic to update entity
@@ -569,19 +632,9 @@ class Entity {
             }
         }
 
-        const has_refer_by_array = [];
-        for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
-            const ref_by_meta = this.meta.ref_by_metas[i];
-            const refer_by_entity = new Entity(ref_by_meta);
-            for (let j = 0; j < id_array.length; j++) {
-                const has_refer_by = await refer_by_entity.has_refer_entity(this.meta.collection, id_array[j]);
-                if (has_refer_by) {
-                    has_refer_by_array.push(id_array[j]);
-                }
-            }
-        }
-
-        if (has_refer_by_array.length > 0) {
+        //check all the ref by array first
+        const has_ref = await this.check_refer_entity();
+        if (has_ref) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "has_refer_by_array:" + JSON.stringify(has_refer_by_array));
             }
@@ -603,6 +656,18 @@ class Entity {
                     log_error(LOG_ENTITY, "delete records is failed with query:" + JSON.stringify(query) + ", result:" + JSON.stringify(result));
                 }
                 return { code: ERROR, err: "delete record is failed" };
+            }
+        }
+
+        //delete other ref_by entity based on delete_mode
+        for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
+            const ref_by_meta = this.meta.ref_by_metas[i];
+            const ref_field = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
+            if (ref_field.delete_mode == DELETE_MODE.cascade) {
+                const refer_by_entity = new Entity(ref_by_meta);
+                for (let j = 0; j < id_array.length; j++) {
+                    await refer_by_entity.delete_refer_entity(this.meta.collection, id_array[j])
+                }
             }
         }
 
@@ -735,6 +800,36 @@ class Entity {
     }
 
     /**
+       * check whether this entity has refered the entity_id value
+       * @param {entity collection} entity_name 
+       * @param {entity object id} entity_id 
+       * @returns true if has refered
+       */
+    async check_refer_entity() {
+        const has_refer_by_array = [];
+        const has_ref = false;
+        for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
+            const ref_by_meta = this.meta.ref_by_metas[i];
+            const ref_field = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
+            const refer_by_entity = new Entity(ref_by_meta);
+            if (!ref_field.delete_mode) {
+                for (let j = 0; j < id_array.length; j++) {
+                    const has_refer_by = await refer_by_entity.has_refer_entity(this.meta.collection, id_array[j]);
+                    if (has_refer_by) {
+                        has_refer_by_array.push(id_array[j]);
+                    }
+                }
+            } else if (ref_field.delete_mode == DELETE_MODE.cascade) {
+                const result = refer_by_entity.check_refer_entity();
+                if (result) {
+                    has_ref = true;
+                }
+            }
+        }
+        return has_refer_by_array.length == 0 && !has_ref;
+    }
+
+    /**
      * check whether this entity has refered the entity_id value
      * @param {entity collection} entity_name 
      * @param {entity object id} entity_id 
@@ -755,6 +850,26 @@ class Entity {
             }
         }
         return false;
+    }
+
+    /**
+     * delete the ref entity
+     * @param {entity collection} entity_name 
+     * @param {entity object id} entity_id 
+     * @returns 
+     */
+    async delete_refer_entity(entity_name, entity_id) {
+        if (this.meta.ref_fields) {
+            const fields = this.meta.ref_fields.filter(f => f.ref === entity_name);
+            if (fields.length > 0) {
+                for (let i = 0; i < fields.length; i++) {
+                    const field = fields[i];
+                    const query = { [field.name]: entity_id + "" };
+                    const id_array = (await this.find(query, {})).map(o => o._id + "");
+                    await this.delete_entity(id_array);
+                }
+            }
+        }
     }
 
     /**
