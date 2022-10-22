@@ -304,7 +304,7 @@ describe('EntityMeta', function () {
 
         it('should collection and fields properties set successfully', function () {
             const entity_meta = new EntityMeta({
-                collection: "user11",
+                collection: "user111",
                 primary_keys: ["name"],
                 fields: [
                     { name: "email", type: "string", required: true },
@@ -312,7 +312,7 @@ describe('EntityMeta', function () {
                     { name: "status", type: "string", required: true }
                 ]
             });
-            strictEqual(entity_meta.collection, "user11");
+            strictEqual(entity_meta.collection, "user111");
             strictEqual(entity_meta.fields.length, 3);
             strictEqual(entity_meta.field_names.join(""), ["email", "pwd", "status"].join(""));
         });
