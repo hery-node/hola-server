@@ -819,15 +819,23 @@ class Entity {
                 const ref_field = ref_fields[j];
                 if (ref_field.delete != DELETE_MODE.keep) {
                     for (let j = 0; j < id_array.length; j++) {
-                        const entities = await refer_by_entity.get_refer_entities(this.meta.collection, id_array[j], {});
+                        const attrs = {};
+                        if (ref_by_meta.ref_label) {
+                            attrs[ref_by_meta.ref_label] = 1;
+                        }
+                        const entities = await refer_by_entity.get_refer_entities(this.meta.collection, id_array[j], attrs);
                         if (entities && entities.length > 0) {
                             if (ref_field.delete == DELETE_MODE.cascade) {
-                                const ref_id_array = await refer_by_entity.check_refer_entity(entities.map(o => o._id + ""));
-                                if (ref_id_array && ref_id_array.length > 0) {
-                                    has_refer_by_array.push(id_array[j]);
+                                const ref_array = await refer_by_entity.check_refer_entity(entities.map(o => o._id + ""));
+                                if (ref_array && ref_array.length > 0) {
+                                    has_refer_by_array.push(...ref_array);
                                 }
                             } else {
-                                has_refer_by_array.push(id_array[j]);
+                                if (ref_by_meta.ref_label) {
+                                    has_refer_by_array.push(...entities.map(o => o[ref_by_meta.ref_label]));
+                                } else {
+                                    has_refer_by_array.push(...entities.map(o => o["_id"] + ""));
+                                }
                             }
                         }
                     }
