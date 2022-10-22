@@ -297,7 +297,7 @@ class Entity {
     * @param {param obj from user input} param_obj
     * @returns object with code and err
     */
-    async clone_entity(param_obj) {
+    async clone_entity(_id, param_obj) {
         const fields = this.meta.clone_fields
         const { obj, error_field_names } = convert_type(param_obj, fields);
         if (error_field_names.length > 0) {
@@ -309,7 +309,7 @@ class Entity {
         }
 
         if (this.meta.before_clone) {
-            const { code, err } = await this.meta.before_clone(this, obj);
+            const { code, err } = await this.meta.before_clone(_id, this, obj);
             if (err || code != SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "before_clone error:" + JSON.stringify(err) + ", with code:" + code);
@@ -342,7 +342,7 @@ class Entity {
         }
 
         if (this.meta.clone) {
-            const { code, err } = await this.meta.clone(this, obj);
+            const { code, err } = await this.meta.clone(_id, this, obj);
             if (err || code != SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "clone error:" + JSON.stringify(err) + ", with code:" + code);
@@ -360,7 +360,7 @@ class Entity {
         }
 
         if (this.meta.after_clone) {
-            const { code, err } = await this.meta.after_clone(this, obj);
+            const { code, err } = await this.meta.after_clone(_id, this, obj);
             if (err || code != SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "after_clone error:" + JSON.stringify(err) + ", with code:" + code);

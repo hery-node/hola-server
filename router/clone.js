@@ -1,8 +1,8 @@
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
-const { SUCCESS } = require('../http/code');
+const { SUCCESS, NO_PARAMS } = require('../http/code');
 const { get_session_userid } = require('../http/session');
 const { wrap_http } = require('../http/error');
-const { post_params } = require('../http/params');
+const { post_params, required_post_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { Entity } = require('../db/entity');
 
@@ -19,6 +19,12 @@ const init_clone_router = function (router, meta) {
     const cp_upload = meta.upload_fields.length > 0 ? upload_file.fields(meta.upload_fields) : upload_file.none();
 
     router.post('/clone', cp_upload, wrap_http(async function (req, res) {
+        let params = required_post_params(req, ["_id"]);
+        if (params === null) {
+            res.json({ code: NO_PARAMS, err: '[_id] checking params are failed!' });
+            return;
+        }
+
         const param_obj = post_params(req, meta.field_names);
         set_file_fields(meta, req, param_obj);
 
@@ -30,7 +36,7 @@ const init_clone_router = function (router, meta) {
             param_obj[meta.user_field] = user_id;
         }
 
-        const { code, err } = await entity.clone_entity(param_obj);
+        const { code, err } = await entity.clone_entity(params["_id"], param_obj);
         if (!has_value(code)) {
             throw new Error("the method should return code");
         }
