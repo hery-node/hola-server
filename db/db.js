@@ -27,7 +27,7 @@ const log_msg = (category, level, msg) => {
   const path = req ? req.originalUrl : "";
   const user = req && req.session && req.session.user ? req.session.user.id : "";
 
-  db.create(col_log, { time: time, category: category, level: level, msg: msg, user: user, path: path }).then(() => {});
+  db.create(col_log, { time: time, category: category, level: level, msg: msg, user: user, path: path }).then(() => { });
 };
 
 const is_log_debug = () => {
@@ -124,6 +124,7 @@ const bulk_update = async (col, items, attrs) => {
     attrs.forEach(function (attr) {
       query[attr] = item[attr];
     });
+    delete item["_id"];
     bulk.find(query).upsert().update({ $set: item }, true);
   }
   return await bulk.execute();
@@ -152,6 +153,7 @@ class DB {
    */
   create(code, obj) {
     const col = this.db[code];
+    delete obj["_id"];
     return col.insert(obj, { checkKeys: false });
   }
 
@@ -168,6 +170,7 @@ class DB {
     }
 
     const col = this.db[code];
+    delete obj["_id"];
     return col.update(query, { $set: obj }, { upsert: true, multi: true });
   }
 
