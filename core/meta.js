@@ -74,7 +74,7 @@ const validate_field = (meta, field) => {
     const keys = Object.keys(field);
     keys.forEach(key => {
         if (!field_attrs.includes(key)) {
-            throw new Error("The attribute [" + key + "] isn't supported now for field:" + field + " and meta:" + meta.collection);
+            throw new Error("The attribute [" + key + "] isn't supported now for field:" + JSON.stringify(field) + " and meta:" + meta.collection);
         }
     });
 }
