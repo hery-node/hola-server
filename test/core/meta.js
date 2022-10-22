@@ -164,6 +164,102 @@ describe('EntityMeta', function () {
             strictEqual(entity_meta2.validate_meta_info(), true);
         });
 
+        it('should success for valid meta info for cascade delete', function () {
+            const entity_meta1 = new EntityMeta({
+                collection: "user11",
+                primary_keys: ["name"],
+                fields: [
+                    { name: "name", type: "string", required: true },
+                    { name: "role", type: "string", ref: "role_meta1", delete: "cascade", required: true },
+                ]
+            });
+
+            const entity_meta2 = new EntityMeta({
+                collection: "role_meta1",
+                primary_keys: ["name"],
+                ref_label: "name",
+                fields: [
+                    { name: "name", type: "string", required: true },
+                ]
+            });
+
+            strictEqual(entity_meta1.validate_meta_info(), true);
+            strictEqual(entity_meta2.validate_meta_info(), true);
+        });
+
+        it('should success for valid meta info for keep delete', function () {
+            const entity_meta1 = new EntityMeta({
+                collection: "user12",
+                primary_keys: ["name"],
+                fields: [
+                    { name: "name", type: "string", required: true },
+                    { name: "role", type: "string", ref: "role_meta2", delete: "keep", required: true },
+                ]
+            });
+
+            const entity_meta2 = new EntityMeta({
+                collection: "role_meta2",
+                primary_keys: ["name"],
+                ref_label: "name",
+                fields: [
+                    { name: "name", type: "string", required: true },
+                ]
+            });
+
+            strictEqual(entity_meta1.validate_meta_info(), true);
+            strictEqual(entity_meta2.validate_meta_info(), true);
+        });
+
+        it('should fails wrong delete value for ref', function () {
+            throws(() => {
+                const entity_meta1 = new EntityMeta({
+                    collection: "user13",
+                    primary_keys: ["name"],
+                    fields: [
+                        { name: "name", type: "string", required: true },
+                        { name: "role", type: "string", ref: "role_meta3", delete: "other", required: true },
+                    ]
+                });
+
+                const entity_meta2 = new EntityMeta({
+                    collection: "role_meta3",
+                    primary_keys: ["name"],
+                    ref_label: "name",
+                    fields: [
+                        { name: "name", type: "string", required: true },
+                    ]
+                });
+                entity_meta1.validate_meta_info();
+                entity_meta2.validate_meta_info();
+            });
+        });
+
+
+        it('should fails delete defined for non-ref field', function () {
+            throws(() => {
+                const entity_meta1 = new EntityMeta({
+                    collection: "user14",
+                    primary_keys: ["name"],
+                    fields: [
+                        { name: "name", type: "string", required: true, delete: "keep" },
+                        { name: "role", type: "string", ref: "role_meta4", required: true },
+                    ]
+                });
+
+                const entity_meta2 = new EntityMeta({
+                    collection: "role_meta4",
+                    primary_keys: ["name"],
+                    ref_label: "name",
+                    fields: [
+                        { name: "name", type: "string", required: true },
+                    ]
+                });
+                entity_meta1.validate_meta_info();
+                entity_meta2.validate_meta_info();
+            });
+        });
+
+
         it('should fails for wrong ref ', function () {
             throws(() => {
                 const entity_meta1 = new EntityMeta({
