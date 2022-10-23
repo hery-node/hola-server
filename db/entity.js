@@ -668,9 +668,7 @@ class Entity {
                 const ref_field = ref_fields[j];
                 if (ref_field.delete == DELETE_MODE.cascade) {
                     const refer_by_entity = new Entity(ref_by_meta);
-                    for (let j = 0; j < id_array.length; j++) {
-                        await refer_by_entity.delete_refer_entity(this.meta.collection, id_array[j])
-                    }
+                    await refer_by_entity.delete_refer_entity(ref_field.name, id_array)
                 }
             }
         }
@@ -819,24 +817,23 @@ class Entity {
             for (let j = 0; j < ref_fields.length; j++) {
                 const ref_field = ref_fields[j];
                 if (ref_field.delete != DELETE_MODE.keep) {
-                    for (let j = 0; j < id_array.length; j++) {
-                        const attrs = {};
-                        if (ref_by_meta.ref_label) {
-                            attrs[ref_by_meta.ref_label] = 1;
-                        }
-                        const entities = await refer_by_entity.get_refer_entities(this.meta.collection, id_array[j], attrs);
-                        if (entities && entities.length > 0) {
-                            if (ref_field.delete == DELETE_MODE.cascade) {
-                                const ref_array = await refer_by_entity.check_refer_entity(entities.map(o => o._id + ""));
-                                if (ref_array && ref_array.length > 0) {
-                                    has_refer_by_array.push(...ref_array);
-                                }
+                    const attr = {};
+                    if (ref_by_meta.ref_label) {
+                        attr[ref_by_meta.ref_label] = 1;
+                    }
+
+                    const entities = await refer_by_entity.get_refer_entities(ref_field.name, id_array, attr);
+                    if (entities && entities.length > 0) {
+                        if (ref_field.delete == DELETE_MODE.cascade) {
+                            const ref_array = await refer_by_entity.check_refer_entity(entities.map(o => o._id + ""));
+                            if (ref_array && ref_array.length > 0) {
+                                has_refer_by_array.push(...ref_array);
+                            }
+                        } else {
+                            if (ref_by_meta.ref_label) {
+                                has_refer_by_array.push(...entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o[ref_by_meta.ref_label]));
                             } else {
-                                if (ref_by_meta.ref_label) {
-                                    has_refer_by_array.push(...entities.map(o => ref_by_meta.collection + ":" + o[ref_by_meta.ref_label]));
-                                } else {
-                                    has_refer_by_array.push(...entities.map(o => ref_by_meta.collection + ":" + o["_id"] + ""));
-                                }
+                                has_refer_by_array.push(...entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o["_id"] + ""));
                             }
                         }
                     }
@@ -848,34 +845,23 @@ class Entity {
 
     /**
      * check whether this entity has refered the entity_id value
-     * @param {entity collection} entity_name 
-     * @param {entity object id} entity_id 
+     * @param {entity in this field name} field_name 
+     * @param {entity object id array} id_array 
      * @returns true if has refered
      */
-    async get_refer_entities(entity_name, entity_id, attr) {
-        const array = [];
-        if (this.meta.ref_fields) {
-            const fields = this.meta.ref_fields.filter(f => f.ref === entity_name);
-            if (fields.length > 0) {
-                for (let i = 0; i < fields.length; i++) {
-                    const field = fields[i];
-                    const query = { [field.name]: entity_id + "" };
-                    const founed = await this.find(query, attr);
-                    array.push(...founed);
-                }
-            }
-        }
-        return array;
+    async get_refer_entities(field_name, id_array, attr) {
+        console.log(id_array);
+        const query = { [field_name]: { "$in": id_array } };
+        return await this.find(query, attr);
     }
 
     /**
-     * delete the ref entity
-     * @param {entity collection} entity_name 
-     * @param {entity object id} entity_id 
-     * @returns 
+     * delete refer entities
+     * @param {entity in this field name} field_name 
+     * @param {entity object id array} id_array 
      */
-    async delete_refer_entity(entity_name, entity_id) {
-        const entities = await this.get_refer_entities(entity_name, entity_id, {});
+    async delete_refer_entity(field_name, id_array) {
+        const entities = await this.get_refer_entities(field_name, id_array, {});
         await this.delete_entity(entities.map(o => o._id + ""));
     }
 
