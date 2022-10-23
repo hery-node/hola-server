@@ -1,6 +1,6 @@
 {
   "name": "hola-server",
-  "version": "0.3.16",
+  "version": "0.3.17",
   "description": "a meta programming framework used to build nodejs restful api",
   "main": "index.js",
   "scripts": {

@@ -632,16 +632,6 @@ class Entity {
             }
         }
 
-        //check all the ref by array first
-        const has_refer_by_array = await this.check_refer_entity(id_array);
-        if (has_refer_by_array.length > 0) {
-            const array = [...new Set(has_refer_by_array)];
-            if (is_log_error()) {
-                log_error(LOG_ENTITY, "has_refer_by_array:" + JSON.stringify(array));
-            }
-            return { code: HAS_REF, err: array };
-        }
-
         if (this.meta.delete) {
             const { code, err } = await this.meta.delete(this, id_array);
             if (err || code != SUCCESS) {
@@ -651,6 +641,16 @@ class Entity {
                 return { code: code, err: err };
             }
         } else {
+            //check all the ref by array first
+            const has_refer_by_array = await this.check_refer_entity(id_array);
+            if (has_refer_by_array.length > 0) {
+                const array = [...new Set(has_refer_by_array)];
+                if (is_log_error()) {
+                    log_error(LOG_ENTITY, "has_refer_by_array:" + JSON.stringify(array));
+                }
+                return { code: HAS_REF, err: array };
+            }
+
             const result = await this.delete(query);
             if (result.ok != 1) {
                 if (is_log_error()) {
@@ -658,17 +658,16 @@ class Entity {
                 }
                 return { code: ERROR, err: "delete record is failed" };
             }
-        }
-
-        //delete other ref_by entity based on delete mode
-        for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
-            const ref_by_meta = this.meta.ref_by_metas[i];
-            const ref_fields = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
-            for (let j = 0; j < ref_fields.length; j++) {
-                const ref_field = ref_fields[j];
-                if (ref_field.delete == DELETE_MODE.cascade) {
-                    const refer_by_entity = new Entity(ref_by_meta);
-                    await refer_by_entity.delete_refer_entity(ref_field.name, id_array)
+            //delete other ref_by entity based on delete mode
+            for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
+                const ref_by_meta = this.meta.ref_by_metas[i];
+                const ref_fields = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
+                for (let j = 0; j < ref_fields.length; j++) {
+                    const ref_field = ref_fields[j];
+                    if (ref_field.delete == DELETE_MODE.cascade) {
+                        const refer_by_entity = new Entity(ref_by_meta);
+                        await refer_by_entity.delete_refer_entity(ref_field.name, id_array)
+                    }
                 }
             }
         }
