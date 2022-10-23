@@ -836,7 +836,7 @@ class Entity {
                             for (let k = 0; k < ref_collection_fields.length; k++) {
                                 const ref_collection_field = ref_collection_fields[k];
                                 const ref_collection_entities = await refer_by_entity.get_refer_entities(ref_collection_field.name, collection_id_array, attr);
-                                ref_collection_entities && ref_collection_entities.length > 0 && ref_entities.push(...(ref_collection_entities.map(o => o["_id"] + "")));
+                                ref_collection_entities && ref_collection_entities.length > 0 && ref_entities_ids.push(...(ref_collection_entities.map(o => o["_id"] + "")));
                             }
                             for (let k = 0; k < entities.length; k++) {
                                 const entity = entities[k];
@@ -847,9 +847,9 @@ class Entity {
 
                             if (left_entities.length > 0) {
                                 if (ref_by_meta.ref_label) {
-                                    has_refer_by_array.push(...entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o[ref_by_meta.ref_label]));
+                                    has_refer_by_array.push(...left_entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o[ref_by_meta.ref_label]));
                                 } else {
-                                    has_refer_by_array.push(...entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o["_id"] + ""));
+                                    has_refer_by_array.push(...left_entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o["_id"] + ""));
                                 }
                             }
                         }
@@ -867,7 +867,6 @@ class Entity {
      * @returns true if has refered
      */
     async get_refer_entities(field_name, id_array, attr) {
-        console.log(id_array);
         const query = { [field_name]: { "$in": id_array } };
         return await this.find(query, attr);
     }
