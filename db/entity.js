@@ -746,6 +746,16 @@ class Entity {
     }
 
     /**
+     * Remove the records from mongodb
+     * @param {*} id can be array or string
+     * @returns 
+     */
+    delete_by_id(id) {
+        const query = Array.isArray(id) ? oid_queries(id) : oid_query(id);
+        return this.db.delete(this.meta.collection, query);
+    }
+
+    /**
      * Find the objects that are refered by other entity
      * @param {ref value} value 
      * @param {the attributes to load from db} attr 
