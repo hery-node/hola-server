@@ -633,7 +633,7 @@ class Entity {
         }
 
         //check all the ref by array first
-        const has_refer_by_array = await this.check_refer_entity(id_array);
+        const has_refer_by_array = await this.check_refer_entity(this.meta.collection, id_array, id_array);
         if (has_refer_by_array.length > 0) {
             const array = [...new Set(has_refer_by_array)];
             if (is_log_error()) {
@@ -802,12 +802,12 @@ class Entity {
     }
 
     /**
-       * check whether this entity has refered the entity_id value
-       * @param {entity collection} entity_name 
-       * @param {entity object id} entity_id 
-       * @returns true if has refered
-       */
-    async check_refer_entity(id_array) {
+     * 
+     * @param {the original collection name} collection 
+     * @param {the id array used to check} id_array 
+     * @returns refer by entities
+     */
+    async check_refer_entity(collection, collection_id_array, id_array) {
         const has_refer_by_array = [];
         for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
             const ref_by_meta = this.meta.ref_by_metas[i];
@@ -825,15 +825,32 @@ class Entity {
                     const entities = await refer_by_entity.get_refer_entities(ref_field.name, id_array, attr);
                     if (entities && entities.length > 0) {
                         if (ref_field.delete == DELETE_MODE.cascade) {
-                            const ref_array = await refer_by_entity.check_refer_entity(entities.map(o => o._id + ""));
+                            const ref_array = await refer_by_entity.check_refer_entity(collection, collection_id_array, entities.map(o => o._id + ""));
                             if (ref_array && ref_array.length > 0) {
                                 has_refer_by_array.push(...ref_array);
                             }
                         } else {
-                            if (ref_by_meta.ref_label) {
-                                has_refer_by_array.push(...entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o[ref_by_meta.ref_label]));
-                            } else {
-                                has_refer_by_array.push(...entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o["_id"] + ""));
+                            const ref_collection_fields = ref_by_meta.ref_fields.filter(field => field.ref == collection && field.delete == DELETE_MODE.cascade);
+                            const ref_entities_ids = [];
+                            const left_entities = [];
+                            for (let k = 0; k < ref_collection_fields.length; k++) {
+                                const ref_collection_field = ref_collection_fields[k];
+                                const ref_collection_entities = await refer_by_entity.get_refer_entities(ref_collection_field.name, collection_id_array, attr);
+                                ref_collection_entities && ref_collection_entities.length > 0 && ref_entities.push(...(ref_collection_entities.map(o => o["_id"] + "")));
+                            }
+                            for (let k = 0; k < entities.length; k++) {
+                                const entity = entities[k];
+                                if (!ref_entities_ids.includes(entity["_id"] + "")) {
+                                    left_entities.push(entity);
+                                }
+                            }
+
+                            if (left_entities.length > 0) {
+                                if (ref_by_meta.ref_label) {
+                                    has_refer_by_array.push(...entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o[ref_by_meta.ref_label]));
+                                } else {
+                                    has_refer_by_array.push(...entities.map(o => this.meta.collection + "<-" + ref_by_meta.collection + ":" + o["_id"] + ""));
+                                }
                             }
                         }
                     }
