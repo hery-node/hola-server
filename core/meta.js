@@ -39,7 +39,9 @@ const validate_field = (meta, field) => {
     if (field.type) {
         get_type(field.type);
     } else {
-        field.type = "string";
+        if (!field.link) {
+            field.type = "string"
+        }
     }
 
     if (meta.primary_keys.includes(field.name)) {

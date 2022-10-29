@@ -1,4 +1,4 @@
-const { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, REF_NOT_FOUND } = require('../../http/code');
+const { SUCCESS, } = require('../../http/code');
 const { strictEqual, deepStrictEqual } = require('assert');
 const { Entity } = require('../../db/entity');
 const { EntityMeta } = require('../../core/meta');
@@ -18,7 +18,8 @@ const user = {
         { name: "role", type: "array", ref: "role_read", required: true },
         { name: "depart", type: "string", ref: "department_read", required: true },
         { name: "status", type: "boolean" },
-        { name: "desc", type: "string", search: false }
+        { name: "desc", type: "string", search: false },
+        { name: "people", link: "depart" },
     ]
 };
 
@@ -32,7 +33,8 @@ const department = {
     ref_label: "name",
     fields: [
         { name: "name", required: true },
-        { name: "desc", type: "string" }
+        { name: "people", type: "int" },
+        { name: "desc", type: "string" },
     ]
 };
 
@@ -65,6 +67,7 @@ const department_entity = new Entity(department_meta);
 const init_db = async () => {
     await user_entity.delete({});
     await role_entity.delete({});
+    await department_entity.delete({});
 
     await role_entity.create_entity({ name: "admin", status: true });
     await role_entity.create_entity({ name: "user", status: true });
@@ -72,8 +75,10 @@ const init_db = async () => {
     await role_entity.create_entity({ name: "user2", status: true });
     await role_entity.create_entity({ name: "user3", status: true });
 
-    await department_entity.create_entity({ name: "dev" });
-    await department_entity.create_entity({ name: "test" });
+    await department_entity.create_entity({ name: "dev", people: 20 });
+    const result = await department_entity.create_entity({ name: "test", people: 30 });
+    strictEqual(result.err, undefined);
+    strictEqual(result.code, SUCCESS);
 
     const { code, err } = await user_entity.create_entity({ "name": "user1", pwd: "pwd", age: "10", depart: "dev", role: "user", status: "true", email: "test@test.com", desc: "abcd" });
     strictEqual(err, undefined);
@@ -100,7 +105,7 @@ describe('Entity Query', function () {
         it('search user by name', async function () {
             await init_db();
 
-            const query = { "attr_names": "name,age", page: "1", limit: "10", sort_by: "name", desc: "true" };
+            const query = { "attr_names": "name,age,depart,people", page: "1", limit: "10", sort_by: "name", desc: "true" };
             const params = { age: "20" };
 
             const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -110,6 +115,8 @@ describe('Entity Query', function () {
             strictEqual(data.length, 3);
             strictEqual(data[0].age, 20);
             strictEqual(data[0].name, "user15");
+            strictEqual(data[0].people, 30);
+            strictEqual(data[0].depart, "test");
             strictEqual(data[0].status, undefined);
         });
 

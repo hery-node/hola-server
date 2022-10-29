@@ -213,8 +213,8 @@ class Entity {
 
         const total = await this.count(search_query);
         const list = await this.find_page(search_query, sort, page_int, page_limit, attrs);
-        const list_ref = await this.convert_ref_attrs(list, ref_fields);
-        const data = await this.read_link_attrs(list_ref, link_fields);
+        const list_link = await this.read_link_attrs(list, link_fields);
+        const data = await this.convert_ref_attrs(list_link, ref_fields);
 
         if (is_log_debug()) {
             log_debug(LOG_ENTITY, "total:" + total + ",data:" + JSON.stringify(data));
@@ -582,8 +582,9 @@ class Entity {
                 }
             }
 
-            const ref_converted = await this.convert_ref_attrs(results, ref_fields);
-            const converted = await this.read_link_attrs(ref_converted, link_fields);
+            const list_link = await this.read_link_attrs(results, link_fields);
+            const converted = await this.convert_ref_attrs(list_link, ref_fields);
+
             if (converted && converted.length == 1) {
                 if (is_log_debug()) {
                     log_debug("read_entity with query:" + JSON.stringify(query) + ",attrs:" + JSON.stringify(attrs) + ",converted:" + JSON.stringify(converted));
@@ -929,7 +930,7 @@ class Entity {
                 return map;
             }, {});
 
-            const entities = [...entity_filter_map.keys()];
+            const entities = Object.keys(entity_filter_map);
             for (let i = 0; i < entities.length; i++) {
                 const meta = get_entity_meta(entities[i]);
                 const entity = new Entity(meta);
@@ -937,7 +938,7 @@ class Entity {
                 for (let j = 0; j < elements.length; j++) {
                     const obj = elements[j];
                     const linked_attrs = entity_filter_map[entities[i]];
-                    for (k = 0; k < linked_attrs.length; k++) {
+                    for (let k = 0; k < linked_attrs.length; k++) {
                         const id = obj[linked_attrs[k]];
                         id_array.push(id);
                     }
@@ -954,17 +955,19 @@ class Entity {
                         ref_fields.push(field);
                     }
                 });
+
                 const ref_entity_items = await entity.find(query, attrs);
                 await entity.convert_ref_attrs(ref_entity_items, ref_fields);
 
                 for (let j = 0; j < elements.length; j++) {
                     const obj = elements[j];
                     const linked_attrs = entity_filter_map[entities[i]];
-                    for (k = 0; k < linked_attrs.length; k++) {
+                    for (let k = 0; k < linked_attrs.length; k++) {
                         const id = obj[linked_attrs[k]];
                         const [link_obj] = ref_entity_items.filter(o => o._id + "" == id);
-                        delete link_obj["_id"];
-                        elements[j] = { ...obj, ...link_obj };
+                        const copy_obj = { ...link_obj };
+                        delete copy_obj["_id"];
+                        elements[j] = { ...obj, ...copy_obj };
                     }
                 }
             }

@@ -274,6 +274,68 @@ describe('EntityMeta', function () {
             });
         });
 
+        it('should fails for wrong link ', function () {
+            throws(() => {
+                const entity_meta1 = new EntityMeta({
+                    collection: "user_link1",
+                    primary_keys: ["name"],
+                    fields: [
+                        { name: "name", type: "string", required: true },
+                        { name: "role", type: "string", link: "other", required: true },
+                    ]
+                });
+                entity_meta1.validate_meta_info();
+            });
+            throws(() => {
+                const entity_meta1 = new EntityMeta({
+                    collection: "user_link2",
+                    primary_keys: ["name"],
+                    fields: [
+                        { name: "name", type: "string", required: true },
+                        { name: "role", type: "string", link: "other" },
+                    ]
+                });
+                entity_meta1.validate_meta_info();
+            });
+
+            throws(() => {
+                const entity_meta1 = new EntityMeta({
+                    collection: "user_link3",
+                    primary_keys: ["name"],
+                    fields: [
+                        { name: "name", type: "string", required: true },
+                        { name: "role", link: "other" },
+                    ]
+                });
+                entity_meta1.validate_meta_info();
+            });
+        });
+
+        it('should success for link ', function () {
+            const entity_meta1 = new EntityMeta({
+                collection: "role_link_other",
+                primary_keys: ["name"],
+                ref_label: "name",
+                fields: [
+                    { name: "name", type: "string", required: true },
+                    { name: "desc", type: "string", required: true },
+                ]
+            });
+
+            const entity_meta2 = new EntityMeta({
+                collection: "user_link_other",
+                primary_keys: ["name"],
+                fields: [
+                    { name: "name", type: "string", required: true },
+                    { name: "user_role", type: "string", ref: "role_link_other", required: true },
+                    { name: "desc", link: "user_role", list: true },
+                ]
+            });
+
+            strictEqual(entity_meta1.validate_meta_info(), true);
+            strictEqual(entity_meta2.validate_meta_info(), true);
+        });
+
         it('should fails for wrong primary key type', function () {
             throws(() => {
                 const entity_meta1 = new EntityMeta({
