@@ -180,10 +180,20 @@ class Entity {
         });
 
         const list_field_names = this.meta.list_fields.map(f => f.name);
+        const ref_fields = [];
+        const link_fields = [];
+
         const attrs = {};
-        attr_names.split(",").forEach(function (attr) {
+        attr_names.split(",").forEach((attr) => {
             if (list_field_names.includes(attr)) {
                 attrs[attr] = 1;
+                const field = this.meta.fields_map[attr];
+                if (field.ref) {
+                    ref_fields.push(field);
+                } else if (field.link) {
+                    link_fields.push(field);
+                    attrs[field.link] = 1;
+                }
             }
         });
 
@@ -203,7 +213,8 @@ class Entity {
 
         const total = await this.count(search_query);
         const list = await this.find_page(search_query, sort, page_int, page_limit, attrs);
-        const data = await this.convert_ref_attrs(list);
+        const list_ref = await this.convert_ref_attrs(list, ref_fields);
+        const data = await this.read_link_attrs(list_ref, link_fields);
 
         if (is_log_debug()) {
             log_debug(LOG_ENTITY, "total:" + total + ",data:" + JSON.stringify(data));
@@ -520,12 +531,12 @@ class Entity {
     }
 
     /**
-     * Validate the param object and invoke the logic to read entity
-     * this is used for update entity
-     * @param {object id of the entity} _id object id of the entity
-     * @param {attr names to retrieve} attr_names
-     *
-     */
+   * Validate the param object and invoke the logic to read entity properties
+   * this is used for update entity
+   * @param {object id of the entity} _id object id of the entity
+   * @param {attr names to retrieve} attr_names
+   *
+   */
     async read_entity(_id, attr_names) {
         const query = oid_query(_id);
         if (query == null) {
@@ -535,53 +546,27 @@ class Entity {
             return { code: INVALID_PARAMS, err: ["_id"] };
         }
 
-        const field_names = this.meta.property_fields.map(f => f.name);
-        const attrs = {};
-        attr_names.split(",").forEach(function (attr) {
-            if (field_names.includes(attr)) {
-                attrs[attr] = 1;
-            }
-        });
-
-        const results = await this.find(query, attrs);
-        if (results && results.length == 1) {
-            if (is_log_debug()) {
-                log_debug("read entity with query:" + JSON.stringify(query) + ",attrs:" + JSON.stringify(attrs) + ",result:" + JSON.stringify(results));
-            }
-            return { code: SUCCESS, data: results[0] };
-        } else {
-            return { code: NOT_FOUND, err: ["_id"] };
-        }
-    }
-
-    /**
-   * Validate the param object and invoke the logic to read entity properties
-   * this is used for update entity
-   * @param {object id of the entity} _id object id of the entity
-   * @param {attr names to retrieve} attr_names
-   *
-   */
-    async read_entity_properties(_id, attr_names) {
-        const query = oid_query(_id);
-        if (query == null) {
-            if (is_log_error()) {
-                log_error(LOG_ENTITY, "read_entity_properties invalid id:" + _id);
-            }
-            return { code: INVALID_PARAMS, err: ["_id"] };
-        }
-
         if (!attr_names) {
             if (is_log_error()) {
-                log_error(LOG_ENTITY, "read_entity_properties invalid attr_names:" + attr_names);
+                log_error(LOG_ENTITY, "read_entity invalid attr_names:" + attr_names);
             }
             return { code: INVALID_PARAMS, err: ["attr_names"] };
         }
 
         const field_names = this.meta.property_fields.map(f => f.name);
+        const ref_fields = [];
+        const link_fields = [];
         const attrs = {};
         attr_names.split(",").forEach(function (attr) {
             if (field_names.includes(attr)) {
                 attrs[attr] = 1;
+                const field = this.meta.fields_map[attr];
+                if (field.ref) {
+                    ref_fields.push(field);
+                } else if (field.link) {
+                    link_fields.push(field);
+                    attrs[field.link] = 1;
+                }
             }
         });
 
@@ -597,10 +582,11 @@ class Entity {
                 }
             }
 
-            const converted = await this.convert_ref_attrs(results);
+            const ref_converted = await this.convert_ref_attrs(results, ref_fields);
+            const converted = await this.read_link_attrs(ref_converted, link_fields);
             if (converted && converted.length == 1) {
                 if (is_log_debug()) {
-                    log_debug("read_entity_properties with query:" + JSON.stringify(query) + ",attrs:" + JSON.stringify(attrs) + ",converted:" + JSON.stringify(converted));
+                    log_debug("read_entity with query:" + JSON.stringify(query) + ",attrs:" + JSON.stringify(attrs) + ",converted:" + JSON.stringify(converted));
                 }
                 return { code: SUCCESS, data: converted[0] };
             }
@@ -877,17 +863,17 @@ class Entity {
      * @param {element of object} elements 
      * @returns 
      */
-    async convert_ref_attrs(elements) {
-        if (elements && this.meta.ref_fields) {
-            for (let i = 0; i < this.meta.ref_fields.length; i++) {
-                const ref_field = this.meta.ref_fields[i];
+    async convert_ref_attrs(elements, ref_fields) {
+        if (elements && ref_fields && ref_fields.length > 0) {
+            for (let i = 0; i < ref_fields.length; i++) {
+                const ref_field = ref_fields[i];
                 let id_array = [];
                 for (let j = 0; j < elements.length; j++) {
                     const obj = elements[j];
                     const value = obj[ref_field.name];
                     if (Array.isArray(value)) {
                         id_array = id_array.concat(value);
-                    } else {
+                    } else if (value) {
                         id_array.push(value);
                     }
                 }
@@ -896,14 +882,89 @@ class Entity {
                 const ref_meta = get_entity_meta(ref_field.ref);
                 const ref_entity = new Entity(ref_meta);
                 const ref_labels = await ref_entity.get_ref_labels(id_array);
-                const label_map_obj = map_array_to_obj(ref_labels, "_id", ref_meta.ref_label);
+                const id_key = "_id";
+                const label_map_obj = map_array_to_obj(ref_labels, id_key, ref_meta.ref_label);
                 for (let j = 0; j < elements.length; j++) {
                     const obj = elements[j];
                     const value = obj[ref_field.name];
+                    obj[ref_field.name + id_key] = value;
+
                     if (Array.isArray(value)) {
                         obj[ref_field.name] = value.map(v => label_map_obj[v]);
-                    } else {
+                    } else if (value) {
                         obj[ref_field.name] = label_map_obj[value];
+                    }
+                }
+            }
+        }
+        return elements;
+    }
+
+    /**
+     * read the link attrs
+     * @param {*} elements 
+     * @returns 
+     */
+    async read_link_attrs(elements, link_fields) {
+        if (elements && link_fields && link_fields.length > 0) {
+            //key is entity name, value is array of fields
+            const entity_attr_map = link_fields.reduce((map, field) => {
+                const link_field = this.meta.fields_map[field.link];
+                if (map[link_field.ref]) {
+                    map[link_field.ref].push(field.name);
+                } else {
+                    map[link_field.ref] = [field.name];
+                }
+                return map;
+            }, {});
+
+            //key entity, value: attr property used to query
+            const entity_filter_map = link_fields.reduce((map, field) => {
+                const link_field = this.meta.fields_map[field.link];
+                if (map[link_field.ref]) {
+                    (!map[link_field.ref].includes(link_field.name)) && map[link_field.ref].push(link_field.name);
+                } else {
+                    map[link_field.ref] = [link_field.name];
+                }
+                return map;
+            }, {});
+
+            const entities = [...entity_filter_map.keys()];
+            for (let i = 0; i < entities.length; i++) {
+                const meta = get_entity_meta(entities[i]);
+                const entity = new Entity(meta);
+                let id_array = [];
+                for (let j = 0; j < elements.length; j++) {
+                    const obj = elements[j];
+                    const linked_attrs = entity_filter_map[entities[i]];
+                    for (k = 0; k < linked_attrs.length; k++) {
+                        const id = obj[linked_attrs[k]];
+                        id_array.push(id);
+                    }
+                }
+                id_array = unique(id_array);
+                const query = oid_queries(id_array);
+                const attr_fields = entity_attr_map[entities[i]];
+                const attrs = {};
+                const ref_fields = [];
+                attr_fields.forEach((attr) => {
+                    attrs[attr] = 1;
+                    const field = meta.fields_map[attr];
+                    if (field.ref) {
+                        ref_fields.push(field);
+                    }
+                });
+                const ref_entity_items = await entity.find(query, attrs);
+                await entity.convert_ref_attrs(ref_entity_items, ref_fields);
+
+                for (let j = 0; j < elements.length; j++) {
+                    const obj = elements[j];
+                    const linked_attrs = entity_filter_map[entities[i]];
+                    for (k = 0; k < linked_attrs.length; k++) {
+                        const id = obj[linked_attrs[k]];
+                        const [link_obj] = ref_entity_items.filter(o => o._id + "" == id);
+                        delete link_obj["_id"];
+                        elements[j] = { ...obj, ...link_obj };
                     }
                 }
             }

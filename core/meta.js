@@ -12,8 +12,10 @@ const meta_manager = {};
  * create is false, this attribute can be shown in property list but sys property can't be shown in property list 
  * 
  * routes: configure customer defined routes
+ * link property: field link property link to entity field and the field should ref to an entity.
+ * and the field name should be the same with the ref entity field name and shouldn't make as required and no other property
 */
-const field_attrs = ["name", "type", "required", "ref", "delete", "create", "list", "search", "update", "clone", "sys"];
+const field_attrs = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys"];
 const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read",
     "before_create", "after_create", "before_clone", "after_clone", "before_update", "after_update", "before_delete", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete",
     "ref_label", "ref_filter", "route", "user_field"];
@@ -71,6 +73,16 @@ const validate_field = (meta, field) => {
         }
     }
 
+    if (field.link) {
+        const keys = Object.keys(field);
+        const support_keys_for_links = ["name", "link", "list"]
+        keys.forEach(key => {
+            if (!support_keys_for_links.includes(key)) {
+                throw new Error("Link field just supports name, link,list property. The attribute [" + key + "] isn't supported for LINK field:" + JSON.stringify(field) + " and meta:" + meta.collection);
+            }
+        });
+    }
+
     const keys = Object.keys(field);
     keys.forEach(key => {
         if (!field_attrs.includes(key)) {
@@ -85,13 +97,32 @@ const validate_field = (meta, field) => {
  * @param {meta fields} fields 
  */
 const validate_fields = (meta, fields) => {
-    const field_names = [];
+    const fields_map = fields.reduce((map, field) => { map[field.name] = field; return map; }, {});
+    const check_duplicate_field_names = [];
+
     fields.forEach(field => {
         validate_field(meta, field);
-        if (field_names.includes(field.name)) {
+        if (check_duplicate_field_names.includes(field.name)) {
             throw new Error("Duplicate field defined [" + JSON.stringify(field) + "] for meta:" + meta.collection);
         } else {
-            field_names.push(field.name);
+            check_duplicate_field_names.push(field.name);
+        }
+        if (field.link) {
+            const link_field = fields_map[field.link];
+            if (!link_field) {
+                throw new Error("link field [" + JSON.stringify(field) + "] should link to one field defined in meta:" + meta.collection);
+            } else {
+                if (!link_field.ref) {
+                    throw new Error("link field [" + JSON.stringify(field) + "] link to field [" + JSON.stringify(link_field) + "] should ref to one entity in meta:" + meta.collection);
+                }
+                const entity = get_entity_meta(link_field.ref);
+                const link_entity_field = entity.fields_map[field.name];
+                if (!link_entity_field) {
+                    throw new Error("link field [" + JSON.stringify(field) + "] should link to one field defined in meta:" + entity.collection);
+                }
+                //set type to link field type
+                field.type = link_entity_field.type;
+            }
         }
     });
 
@@ -167,22 +198,24 @@ class EntityMeta {
         this.ref_fields = this.meta.fields.filter(field => field.ref);
         this.ref_by_metas = [];
 
+        this.link_fields = this.meta.fields.filter(field => field.link);
+        this.fields_map = meta.fields.reduce((map, field) => { map[field.name] = field; return map; }, {});
         this.fields = meta.fields;
         this.primary_keys = meta.primary_keys;
         this.field_names = this.fields.map(field => field.name);
         this.user_field = meta.user_field;
 
         this.property_fields = this.fields.filter(field => field.sys != true);
-        this.create_fields = this.fields.filter(field => field.create != false && field.sys != true);
-        this.update_fields = this.fields.filter(field => field.create != false && field.update != false && field.sys != true);
-        this.search_fields = this.fields.filter(field => field.search != false && field.sys != true);
-        this.clone_fields = this.fields.filter(field => field.clone != false && field.sys != true);
+        this.create_fields = this.fields.filter(field => field.create != false && field.sys != true && !field.link);
+        this.update_fields = this.fields.filter(field => field.create != false && field.update != false && field.sys != true && !field.link);
+        this.search_fields = this.fields.filter(field => field.search != false && field.sys != true && !field.link);
+        this.clone_fields = this.fields.filter(field => field.clone != false && field.sys != true && !field.link);
         this.list_fields = this.fields.filter(field => field.list != false && field.sys != true);
         this.primary_key_fields = this.fields.filter(field => meta.primary_keys.includes(field.name));
         this.required_field_names = this.fields.filter(field => field.required == true || this.primary_keys.includes(field.name)).map(field => field.name);
 
         this.file_fields = meta.fields.filter(f => f.type === 'file');
-        this.upload_fields = this.file_fields && this.file_fields.length > 0 ? this.file_fields.map(f => ({ name: f.name, maxCount: f.max ? f.max : 1 })) : [];
+        this.upload_fields = this.file_fields && this.file_fields.length > 0 ? this.file_fields.map(f => ({ name: f.name })) : [];
 
         set_callback(this, "after_read", meta.after_read);
         set_callback(this, "before_create", meta.before_create);
