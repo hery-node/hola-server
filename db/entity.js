@@ -188,11 +188,11 @@ class Entity {
             if (list_field_names.includes(attr)) {
                 attrs[attr] = 1;
                 const field = this.meta.fields_map[attr];
-                if (field.ref) {
-                    ref_fields.push(field);
-                } else if (field.link) {
+                if (field.link) {
                     link_fields.push(field);
                     attrs[field.link] = 1;
+                } else if (field.ref) {
+                    ref_fields.push(field);
                 }
             }
         });
@@ -597,11 +597,11 @@ class Entity {
             if (field_names.includes(attr)) {
                 attrs[attr] = 1;
                 const field = this.meta.fields_map[attr];
-                if (field.ref) {
-                    ref_fields.push(field);
-                } else if (field.link) {
+                if (field.link) {
                     link_fields.push(field);
                     attrs[field.link] = 1;
+                } else if (field.ref) {
+                    ref_fields.push(field);
                 }
             }
         });
@@ -987,7 +987,7 @@ class Entity {
                 attr_fields.forEach((attr) => {
                     attrs[attr] = 1;
                     const field = meta.fields_map[attr];
-                    if (field.ref) {
+                    if (!field.link && field.ref) {
                         ref_fields.push(field);
                     }
                 });

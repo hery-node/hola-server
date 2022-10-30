@@ -48,7 +48,7 @@ const validate_field = (meta, field) => {
         field.required = true;
     }
 
-    if (field.ref) {
+    if (field.ref && !field.link) {
         const ref_meta = meta_manager[field.ref];
         if (!ref_meta) {
             throw new Error("meta:" + meta.collection + ",field:" + field.name + " refers invalid meta:" + field.ref + "]");
