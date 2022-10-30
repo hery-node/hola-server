@@ -531,12 +531,48 @@ class Entity {
     }
 
     /**
-   * Validate the param object and invoke the logic to read entity properties
-   * this is used for update entity
-   * @param {object id of the entity} _id object id of the entity
-   * @param {attr names to retrieve} attr_names
-   *
-   */
+     * Use objectid to read entity properties. Validate the param object and invoke the logic to read entity properties.
+     * This method doesn't convert ref property, so all the ref properties are objectid of the ref entity.
+     * It also donesn't inclue link property. This is used for form view to do create/update the entity.
+     * @param {object id of the entity} _id object id of the entity
+     * @param {attr names to retrieve} attr_names
+     *
+     */
+    async read_property(_id, attr_names) {
+        const query = oid_query(_id);
+        if (query == null) {
+            if (is_log_error()) {
+                log_error(LOG_ENTITY, "read_property invalid id:" + _id);
+            }
+            return { code: INVALID_PARAMS, err: ["_id"] };
+        }
+
+        const field_names = this.meta.property_fields.map(f => f.name);
+        const attrs = {};
+        attr_names.split(",").forEach(function (attr) {
+            if (field_names.includes(attr)) {
+                attrs[attr] = 1;
+            }
+        });
+
+        const results = await this.find(query, attrs);
+        if (results && results.length == 1) {
+            if (is_log_debug()) {
+                log_debug("read_property with query:" + JSON.stringify(query) + ",attrs:" + JSON.stringify(attrs) + ",result:" + JSON.stringify(results));
+            }
+            return { code: SUCCESS, data: results[0] };
+        } else {
+            return { code: NOT_FOUND, err: ["_id"] };
+        }
+    }
+
+    /**
+     * Use objectid to read entity properties. Validate the param object and invoke the logic to read entity properties.
+     * It will convert object ref attributes to ref_label property of the ref entity and also read link attributes.
+     * @param {object id of the entity} _id object id of the entity
+     * @param {attr names to retrieve} attr_names
+     *
+     */
     async read_entity(_id, attr_names) {
         const query = oid_query(_id);
         if (query == null) {
@@ -957,17 +993,21 @@ class Entity {
                 });
 
                 const ref_entity_items = await entity.find(query, attrs);
-                await entity.convert_ref_attrs(ref_entity_items, ref_fields);
+                if (ref_entity_items && ref_entity_items.length > 0) {
+                    await entity.convert_ref_attrs(ref_entity_items, ref_fields);
 
-                for (let j = 0; j < elements.length; j++) {
-                    const obj = elements[j];
-                    const linked_attrs = entity_filter_map[entities[i]];
-                    for (let k = 0; k < linked_attrs.length; k++) {
-                        const id = obj[linked_attrs[k]];
-                        const [link_obj] = ref_entity_items.filter(o => o._id + "" == id);
-                        const copy_obj = { ...link_obj };
-                        delete copy_obj["_id"];
-                        elements[j] = { ...obj, ...copy_obj };
+                    for (let j = 0; j < elements.length; j++) {
+                        const obj = elements[j];
+                        const linked_attrs = entity_filter_map[entities[i]];
+                        for (let k = 0; k < linked_attrs.length; k++) {
+                            const id = obj[linked_attrs[k]];
+                            const [link_obj] = ref_entity_items.filter(o => o._id + "" == id);
+                            if (link_obj) {
+                                const copy_obj = { ...link_obj };
+                                delete copy_obj["_id"];
+                                elements[j] = { ...obj, ...copy_obj };
+                            }
+                        }
                     }
                 }
             }

@@ -59,7 +59,7 @@ const init_read_router = function (router, meta) {
         res.json({ code: code, err: err, total: total, data: data });
     }));
 
-    router.post('/read', wrap_http(async function (req, res) {
+    router.post('/read_entity', wrap_http(async function (req, res) {
         let params = required_post_params(req, ["_id", "attr_names"]);
         if (params === null) {
             res.json({ code: NO_PARAMS, err: '[_id,attr_names] checking params are failed!' });
@@ -68,6 +68,21 @@ const init_read_router = function (router, meta) {
 
         const { _id, attr_names } = params;
         const { code, err, data } = await entity.read_entity(_id, attr_names);
+        if (!has_value(code)) {
+            throw new Error("the method should return code");
+        }
+        res.json({ code: code, err: err, data: data });
+    }));
+
+    router.post('/read_property', wrap_http(async function (req, res) {
+        let params = required_post_params(req, ["_id", "attr_names"]);
+        if (params === null) {
+            res.json({ code: NO_PARAMS, err: '[_id,attr_names] checking params are failed!' });
+            return;
+        }
+
+        const { _id, attr_names } = params;
+        const { code, err, data } = await entity.read_property(_id, attr_names);
         if (!has_value(code)) {
             throw new Error("the method should return code");
         }
