@@ -219,10 +219,10 @@ class EntityMeta {
         this.user_field = meta.user_field;
 
         this.property_fields = this.fields.filter(field => field.sys != true);
-        this.create_fields = this.fields.filter(field => field.create != false && field.sys != true && !field.link);
-        this.update_fields = this.fields.filter(field => field.create != false && field.update != false && field.sys != true && !field.link);
-        this.search_fields = this.fields.filter(field => field.search != false && field.sys != true && !field.link);
-        this.clone_fields = this.fields.filter(field => field.clone != false && field.sys != true && !field.link);
+        this.create_fields = this.fields.filter(field => field.create != false && field.sys != true);
+        this.update_fields = this.fields.filter(field => field.create != false && field.update != false && field.sys != true);
+        this.search_fields = this.fields.filter(field => field.search != false && field.sys != true);
+        this.clone_fields = this.fields.filter(field => field.clone != false && field.sys != true);
         this.list_fields = this.fields.filter(field => field.list != false && field.sys != true);
         this.primary_key_fields = this.fields.filter(field => meta.primary_keys.includes(field.name));
         this.required_field_names = this.fields.filter(field => field.required == true || this.primary_keys.includes(field.name)).map(field => field.name);
