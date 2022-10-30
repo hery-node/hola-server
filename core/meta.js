@@ -124,6 +124,9 @@ const validate_fields = (meta, fields) => {
                 }
                 //set type to link field type
                 field.type = link_entity_field.type;
+                if (link_entity_field.ref) {
+                    field.ref = link_entity_field.ref;
+                }
             }
         }
     });
