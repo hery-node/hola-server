@@ -184,10 +184,11 @@ class Entity {
         const link_fields = [];
 
         const attrs = {};
+        const fields_map = this.meta.fields_map;
         attr_names.split(",").forEach((attr) => {
             if (list_field_names.includes(attr)) {
                 attrs[attr] = 1;
-                const field = this.meta.fields_map[attr];
+                const field = fields_map[attr];
                 if (field.link) {
                     link_fields.push(field);
                     attrs[field.link] = 1;
@@ -549,7 +550,7 @@ class Entity {
 
         const field_names = this.meta.property_fields.map(f => f.name);
         const attrs = {};
-        attr_names.split(",").forEach(function (attr) {
+        attr_names.split(",").forEach((attr) => {
             if (field_names.includes(attr)) {
                 attrs[attr] = 1;
             }
@@ -593,10 +594,12 @@ class Entity {
         const ref_fields = [];
         const link_fields = [];
         const attrs = {};
-        attr_names.split(",").forEach(function (attr) {
+
+        const fields_map = this.meta.fields_map;
+        attr_names.split(",").forEach((attr) => {
             if (field_names.includes(attr)) {
                 attrs[attr] = 1;
-                const field = this.meta.fields_map[attr];
+                const field = fields_map[attr];
                 if (field.link) {
                     link_fields.push(field);
                     attrs[field.link] = 1;
