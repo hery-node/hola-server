@@ -122,8 +122,16 @@ const validate_fields = (meta, fields) => {
                 if (!link_entity_field) {
                     throw new Error("link field [" + JSON.stringify(field) + "] should link to one field defined in meta:" + entity.collection);
                 }
+
                 //set type to link field type
                 field.type = link_entity_field.type;
+                field.required = false;
+                field.create = false;
+                field.search = false;
+                field.update = false;
+                field.clone = false;
+                field.delete = "cascade";
+
                 if (link_entity_field.ref) {
                     field.ref = link_entity_field.ref;
                 }
