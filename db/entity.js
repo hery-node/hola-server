@@ -901,9 +901,11 @@ class Entity {
     /**
      * Convert ref element object id to ref_label
      * @param {element of object} elements 
+     * @param {*} passed_ref_fields, if not pass, use all meta ref_fields
      * @returns 
      */
-    async convert_ref_attrs(elements, ref_fields) {
+    async convert_ref_attrs(elements, passed_ref_fields) {
+        const ref_fields = passed_ref_fields ? passed_ref_fields : this.meta.ref_fields;
         if (elements && ref_fields && ref_fields.length > 0) {
             for (let i = 0; i < ref_fields.length; i++) {
                 const ref_field = ref_fields[i];
