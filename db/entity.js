@@ -84,7 +84,7 @@ class Entity {
                     const array = [];
                     for (let j = 0; j < value.length; j++) {
                         const v = value[j];
-                        const ref_entities = await ref_entity.find_by_ref_value(v, { "_id": 1 });
+                        const ref_entities = await ref_entity.find_by_ref_value(v, { "_id": 1 }, this.meta.collection);
 
                         if (ref_entities.length == 0) {
                             return { code: REF_NOT_FOUND, err: [field.name] };
@@ -97,7 +97,7 @@ class Entity {
                     param_obj[field.name] = array;
 
                 } else if (has_value(value)) {
-                    const ref_entities = await ref_entity.find_by_ref_value(value, { "_id": 1 });
+                    const ref_entities = await ref_entity.find_by_ref_value(value, { "_id": 1 }, this.meta.collection);
 
                     if (ref_entities.length == 0) {
                         return { code: REF_NOT_FOUND, err: [field.name] };
@@ -129,7 +129,7 @@ class Entity {
                     if (refer_field_names.includes(search_field.name)) {
                         //refer field
                         const refer_entity = new Entity(get_entity_meta(search_field.ref));
-                        const oids = await refer_entity.find_by_ref_value(value, { _id: 1 });
+                        const oids = await refer_entity.find_by_ref_value(value, { _id: 1 }, this.meta.collection);
                         if (oids.length > 0) {
                             and_array.push({ [search_field.name]: { "$all": oids.map(o => o._id + "") } });
                         }
@@ -787,7 +787,7 @@ class Entity {
      * @param {the attributes to load from db} attr 
      * @returns array of the objects that are found
      */
-    find_by_ref_value(value, attr) {
+    find_by_ref_value(value, attr, ref_by_entity) {
         let query = Array.isArray(value) ? oid_queries(value) : oid_query(value);
         if (query == null) {
             if (Array.isArray(value)) {
@@ -802,9 +802,14 @@ class Entity {
             }
         }
 
-        if (this.meta.ref_filter) {
-            query = { ...query, ...this.meta.ref_filter };
+        if (this.meta.ref_filter && ref_by_entity) {
+            if (this.meta.ref_filter[ref_by_entity]) {
+                query = { ...query, ...this.meta.ref_filter[ref_by_entity] };
+            } else if (this.meta.ref_filter["*"]) {
+                query = { ...query, ...this.meta.ref_filter["*"] };
+            }
         }
+
         return this.find(query, attr);
     }
 
