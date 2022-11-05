@@ -1029,8 +1029,12 @@ class Entity {
         if (this.meta.user_field) {
             query[this.meta.user_field] = get_session_userid();
         }
-        if (this.meta.ref_filter) {
-            query = ref_by_entity && this.meta.ref_filter[ref_by_entity] ? { ...query, ...this.meta.ref_filter[ref_by_entity] } : { ...query, ...this.meta.ref_filter };
+        if (this.meta.ref_filter && ref_by_entity) {
+            if (this.meta.ref_filter[ref_by_entity]) {
+                query = { ...query, ...this.meta.ref_filter[ref_by_entity] };
+            } else if (this.meta.ref_filter["*"]) {
+                query = { ...query, ...this.meta.ref_filter["*"] };
+            }
         }
         return this.find_sort(query, { [this.meta.ref_label]: 1 }, { [this.meta.ref_label]: 1 });
     }
