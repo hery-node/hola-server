@@ -18,7 +18,7 @@ const get_session_userid = () => {
   return req && req.session && req.session.user ? req.session.user.id : "";
 };
 
-const log_msg = (category, level, msg) => {
+const log_msg = (category, level, msg, extra) => {
   const time = format_date_time(new Date());
   const db = get_db();
   const { col_log } = get_settings().log;
@@ -27,7 +27,7 @@ const log_msg = (category, level, msg) => {
   const path = req ? req.originalUrl : "";
   const user = req && req.session && req.session.user ? req.session.user.id : "";
 
-  db.create(col_log, { time: time, category: category, level: level, msg: msg, user: user, path: path }).then(() => { });
+  db.create(col_log, { time: time, category: category, level: level, msg: msg, user: user, path: path, ...extra }).then(() => { });
 };
 
 const is_log_debug = () => {
@@ -50,27 +50,27 @@ const is_log_error = () => {
   return save_db && log_level <= LOG_LEVEL_ERROR;
 };
 
-const log_debug = (category, msg) => {
+const log_debug = (category, msg, extra) => {
   if (is_log_debug()) {
-    log_msg(category, LOG_LEVEL_DEBUG, msg);
+    log_msg(category, LOG_LEVEL_DEBUG, msg, extra);
   }
 };
 
-const log_info = (category, msg) => {
+const log_info = (category, msg, extra) => {
   if (is_log_info()) {
-    log_msg(category, LOG_LEVEL_INFO, msg);
+    log_msg(category, LOG_LEVEL_INFO, msg, extra);
   }
 };
 
-const log_warn = (category, msg) => {
+const log_warn = (category, msg, extra) => {
   if (is_log_warn()) {
-    log_msg(category, LOG_LEVEL_WARN, msg);
+    log_msg(category, LOG_LEVEL_WARN, msg, extra);
   }
 };
 
-const log_error = (category, msg) => {
+const log_error = (category, msg, extra) => {
   if (is_log_error()) {
-    log_msg(category, LOG_LEVEL_ERROR, msg);
+    log_msg(category, LOG_LEVEL_ERROR, msg, extra);
   }
 };
 
