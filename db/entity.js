@@ -1024,13 +1024,13 @@ class Entity {
     * get ref labels of the object, use ref_filter
     * @returns 
     */
-    get_filtered_ref_labels() {
+    get_filtered_ref_labels(ref_by_entity) {
         let query = {};
         if (this.meta.user_field) {
             query[this.meta.user_field] = get_session_userid();
         }
         if (this.meta.ref_filter) {
-            query = { ...query, ...this.meta.ref_filter };
+            query = ref_by_entity && this.meta.ref_filter[ref_by_entity] ? { ...query, ...this.meta.ref_filter[ref_by_entity] } : { ...query, ...this.meta.ref_filter };
         }
         return this.find_sort(query, { [this.meta.ref_label]: 1 }, { [this.meta.ref_label]: 1 });
     }

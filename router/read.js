@@ -1,4 +1,4 @@
-const { required_post_params } = require('../http/params');
+const { required_post_params, get_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { NO_PARAMS, SUCCESS } = require('../http/code');
 const { get_session_userid } = require('../http/session');
@@ -30,7 +30,8 @@ const init_read_router = function (router, meta) {
     }));
 
     router.get('/ref', wrap_http(async function (req, res) {
-        const list = await entity.get_filtered_ref_labels();
+        const { ref_by_entity } = get_params(req, ["ref_by_entity"]);
+        const list = await entity.get_filtered_ref_labels(ref_by_entity);
         const items = list.map(obj => ({ "text": obj[meta.ref_label], "value": obj["_id"] + "" }));
         res.json({ code: SUCCESS, data: items });
     }));
