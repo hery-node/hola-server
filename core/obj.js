@@ -4,10 +4,19 @@
  * @param {attributes to be copied} attrs 
  * @returns 
  */
-const copy_obj = function (obj, attrs) {
+const copy_obj = (obj, attrs) => {
     const copied = {};
     attrs.forEach(attr => copied[attr] = obj[attr]);
     return copied;
 };
 
-module.exports = { copy_obj }
+/**
+ * Check this is object or not
+ * @param {Object to be checked} obj 
+ * @returns 
+ */
+const is_object = (obj) => {
+    return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+}
+
+module.exports = { copy_obj, is_object }

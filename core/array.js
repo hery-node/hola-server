@@ -98,17 +98,6 @@ const avg = function (arr) {
 };
 
 /**
- * Remove duplicate element and keep it unique
- * @param {array of elements} arr 
- * @returns 
- */
-const unique = function (arr) {
-    return arr.filter(function (elem, pos) {
-        return arr.indexOf(elem) == pos;
-    });
-}
-
-/**
  * 
  * @param {array of object} arr 
  * @param {key attr of element as key} key_attr 
@@ -163,4 +152,36 @@ const sort_by_key_seq = function (arr, attr, keys) {
     return arr;
 };
 
-module.exports = { shuffle, remove_element, pop_n, shift_n, sum, avg, sort_desc, sort_asc, sort_by_key_seq, unique, map_array_to_obj }
+/**
+ * Create combination of two object, the size will be arr1.length * arr2.length
+ * @param {array of object} arr1 
+ * @param {array of object} arr2 
+ * @returns 
+ */
+const combine = (arr1, arr2) => {
+    const result = [];
+    for (let i = 0; i < arr1.length; i++) {
+        const obj1 = arr1[i];
+        for (let j = 0; j < arr2.length; j++) {
+            const obj2 = arr2[j];
+            result.push({ ...obj1, ...obj2 });
+        }
+    }
+    return result;
+}
+
+/**
+ * Remove duplicate element and keep it unique
+ * @param {array of elements} arr 
+ * @returns 
+ */
+const unique = (array) => {
+    return array.filter((value, index) => {
+        const _value = JSON.stringify(value);
+        return index === array.findIndex(obj => {
+            return JSON.stringify(obj) === _value;
+        });
+    });
+}
+
+module.exports = { shuffle, remove_element, pop_n, shift_n, sum, avg, combine, sort_desc, sort_asc, sort_by_key_seq, unique, map_array_to_obj }
