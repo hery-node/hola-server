@@ -15,7 +15,7 @@ const meta_manager = {};
  * link property: field link property link to entity field and the field should ref to an entity.
  * and the field name should be the same with the ref entity field name and shouldn't make as required and no other property
 */
-const field_attrs = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys"];
+const field_attrs = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure"];
 const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read",
     "before_create", "after_create", "before_clone", "after_clone", "before_update", "after_update", "before_delete", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete",
     "ref_label", "ref_filter", "route", "user_field"];
@@ -218,12 +218,12 @@ class EntityMeta {
         this.field_names = this.fields.map(field => field.name);
         this.user_field = meta.user_field;
 
-        this.property_fields = this.fields.filter(field => field.sys != true);
+        this.property_fields = this.fields.filter(field => field.sys != true && field.secure != true);
         this.create_fields = this.fields.filter(field => field.create != false && field.sys != true);
         this.update_fields = this.fields.filter(field => field.create != false && field.update != false && field.sys != true);
         this.search_fields = this.fields.filter(field => field.search != false && field.sys != true);
         this.clone_fields = this.fields.filter(field => field.clone != false && field.sys != true);
-        this.list_fields = this.fields.filter(field => field.list != false && field.sys != true);
+        this.list_fields = this.fields.filter(field => field.list != false && field.sys != true && field.secure != true);
         this.primary_key_fields = this.fields.filter(field => meta.primary_keys.includes(field.name));
         this.required_field_names = this.fields.filter(field => field.required == true || this.primary_keys.includes(field.name)).map(field => field.name);
 
