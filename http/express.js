@@ -11,6 +11,18 @@ const { asyncLocalStorage, set_context_value } = require('./context');
 const app = express();
 let server_initialized = false;
 
+const is_excluded_url = (server, req) => {
+    const exclude_urls = server.exclude_urls;
+    for (let i = 0; i < exclude_urls.length; i++) {
+        const re = new RegExp(exclude_urls[i], "gim");
+        if (re.test(req.originalUrl)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 const init_express_server = (base_dir, callback) => {
     if (server_initialized === true) {
         return app;
@@ -25,9 +37,7 @@ const init_express_server = (base_dir, callback) => {
     init_session(app);
 
     app.use((req, res, next) => {
-        const exclude_urls = server.exclude_urls;
-
-        if (server.check_user && !exclude_urls.includes(req.originalUrl)) {
+        if (server.check_user && !is_excluded_url(server, req)) {
             const user_id = get_session_userid(req);
             if (user_id == null) {
                 res.json({ code: NO_SESSION, err: "no session found" });
@@ -59,3 +69,8 @@ const init_express_server = (base_dir, callback) => {
 }
 
 module.exports = { init_express_server };
+
+const str = "/monitor/635c7e6aecf2f40bf70feca9";
+const exclude_urls = ["/monitor/.*?/"];
+
+
