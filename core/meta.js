@@ -10,12 +10,16 @@ const meta_manager = {};
  * delete: delete is only used for ref field, it decide when the ref entity will be deleted, how to handle this entity,no value, will not let the refered entity be deleted, keep: keep this entity(no data consistency), cascade: also delete this entity also,
  * sys: this field is used to control the user can set the value or not. sys field can only be set in the server side(before callback is good place to do this)
  * create is false, this attribute can be shown in property list but sys property can't be shown in property list 
+ * secure: secure properties will not be read by client, this is useful for password
+ * group: this is used to control user sharing entities, this means the entity is shared by user group, this is only valid for user field
  * 
  * routes: configure customer defined routes
  * link property: field link property link to entity field and the field should ref to an entity.
  * and the field name should be the same with the ref entity field name and shouldn't make as required and no other property
+ * 
+ * 
 */
-const field_attrs = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure"];
+const field_attrs = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "group"];
 const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read",
     "before_create", "after_create", "before_clone", "after_clone", "before_update", "after_update", "before_delete", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete",
     "ref_label", "ref_filter", "route", "user_field"];

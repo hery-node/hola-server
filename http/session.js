@@ -24,4 +24,9 @@ const get_session_userid = (req) => {
     return user ? user.id : null;
 }
 
-module.exports = { init_session, get_session_userid };
+const get_session_user_groups = (req) => {
+    const group = req && req.session ? req.session.group : null;
+    return group && Array.isArray(group) ? group : null;
+}
+
+module.exports = { init_session, get_session_userid, get_session_user_groups };
