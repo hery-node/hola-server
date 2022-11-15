@@ -44,13 +44,22 @@ const init_read_router = function (router, meta) {
         }
 
         const param_obj = req.body;
+
         if (meta.user_field) {
             const [user_field] = meta.fields.filter(f => f.name == meta.user_field);
-            const user_ids = user_field && user_field.group == true ? get_session_user_groups(req) : [get_session_userid(req)];
-            if (user_ids == null) {
-                throw new Error("no user or user group is found in session");
+            if (user_field && user_field.group == true) {
+                const user_ids = get_session_user_groups(req);
+                if (user_ids == null) {
+                    throw new Error("no user group is found in session");
+                }
+                param_obj[meta.user_field] = user_ids;
+            } else {
+                const user_id = get_session_userid(req);
+                if (user_id == null) {
+                    throw new Error("no user id is found in session");
+                }
+                param_obj[meta.user_field] = user_id;
             }
-            param_obj[meta.user_field] = { "$in": user_ids };
         }
 
         const { code, err, total, data } = await entity.list_entity(query_params["_query"], null, param_obj);

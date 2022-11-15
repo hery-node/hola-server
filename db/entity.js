@@ -128,7 +128,7 @@ class Entity {
                         const refer_entity = new Entity(get_entity_meta(search_field.ref));
                         const oids = await refer_entity.find_by_ref_value(value, { _id: 1 }, this.meta.collection);
                         if (oids.length > 0) {
-                            and_array.push({ [search_field.name]: { "$all": oids.map(o => o._id + "") } });
+                            and_array.push({ [search_field.name]: { "$in": oids.map(o => o._id + "") } });
                         }
                     } else {
                         and_array.push(parse_search_value(search_field.name, search_field.type, value));
