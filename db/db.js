@@ -131,7 +131,7 @@ const bulk_update = async (col, items, attrs) => {
 };
 
 class DB {
-  constructor(url, poolSize) {
+  constructor(url, poolSize, callback) {
     if (!url) {
       return;
     }
@@ -142,6 +142,10 @@ class DB {
       if (is_log_error()) {
         log_error(LOG_DB, err);
       }
+    });
+
+    this.db.on('connect', function () {
+      callback && callback();
     });
   }
 
@@ -343,19 +347,19 @@ class DB {
   }
 }
 
-let db_instance = new DB();
+let db_instance = null;
 
 /**
  *
  * @returns db instance of mongodb
  */
-const get_db = () => {
+const get_db = (callback) => {
   if (db_instance && db_instance.db) {
     return db_instance;
   } else {
     const mongo = get_settings().mongo;
 
-    db_instance = new DB(mongo.url, mongo.pool);
+    db_instance = new DB(mongo.url, mongo.pool, callback);
     return db_instance;
   }
 };

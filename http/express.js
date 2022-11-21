@@ -69,8 +69,3 @@ const init_express_server = (base_dir, callback) => {
 }
 
 module.exports = { init_express_server };
-
-const str = "/monitor/635c7e6aecf2f40bf70feca9";
-const exclude_urls = ["/monitor/.*?/"];
-
-
