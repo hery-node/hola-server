@@ -23,7 +23,7 @@ const is_excluded_url = (server, req) => {
     return false;
 }
 
-const init_express_server = (base_dir, callback) => {
+const init_express_server = (base_dir, port_attr, callback) => {
     if (server_initialized === true) {
         return app;
     }
@@ -58,7 +58,7 @@ const init_express_server = (base_dir, callback) => {
     init_router_dirs(app, base_dir);
     handle_exception(app);
 
-    app.listen(server.service_port, async function () {
+    app.listen(server[port_attr], async function () {
         if (callback) {
             await callback();
         }
