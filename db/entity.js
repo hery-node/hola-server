@@ -138,6 +138,15 @@ class Entity {
                 }
             }
 
+            if (param_obj["_id"] && param_obj["_id"].trim().length > 0) {
+                const ids = param_obj["_id"].split(",");
+                if (ids.length == 1) {
+                    and_array.push(oid_query(ids[0]));
+                } else if (ids.length > 1) {
+                    and_array.push(oid_queries(ids));
+                }
+            }
+
             if (and_array.length > 0) {
                 query["$and"] = and_array;
 
