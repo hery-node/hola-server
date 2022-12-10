@@ -167,12 +167,12 @@ const random_sample = (obj) => {
  * @returns 
  */
 const extract_number = (value) => {
-    const number = value.match(/[+\-0-9\\.]+/g);
-    if (!number) {
+    const numbers = value.match(/([+\-0-9\\.]+)/g);
+    if (!numbers) {
         return 0;
     }
 
-    const values = number.map(Number);
+    const values = numbers.map(Number).filter(v => has_value(v));
     return values.length == 1 ? values[0] : 0;
 }
 

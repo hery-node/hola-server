@@ -3,7 +3,7 @@ const is_undefined = function (value) {
 }
 
 const has_value = function (value) {
-    if (value === undefined || value === null) {
+    if (value === undefined || value === null || isNaN(value)) {
         return false
     }
     if (typeof value == 'undefined') {
