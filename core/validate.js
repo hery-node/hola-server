@@ -3,7 +3,9 @@ const is_undefined = function (value) {
 }
 
 const has_value = function (value) {
-    if (value === undefined || value === null || isNaN(value)) {
+    //In short, JavaScript NaN values are the only ones that are not equal to themselves
+    //value!==value is to check is NaN
+    if (value === undefined || value === null || value !== value) {
         return false
     }
     if (typeof value == 'undefined') {
