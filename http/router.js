@@ -18,18 +18,20 @@ const { get_settings } = require('../setting');
 const init_router_dirs = (app, base_dir) => {
     const route_dirs = get_settings().server.routes;
 
-    route_dirs.forEach(route_dir => {
-        const full_route_dir = path.join(base_dir, route_dir);
-        const routes = fs.readdirSync(full_route_dir);
-        routes.forEach(route => {
-            const router = require(`${base_dir}/${route_dir}/${route}`);
-            const basename = path.basename(route, '.js');
-            app.use('/' + basename, router);
+    if (route_dirs) {
+        route_dirs.forEach(route_dir => {
+            const full_route_dir = path.join(base_dir, route_dir);
+            const routes = fs.readdirSync(full_route_dir);
+            routes.forEach(route => {
+                const router = require(`${base_dir}/${route_dir}/${route}`);
+                const basename = path.basename(route, '.js');
+                app.use('/' + basename, router);
+            });
         });
-    });
 
-    //after init all the router, then validate all the meta informations
-    validate_all_metas();
+        //after init all the router, then validate all the meta informations
+        validate_all_metas();
+    }
 }
 
 /**

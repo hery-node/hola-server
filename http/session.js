@@ -6,7 +6,7 @@ const init_session = (app) => {
     const server = get_settings().server;
     const mongo = get_settings().mongo;
 
-    if (server.keep_session) {
+    if (server.keep_session && mongo) {
         const session = server.session;
 
         app.use(express_session({

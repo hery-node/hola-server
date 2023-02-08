@@ -32,8 +32,12 @@ const init_express_server = (base_dir, port_attr, callback) => {
     const threshold = server.threshold;
 
     init_cors(app);
-    app.use(express.json({ limit: threshold.body_limit, extended: true }));
-    app.use(express.urlencoded({ limit: threshold.body_limit, extended: true }));
+
+    if (threshold) {
+        app.use(express.json({ limit: threshold.body_limit, extended: true }));
+        app.use(express.urlencoded({ limit: threshold.body_limit, extended: true }));
+    }
+
     init_session(app);
 
     app.use((req, res, next) => {
