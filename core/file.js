@@ -1,4 +1,6 @@
 const fs = require('fs');
+const fs_promises = require('fs').promises;
+
 const unzipper = require('unzipper');
 
 const file_extension = file_name => file_name ? file_name.split('.').pop() : "";
@@ -28,4 +30,9 @@ const is_file_exist = (path) => {
     return true;
 }
 
-module.exports = { file_extension, file_prefix, read_from_zip_by_extension, read_from_zip_by_prefix, is_file_exist }
+const get_file_size = async (path) => {
+    const stats = await fs_promises.stat(path);
+    return stats.size;
+}
+
+module.exports = { file_extension, file_prefix, read_from_zip_by_extension, read_from_zip_by_prefix, is_file_exist, get_file_size }
