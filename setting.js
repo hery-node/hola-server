@@ -44,14 +44,20 @@ const get_settings = () => {
 }
 
 const is_valid_role = (role_name) => {
+    //no role defined, then no role check
     if (!settings.roles) {
-        return false;
+        return true;
     }
     const roles = settings.roles.filter(role => role.name == role_name);
     return roles.length == 1;
 }
 
 const is_root_role = (role_name) => {
+    //no role defined, then every one is root
+    if (!settings.roles) {
+        return true;
+    }
+
     if (!is_valid_role(role_name)) {
         return false;
     }

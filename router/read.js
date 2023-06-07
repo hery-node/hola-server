@@ -46,8 +46,7 @@ const init_read_router = function (router, meta) {
             }
         }
 
-        const mode = meta.roles ? get_user_role_mode(req, meta.roles) : "";
-        res.json({ code: SUCCESS, data: mode });
+        res.json({ code: SUCCESS, data: get_user_role_mode(req, meta.roles) });
     }));
 
     router.get('/ref', wrap_http(async function (req, res) {

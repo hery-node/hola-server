@@ -33,6 +33,11 @@ const get_session_user_role = (req) => {
 const mode_all = "bcdeiorsu";
 
 const get_user_role_mode = (req, roles) => {
+    const server = get_settings().server;
+    if (server.check_user == false) {
+        return mode_all;
+    }
+
     const user_role = get_session_user_role(req);
     if (!user_role) {
         return "";
