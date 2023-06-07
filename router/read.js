@@ -22,7 +22,6 @@ const init_read_router = function (router, meta) {
             }
         }
 
-        const mode = meta.roles ? get_user_role_mode(req, meta.roles) : "";
         const entity_meta = {
             creatable: meta.creatable,
             readable: meta.readable,
@@ -33,10 +32,22 @@ const init_read_router = function (router, meta) {
             exportable: meta.exportable,
             editable: meta.editable,
             user_field: meta.user_field,
-            fields: meta.fields,
-            mode: mode.length > 0 ? mode : null
+            fields: meta.fields
         }
         res.json({ code: SUCCESS, data: entity_meta });
+    }));
+
+    router.get('/mode', wrap_http(async function (req, res) {
+        if (meta.roles) {
+            const has_right = check_user_role(req, meta.roles, "r");
+            if (!has_right) {
+                res.json({ code: NO_RIGHTS, err: "no rights error" });
+                return;
+            }
+        }
+
+        const mode = meta.roles ? get_user_role_mode(req, meta.roles) : "";
+        res.json({ code: SUCCESS, data: mode });
     }));
 
     router.get('/ref', wrap_http(async function (req, res) {
