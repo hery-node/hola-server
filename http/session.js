@@ -52,7 +52,11 @@ const get_user_role_mode = (req, roles) => {
             const role_name = role_settings[0];
             const role_mode = role_settings[1];
             if (user_role == role_name) {
-                return role_mode;
+                if (role_mode == "*") {
+                    return mode_all;
+                } else {
+                    return role_mode;
+                }
             }
         }
     }
