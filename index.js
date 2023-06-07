@@ -1,10 +1,11 @@
 const { get_db } = require('./db/db');
 const { Entity } = require('./db/entity');
-const { init_settings, is_root_role } = require('./setting');
+const { init_settings } = require('./setting');
 const { init_router } = require('./http/router');
 const { init_express_server } = require('./http/express');
 const { register_type, get_type } = require('./core/type');
 const { EntityMeta, get_entity_meta } = require('./core/meta');
+const { is_root_role } = require('./core/role');
 
 
 const array = require('./core/array');

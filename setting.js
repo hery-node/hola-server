@@ -43,26 +43,4 @@ const get_settings = () => {
     return settings;
 }
 
-const is_valid_role = (role_name) => {
-    //no role defined, then no role check
-    if (!settings.roles) {
-        return true;
-    }
-    const roles = settings.roles.filter(role => role.name == role_name);
-    return roles.length == 1;
-}
-
-const is_root_role = (role_name) => {
-    //no role defined, then every one is root
-    if (!settings.roles) {
-        return true;
-    }
-
-    if (!is_valid_role(role_name)) {
-        return false;
-    }
-
-    return settings.roles.filter(role => role.name == role_name)[0].root == true;
-}
-
-module.exports = { init_settings, get_settings, is_root_role, is_valid_role };
+module.exports = { init_settings, get_settings };

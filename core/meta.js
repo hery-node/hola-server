@@ -1,6 +1,6 @@
 const { is_undefined } = require('./validate');
 const { get_type } = require('./type');
-const { is_valid_role } = require('../setting');
+const { validate_meta_role } = require('./role');
 
 const meta_manager = {};
 /**
@@ -191,6 +191,7 @@ const get_all_metas = () => {
     return Object.keys(meta_manager);
 }
 
+
 /**
  * Wrap the meta info from user side:
  * 1) validate the meta structure and keep it is valid
@@ -211,6 +212,17 @@ class EntityMeta {
         this.importable = is_undefined(meta.importable) ? false : meta.importable;
         this.exportable = is_undefined(meta.exportable) ? false : meta.exportable;
         this.editable = this.creatable || this.updatable;
+
+        //b:batch mode, c:create, d:delete, e:export, i:import, o:clone, p:page, r: refresh, s:search, u:update
+        const modes = [];
+        this.creatable && (modes.push("c"));
+        this.readable && (modes.push("rps"));
+        this.updatable && (modes.push("u"));
+        this.deleteable && (modes.push("db"));
+        this.cloneable && (modes.push("o"));
+        this.importable && (modes.push("i"));
+        this.exportable && (modes.push("e"));
+        this.mode = modes.join("");
 
         this.ref_label = this.meta.ref_label;
         this.ref_filter = this.meta.ref_filter;
@@ -287,10 +299,11 @@ class EntityMeta {
             if (!Array.isArray(this.roles)) {
                 throw new Error("roles of meta [" + this.collection + "] should be array");
             }
+
             this.roles.forEach(role => {
                 const role_config = role.split(":");
                 const role_name = role_config[0];
-                if (!is_valid_role(role_name)) {
+                if (!validate_meta_role(role_name)) {
                     throw new Error("role [" + role_name + "] not defined in setting");
                 }
             });
