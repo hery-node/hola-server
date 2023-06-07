@@ -1,6 +1,6 @@
 {
   "name": "hola-server",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "a meta programming framework used to build nodejs restful api",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,9 @@
     "mongodb": "^4.7.0",
     "mongoist": "^2.5.4",
     "multer": "^1.4.5-lts.1",
-    "unzipper": "^0.10.11"
+    "unzipper": "^0.10.11",
+    "node-cron": "^3.0.2",
+     "wxmnode": "^1.0.5"
   },
   "devDependencies": {
     "chai": "^4.3.6",

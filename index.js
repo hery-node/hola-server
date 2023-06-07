@@ -8,8 +8,13 @@ const { EntityMeta, get_entity_meta } = require('./core/meta');
 
 
 const array = require('./core/array');
+const bash = require('./core/bash');
+const chart = require('./core/chart');
+const cron = require('./core/cron');
 const date = require('./core/date');
 const file = require('./core/file');
+const lhs = require('./core/lhs');
+const msg = require('./core/msg');
 const number = require('./core/number');
 const obj = require('./core/obj');
 const random = require('./core/random');
@@ -26,6 +31,6 @@ const { log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info, is_
 
 module.exports = {
     init_settings, init_express_server, init_router, register_type, get_type, get_db,
-    Entity, EntityMeta, get_entity_meta, array, date, file, number, obj, random, thread, validate, code, err, params, context, gridfs, gen_i18n,
+    Entity, EntityMeta, get_entity_meta, array, bash, chart, cron, date, file, lhs, msg, number, obj, random, thread, validate, code, err, params, context, gridfs, gen_i18n,
     log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info, is_log_warn, is_log_error, get_session_userid, oid_queries, oid_query
 };
