@@ -1,6 +1,6 @@
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
-const { SUCCESS, NO_PARAMS } = require('../http/code');
-const { get_session_userid } = require('../http/session');
+const { SUCCESS, NO_PARAMS, NO_RIGHTS } = require('../http/code');
+const { get_session_userid, check_user_role } = require('../http/session');
 const { wrap_http } = require('../http/error');
 const { post_params, required_post_params } = require('../http/params');
 const { has_value } = require('../core/validate');
@@ -19,6 +19,14 @@ const init_clone_router = function (router, meta) {
     const cp_upload = meta.upload_fields.length > 0 ? upload_file.fields(meta.upload_fields) : upload_file.none();
 
     router.post('/clone', cp_upload, wrap_http(async function (req, res) {
+        if (meta.roles) {
+            const has_right = check_user_role(req, meta.roles, "o");
+            if (!has_right) {
+                res.json({ code: NO_RIGHTS, err: "no rights error" });
+                return;
+            }
+        }
+
         let params = required_post_params(req, ["_id"]);
         if (params === null) {
             res.json({ code: NO_PARAMS, err: '[_id] checking params are failed!' });

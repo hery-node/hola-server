@@ -1,5 +1,6 @@
 const { is_undefined } = require('./validate');
 const { get_type } = require('./type');
+const { is_valid_role } = require('../setting');
 
 const meta_manager = {};
 /**
@@ -20,7 +21,7 @@ const meta_manager = {};
  * 
 */
 const field_attrs = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "group"];
-const meta_attrs = ["collection", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read",
+const meta_attrs = ["collection", "roles", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read",
     "before_create", "after_create", "before_clone", "after_clone", "before_update", "after_update", "before_delete", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete",
     "ref_label", "ref_filter", "route", "user_field"];
 
@@ -200,6 +201,7 @@ class EntityMeta {
     constructor(meta) {
         this.meta = meta;
         this.collection = this.meta.collection;
+        this.roles = this.meta.roles;
 
         this.creatable = is_undefined(meta.creatable) ? false : meta.creatable;
         this.readable = is_undefined(meta.readable) ? false : meta.readable;
@@ -277,6 +279,19 @@ class EntityMeta {
             this.primary_keys.forEach(key => {
                 if (!this.field_names.includes(key)) {
                     throw new Error("wrong primary_key " + key + " configured in meta:" + this.collection);
+                }
+            });
+        }
+
+        if (this.roles) {
+            if (!Array.isArray(this.roles)) {
+                throw new Error("roles of meta [" + this.collection + "] should be array");
+            }
+            this.roles.forEach(role => {
+                const role_config = role.split(":");
+                const role_name = role_config[0];
+                if (!is_valid_role(role_name)) {
+                    throw new Error("role [" + role_name + "] not defined in setting");
                 }
             });
         }

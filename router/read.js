@@ -1,7 +1,7 @@
 const { required_post_params, get_params } = require('../http/params');
 const { has_value } = require('../core/validate');
-const { NO_PARAMS, SUCCESS } = require('../http/code');
-const { get_session_userid, get_session_user_groups } = require('../http/session');
+const { NO_PARAMS, SUCCESS, NO_RIGHTS } = require('../http/code');
+const { get_session_userid, get_session_user_groups, check_user_role, get_user_role_mode } = require('../http/session');
 const { wrap_http } = require('../http/error');
 const { Entity } = require('../db/entity');
 
@@ -14,6 +14,15 @@ const init_read_router = function (router, meta) {
     const entity = new Entity(meta);
 
     router.get('/meta', wrap_http(async function (req, res) {
+        if (meta.roles) {
+            const has_right = check_user_role(req, meta.roles, "r");
+            if (!has_right) {
+                res.json({ code: NO_RIGHTS, err: "no rights error" });
+                return;
+            }
+        }
+
+        const mode = meta.roles ? get_user_role_mode(req, meta.roles) : "";
         const entity_meta = {
             creatable: meta.creatable,
             readable: meta.readable,
@@ -24,12 +33,21 @@ const init_read_router = function (router, meta) {
             exportable: meta.exportable,
             editable: meta.editable,
             user_field: meta.user_field,
-            fields: meta.fields
+            fields: meta.fields,
+            mode: mode.length > 0 ? mode : null
         }
         res.json({ code: SUCCESS, data: entity_meta });
     }));
 
     router.get('/ref', wrap_http(async function (req, res) {
+        if (meta.roles) {
+            const has_right = check_user_role(req, meta.roles, "r");
+            if (!has_right) {
+                res.json({ code: NO_RIGHTS, err: "no rights error" });
+                return;
+            }
+        }
+
         const { ref_by_entity } = get_params(req, ["ref_by_entity"]);
         const list = await entity.get_filtered_ref_labels(ref_by_entity);
         const items = list.map(obj => ({ "text": obj[meta.ref_label], "value": obj["_id"] + "" }));
@@ -37,6 +55,14 @@ const init_read_router = function (router, meta) {
     }));
 
     router.post('/list', wrap_http(async function (req, res) {
+        if (meta.roles) {
+            const has_right = check_user_role(req, meta.roles, "r");
+            if (!has_right) {
+                res.json({ code: NO_RIGHTS, err: "no rights error" });
+                return;
+            }
+        }
+
         const query_params = required_post_params(req, ["_query"]);
         if (query_params === null) {
             res.json({ code: NO_PARAMS, err: ["_query"] });
@@ -71,6 +97,14 @@ const init_read_router = function (router, meta) {
     }));
 
     router.post('/read_entity', wrap_http(async function (req, res) {
+        if (meta.roles) {
+            const has_right = check_user_role(req, meta.roles, "r");
+            if (!has_right) {
+                res.json({ code: NO_RIGHTS, err: "no rights error" });
+                return;
+            }
+        }
+
         let params = required_post_params(req, ["_id", "attr_names"]);
         if (params === null) {
             res.json({ code: NO_PARAMS, err: '[_id,attr_names] checking params are failed!' });
@@ -86,6 +120,14 @@ const init_read_router = function (router, meta) {
     }));
 
     router.post('/read_property', wrap_http(async function (req, res) {
+        if (meta.roles) {
+            const has_right = check_user_role(req, meta.roles, "r");
+            if (!has_right) {
+                res.json({ code: NO_RIGHTS, err: "no rights error" });
+                return;
+            }
+        }
+
         let params = required_post_params(req, ["_id", "attr_names"]);
         if (params === null) {
             res.json({ code: NO_PARAMS, err: '[_id,attr_names] checking params are failed!' });

@@ -1,6 +1,7 @@
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
 const { required_post_params, post_update_params } = require('../http/params');
-const { SUCCESS, NO_PARAMS } = require('../http/code');
+const { SUCCESS, NO_PARAMS, NO_RIGHTS } = require('../http/code');
+const { check_user_role } = require('../http/session');
 const { has_value } = require('../core/validate');
 const { wrap_http } = require('../http/error');
 const { Entity } = require('../db/entity');
@@ -18,6 +19,14 @@ const init_update_router = function (router, meta) {
     const cp_upload = meta.upload_fields.length > 0 ? upload_file.fields(meta.upload_fields) : upload_file.none();
 
     router.post('/update', cp_upload, wrap_http(async function (req, res) {
+        if (meta.roles) {
+            const has_right = check_user_role(req, meta.roles, "u");
+            if (!has_right) {
+                res.json({ code: NO_RIGHTS, err: "no rights error" });
+                return;
+            }
+        }
+
         let params = required_post_params(req, ["_id"]);
         if (params === null) {
             params = required_post_params(req, meta.primary_keys);
