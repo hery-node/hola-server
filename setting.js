@@ -1,6 +1,11 @@
 const dev_mode = true;
 
 let settings = {
+    axios: {
+        retry: 3,
+        retry_delay: 1000,
+        proxy: null
+    },
     encrypt: {
         key: "AhBWt15WFj8PrMnnZhX8AF1IM4V2x0A3"
     },
