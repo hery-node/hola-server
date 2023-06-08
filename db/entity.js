@@ -235,10 +235,11 @@ class Entity {
     /**
     * Validate the param object and invoke the logic to save it to db
     * @param {param obj from user input} param_obj
+    * @param {which view to create the entity} view
     * @returns object with code and err
     */
-    async create_entity(param_obj) {
-        const fields = this.meta.create_fields
+    async create_entity(param_obj, view) {
+        const fields = this.meta.create_fields.filter(field => field.view == view);
         const { obj, error_field_names } = convert_type(param_obj, fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
@@ -397,10 +398,13 @@ class Entity {
      * Validate the param object and invoke the logic to update entity
      * @param {object id of the entity} _id object id of the entity, if it is null, then use primary key
      * @param {param object from user input} param_obj 
+     * @param {which view to update the entity} view 
      * 
      */
-    async update_entity(_id, param_obj) {
-        const { obj, error_field_names } = convert_update_type(param_obj, this.meta.update_fields);
+    async update_entity(_id, param_obj, view) {
+        const fields = this.meta.update_fields.filter(field => field.view == view);
+
+        const { obj, error_field_names } = convert_update_type(param_obj, fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "update_entity error fields:" + JSON.stringify(error_field_names));

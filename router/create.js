@@ -26,6 +26,12 @@ const init_create_router = function (router, meta) {
             return;
         }
 
+        //which view to create the entity
+        let { _view } = post_params(req, ["_view"]);
+        if (!_view) {
+            _view = "0";
+        }
+
         const param_obj = post_params(req, meta.field_names);
         set_file_fields(meta, req, param_obj);
 
@@ -37,7 +43,7 @@ const init_create_router = function (router, meta) {
             param_obj[meta.user_field] = user_id;
         }
 
-        const { code, err } = await entity.create_entity(param_obj);
+        const { code, err } = await entity.create_entity(param_obj, _view);
         if (!has_value(code)) {
             throw new Error("the method should return code");
         }

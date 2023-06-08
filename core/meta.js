@@ -13,6 +13,7 @@ const meta_manager = {};
  * create is false, this attribute can be shown in property list but sys property can't be shown in property list 
  * secure: secure properties will not be read by client, this is useful for password
  * group: this is used to control user sharing entities, this means the entity is shared by user group, this is only valid for user field
+ * view: this is used to control for edit form, for one entity, may have many forms to edit the entity, so use view to seperate them, this can be string or array
  * 
  * routes: configure customer defined routes
  * link property: field link property link to entity field and the field should ref to an entity.
@@ -20,7 +21,7 @@ const meta_manager = {};
  * 
  * 
 */
-const field_attrs = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "group"];
+const field_attrs = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "group", "view"];
 const meta_attrs = ["collection", "roles", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read",
     "before_create", "after_create", "before_clone", "after_clone", "before_update", "after_update", "before_delete", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete",
     "ref_label", "ref_filter", "route", "user_field"];
@@ -88,6 +89,19 @@ const validate_field = (meta, field) => {
                 throw new Error("Link field just supports name, link,list property. The attribute [" + key + "] isn't supported for LINK field:" + JSON.stringify(field) + " and meta:" + meta.collection);
             }
         });
+    }
+
+    const editable = field.create || field.update;
+
+    if (field.view) {
+        if (!editable) {
+            throw new Error("view can just defined for editable (create/update) field only. Field:" + JSON.stringify(field) + "] and meta:" + meta.collection);
+        }
+    } else {
+        //no view defined for create/update field, then set view to default value "0"
+        if (editable) {
+            field.view = "0";
+        }
     }
 
     const keys = Object.keys(field);

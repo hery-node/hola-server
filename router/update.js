@@ -1,5 +1,5 @@
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
-const { required_post_params, post_update_params } = require('../http/params');
+const { required_post_params, post_update_params, post_params } = require('../http/params');
 const { SUCCESS, NO_PARAMS, NO_RIGHTS } = require('../http/code');
 const { check_user_role } = require('../http/session');
 const { has_value } = require('../core/validate');
@@ -36,10 +36,16 @@ const init_update_router = function (router, meta) {
             }
         }
 
+        //which view to update the entity
+        let { _view } = post_params(req, ["_view"]);
+        if (!_view) {
+            _view = "0";
+        }
+
         const param_obj = post_update_params(req, meta.field_names);
         set_file_fields(meta, req, param_obj);
 
-        const { code, err } = await entity.update_entity(params["_id"], param_obj);
+        const { code, err } = await entity.update_entity(params["_id"], param_obj, _view);
         if (!has_value(code)) {
             throw new Error("the method should return code");
         }
