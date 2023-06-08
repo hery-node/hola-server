@@ -1,7 +1,7 @@
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
 const { required_post_params, post_update_params, post_params } = require('../http/params');
 const { SUCCESS, NO_PARAMS, NO_RIGHTS } = require('../http/code');
-const { check_user_role } = require('../http/session');
+const { check_user_role } = require('../core/role');
 const { has_value } = require('../core/validate');
 const { wrap_http } = require('../http/error');
 const { Entity } = require('../db/entity');
