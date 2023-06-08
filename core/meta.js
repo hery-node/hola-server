@@ -216,7 +216,8 @@ class EntityMeta {
         //b:batch mode, c:create, d:delete, e:export, i:import, o:clone, p:page, r: refresh, s:search, u:update
         const modes = [];
         this.creatable && (modes.push("c"));
-        this.readable && (modes.push("rps"));
+        //prefer the infinite scrolling mode, so doesn't include p mode
+        this.readable && (modes.push("rs"));
         this.updatable && (modes.push("u"));
         this.deleteable && (modes.push("db"));
         this.cloneable && (modes.push("o"));
@@ -302,9 +303,23 @@ class EntityMeta {
 
             this.roles.forEach(role => {
                 const role_config = role.split(":");
+                if (role_config.length != 2) {
+                    throw new Error("wrong role config [" + role + "] in meta [" + this.collection + "]. You should use : to seperate the role name with mode.");
+                }
+
                 const role_name = role_config[0];
                 if (!validate_meta_role(role_name)) {
-                    throw new Error("role [" + role_name + "] not defined in setting");
+                    throw new Error("role [" + role_name + "] in meta [" + this.collection + "] not defined in setting's role config.");
+                }
+
+                const role_mode = role_config[1];
+                if (role_mode != "*") {
+                    for (let i = 0; i < role_mode.length; i++) {
+                        const mode = role_mode.charAt(i);
+                        if (!this.mode.includes(mode)) {
+                            throw new Error("role [" + role_name + "] in meta [" + this.collection + "] with mode [" + mode + "] doesn't comply with entity mode [" + this.mode + "]");
+                        }
+                    }
                 }
             });
         }
