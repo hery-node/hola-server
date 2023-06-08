@@ -91,7 +91,7 @@ const validate_field = (meta, field) => {
         });
     }
 
-    const editable = field.create || field.update;
+    const editable = (field.create != false) || (field.update != false);
 
     if (field.view) {
         if (!editable) {

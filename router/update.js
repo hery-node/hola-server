@@ -39,7 +39,7 @@ const init_update_router = function (router, meta) {
         //which view to update the entity
         let { _view } = post_params(req, ["_view"]);
         if (!_view) {
-            _view = "0";
+            _view = "*";
         }
 
         const param_obj = post_update_params(req, meta.field_names);
