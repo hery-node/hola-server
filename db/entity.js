@@ -4,7 +4,7 @@ const { required_params } = require('../http/params');
 const { convert_type, convert_update_type, get_type } = require('../core/type');
 const { get_entity_meta, DELETE_MODE } = require('../core/meta');
 const { unique, map_array_to_obj } = require('../core/array');
-const { LOG_ENTITY, get_db, oid_query, oid_queries, is_log_debug, is_log_error, log_debug, log_error, get_session_userid } = require('./db');
+const { LOG_ENTITY, get_db, oid_query, oid_queries, is_log_debug, is_log_error, log_debug, log_error, get_session_userid, bulk_update } = require('./db');
 
 /**
  * Convert search value type, if there is error, keep it
@@ -61,6 +61,25 @@ class Entity {
     constructor(meta) {
         this.meta = meta;
         this.db = get_db();
+    }
+
+    /**
+     * 
+     * @returns mongo underlying collection
+     */
+    get_col() {
+        return this.db.get_col(this.meta.collection);
+    }
+
+    /**
+     * Execute bulk update using the items
+     * @param {the items to execute bulk update} items
+     * @param {the attributes used as search criteria} attrs
+     * @returns
+     */
+    async bulk_update(items, attrs) {
+        const col = this.get_col();
+        await bulk_update(col, items, attrs);
     }
 
     /**

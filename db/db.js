@@ -150,6 +150,15 @@ class DB {
   }
 
   /**
+   * get db collection
+   * @param {mongodb collection name} code
+   * @returns 
+   */
+  get_col(code) {
+    return this.db[code];
+  }
+
+  /**
    * Insert Object to db
    * @param {mongodb collection name} code
    * @param {inserted object} obj
