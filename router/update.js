@@ -20,7 +20,7 @@ const init_update_router = function (router, meta) {
 
     router.post('/update', cp_upload, wrap_http(async function (req, res) {
         if (meta.roles) {
-            const has_right = check_user_role(req, meta.roles, "u");
+            const has_right = check_user_role(req, meta, "u");
             if (!has_right) {
                 res.json({ code: NO_RIGHTS, err: "no rights error" });
                 return;
