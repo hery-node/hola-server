@@ -230,7 +230,7 @@ class Entity {
         let page_limit = parseInt(limit);
         page_limit = isNaN(page_limit) || page_limit <= 0 ? 10 : page_limit;
 
-        const search_query = query ? query : await this.get_search_query(param_obj);
+        const search_query = { ...query, ...await this.get_search_query(param_obj) };
         if (!search_query) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "no search query is set for param:" + JSON.stringify(param_obj));
