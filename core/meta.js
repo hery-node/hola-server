@@ -22,7 +22,7 @@ const meta_manager = {};
  * 
 */
 const field_attrs = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "group", "view"];
-const meta_attrs = ["collection", "roles", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read",
+const meta_attrs = ["collection", "roles", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read", "list_query",
     "before_create", "after_create", "before_clone", "after_clone", "before_update", "after_update", "before_delete", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete",
     "ref_label", "ref_filter", "route", "user_field"];
 
@@ -264,6 +264,7 @@ class EntityMeta {
         this.upload_fields = this.file_fields && this.file_fields.length > 0 ? this.file_fields.map(f => ({ name: f.name })) : [];
 
         set_callback(this, "after_read", meta.after_read);
+        set_callback(this, "list_query", meta.list_query);
         set_callback(this, "before_create", meta.before_create);
         set_callback(this, "before_clone", meta.before_clone);
         set_callback(this, "before_update", meta.before_update);
