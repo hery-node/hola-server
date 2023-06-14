@@ -91,7 +91,7 @@ const init_read_router = function (router, meta) {
             }
         }
 
-        const query = meta.list_query ? await meta.list_query(entity, param_obj) : null;
+        const query = meta.list_query ? await meta.list_query(entity, param_obj, req) : null;
         const { code, err, total, data } = await entity.list_entity(query_params["_query"], query, param_obj);
         if (!has_value(code)) {
             throw new Error("the list_entity method should return code");
