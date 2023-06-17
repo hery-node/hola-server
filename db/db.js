@@ -131,12 +131,12 @@ const bulk_update = async (col, items, attrs) => {
 };
 
 class DB {
-  constructor(url, poolSize, callback) {
+  constructor(url, options, callback) {
     if (!url) {
       return;
     }
 
-    this.db = mongoist(url, { autoReconnect: true, poolSize: poolSize });
+    this.db = mongoist(url, options);
 
     this.db.on("error", function (err) {
       if (is_log_error()) {
@@ -368,7 +368,7 @@ const get_db = (callback) => {
   } else {
     const mongo = get_settings().mongo;
 
-    db_instance = new DB(mongo.url, mongo.pool, callback);
+    db_instance = new DB(mongo.url, mongo.options, callback);
     return db_instance;
   }
 };
