@@ -11,7 +11,7 @@ const LOG_BASH = "bash";
  */
 const run_script = async (host, script) => {
     return new Promise((resolve) => {
-        exec(`ssh -i ${host.private} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p ${host.port} ${host.user}@${host.ip} /bin/bash <<'EOT' \n ${script} \nEOT\n`, { maxBuffer: 1024 * 150000 }, (error, stdout) => {
+        exec(`ssh ${host.auth} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p ${host.port} ${host.user}@${host.ip} /bin/bash <<'EOT' \n ${script} \nEOT\n`, { maxBuffer: 1024 * 150000 }, (error, stdout) => {
             if (error) {
                 if (is_log_error()) {
                     log_error(LOG_BASH, "error running on host:" + host.name + " the script:" + script + ",error:" + error);
@@ -29,7 +29,7 @@ const run_script = async (host, script) => {
 
 const run_script_file = async (host, script_file) => {
     return new Promise((resolve) => {
-        exec(`ssh -i ${host.private} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p ${host.port} ${host.user}@${host.ip} /bin/bash < ${script_file}`, (error, stdout) => {
+        exec(`ssh ${host.auth} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p ${host.port} ${host.user}@${host.ip} /bin/bash < ${script_file}`, (error, stdout) => {
             if (error) {
                 if (is_log_error()) {
                     log_error(LOG_BASH, "error running on host:" + host.name + " the script_file:" + script_file + ",error:" + error);
@@ -77,7 +77,7 @@ const run_local_cmd = async (cmd, log_extra) => {
  */
 const scp = async (host, remote_file, local_file) => {
     return new Promise((resolve) => {
-        exec(`scp -C -i ${host.private} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${host.user}@${host.ip}:${remote_file} ${local_file}`, (error, stdout) => {
+        exec(`scp ${host.auth} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${host.user}@${host.ip}:${remote_file} ${local_file}`, (error, stdout) => {
             if (error) {
                 if (is_log_error()) {
                     log_error(LOG_BASH, "error scp on host:" + host.name + " remote:" + remote_file + ",local:" + local_file + ",error:" + error);
