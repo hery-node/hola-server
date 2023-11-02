@@ -75,17 +75,42 @@ const run_local_cmd = async (cmd, log_extra) => {
  * @param {local file path} locale_file 
  * @returns 
  */
-const scp = async (host, remote_file, local_file) => {
+const scp = async (host, remote_file, local_file, extra) => {
     return new Promise((resolve) => {
-        exec(`scp ${host.auth} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${host.user}@${host.ip}:${remote_file} ${local_file}`, (error, stdout) => {
+        exec(`sshpass -p '${host.pwd}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${host.user}@${host.ip}:${remote_file} ${local_file}`, (error, stdout) => {
             if (error) {
                 if (is_log_error()) {
-                    log_error(LOG_BASH, "error scp on host:" + host.name + " remote:" + remote_file + ",local:" + local_file + ",error:" + error);
+                    log_error(LOG_BASH, "error scp on host:" + host.name + " remote:" + remote_file + ",local:" + local_file + ",error:" + error, extra);
                 }
                 resolve({ err: "error scp:" + remote_file + " to locale:" + local_file + ",err:" + error });
             } else {
                 if (is_log_debug()) {
-                    log_debug(LOG_BASH, "executing scp on host:" + host.name + ", remote:" + remote_file + ",local:" + local_file + ",stdout:" + stdout);
+                    log_debug(LOG_BASH, "executing scp on host:" + host.name + ", remote:" + remote_file + ",local:" + local_file + ",stdout:" + stdout, extra);
+                }
+                resolve({ stdout: stdout });
+            }
+        });
+    });
+};
+
+/**
+ * Scp local file to remote file
+ * @param {remote host} host 
+ * @param {local file path} locale_file 
+ * @param {remote file path} remote_file 
+ * @returns 
+ */
+const scpr = async (host, local_file, remote_file, extra) => {
+    return new Promise((resolve) => {
+        exec(`sshpass -p '${host.pwd}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${local_file} ${host.user}@${host.ip}:${remote_file}`, (error, stdout) => {
+            if (error) {
+                if (is_log_error()) {
+                    log_error(LOG_BASH, "error scpr on host:" + host.name + " remote:" + remote_file + ",local:" + local_file + ",error:" + error, extra);
+                }
+                resolve({ err: "error scp:" + remote_file + " to locale:" + local_file + ",err:" + error });
+            } else {
+                if (is_log_debug()) {
+                    log_debug(LOG_BASH, "executing scpr on host:" + host.name + ", remote:" + remote_file + ",local:" + local_file + ",stdout:" + stdout, extra);
                 }
                 resolve({ stdout: stdout });
             }
@@ -280,4 +305,4 @@ const stop_process = async (host, process_name, stop_cmd, using_full) => {
     return has_process;
 }
 
-module.exports = { stop_process, scp, run_script, run_script_file, run_simple_cmd, run_local_cmd, run_simple_local_cmd, get_info, get_system_attributes, read_key_value_line, read_obj_line };
+module.exports = { stop_process, scp, scpr, run_script, run_script_file, run_simple_cmd, run_local_cmd, run_simple_local_cmd, get_info, get_system_attributes, read_key_value_line, read_obj_line };
