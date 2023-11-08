@@ -77,7 +77,7 @@ const run_local_cmd = async (cmd, log_extra) => {
  */
 const scp = async (host, remote_file, local_file, log_extra) => {
     return new Promise((resolve) => {
-        exec(`sshpass -p '${host.pwd}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${host.user}@${host.ip}:${remote_file} ${local_file}`, (error, stdout) => {
+        exec(`scp ${host.auth} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${host.user}@${host.ip}:${remote_file} ${local_file}`, (error, stdout) => {
             if (error) {
                 if (is_log_error()) {
                     log_error(LOG_BASH, "error scp on host:" + host.name + " remote:" + remote_file + ",local:" + local_file + ",error:" + error, log_extra);
@@ -102,7 +102,7 @@ const scp = async (host, remote_file, local_file, log_extra) => {
  */
 const scpr = async (host, local_file, remote_file, log_extra) => {
     return new Promise((resolve) => {
-        exec(`sshpass -p '${host.pwd}' scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${local_file} ${host.user}@${host.ip}:${remote_file}`, (error, stdout) => {
+        exec(`scp ${host.auth} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${local_file} ${host.user}@${host.ip}:${remote_file}`, (error, stdout) => {
             if (error) {
                 if (is_log_error()) {
                     log_error(LOG_BASH, "error scpr on host:" + host.name + " remote:" + remote_file + ",local:" + local_file + ",error:" + error, log_extra);
