@@ -6,7 +6,7 @@ const { is_log_debug, is_log_error, log_debug, log_error } = require('../db/db')
 const LOG_BASH = "bash";
 
 const get_log_file = async () => {
-    const home = await run_local_cmd("echo ~");
+    const home = await run_simple_local_cmd("echo ~");
     const log_dir = `${home}/.hola/ssh`;
     await run_local_cmd(`mkdir -p ${log_dir}`);
     return `${log_dir}/l_${random_code()}.log`;
