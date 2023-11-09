@@ -19,6 +19,30 @@ const get_log_file = async () => {
  * @returns 
  */
 const run_script = async (host, script, log_extra) => {
+    return new Promise((resolve) => {
+        exec(`ssh ${host.auth} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p ${host.port} ${host.user}@${host.ip} /bin/bash <<'EOT'\n ${script} \nEOT\n`, { maxBuffer: 1024 * 150000 }, (error, stdout) => {
+            if (error) {
+                if (is_log_error()) {
+                    log_error(LOG_BASH, "error running on host:" + host.name + " the script:" + script + ",error:" + error, log_extra);
+                }
+                resolve({ stdout: stdout, err: "error running the script:" + script + ",error:" + error });
+            } else {
+                if (is_log_debug()) {
+                    log_debug(LOG_BASH, "executing on host:" + host.name + ", script:" + script + ",stdout:" + stdout, log_extra);
+                }
+                resolve({ stdout: stdout });
+            }
+        });
+    });
+};
+
+/**
+ * Run script and get stdout and this use file redirect to avoid progress bar issue
+ * @param {host info,contains user,ip and password} host
+ * @param {commands to run} script
+ * @returns 
+ */
+const run_script_extra = async (host, script, log_extra) => {
     const log_file = await get_log_file();
 
     return new Promise((resolve) => {
@@ -322,4 +346,4 @@ const stop_process = async (host, process_name, stop_cmd, using_full, log_extra)
     return has_process;
 }
 
-module.exports = { stop_process, scp, scpr, run_script, run_script_file, run_simple_cmd, run_local_cmd, run_simple_local_cmd, get_info, get_system_attributes, read_key_value_line, read_obj_line };
+module.exports = { stop_process, scp, scpr, run_script, run_script_extra, run_script_file, run_simple_cmd, run_local_cmd, run_simple_local_cmd, get_info, get_system_attributes, read_key_value_line, read_obj_line };
