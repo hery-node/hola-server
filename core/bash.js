@@ -65,22 +65,18 @@ const run_script_extra = async (host, script, log_extra) => {
 };
 
 const run_script_file = async (host, script_file, log_extra) => {
-    const log_file = await get_log_file();
-
     return new Promise((resolve) => {
-        exec(`ssh ${host.auth} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p ${host.port} ${host.user}@${host.ip} /bin/bash < ${script_file} > ${log_file}`, (error, stdout) => {
+        exec(`ssh ${host.auth} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p ${host.port} ${host.user}@${host.ip} /bin/bash < ${script_file}`, (error, stdout) => {
             if (error) {
                 if (is_log_error()) {
                     log_error(LOG_BASH, "error running on host:" + host.name + " the script_file:" + script_file + ",error:" + error, log_extra);
                 }
                 resolve({ stdout: stdout, err: "error running the script:" + script_file + ",error:" + error });
             } else {
-                const output = fs.readFileSync(log_file, { encoding: 'utf8', flag: 'r' });
                 if (is_log_debug()) {
-                    log_debug(LOG_BASH, "executing on host:" + host.name + ", script_file:" + script_file + ",stdout:" + output, log_extra);
+                    log_debug(LOG_BASH, "executing on host:" + host.name + ", script_file:" + script_file + ",stdout:" + stdout, log_extra);
                 }
-                resolve({ stdout: output });
-                fs.unlinkSync(log_file);
+                resolve({ stdout: stdout });
             }
         });
     });
