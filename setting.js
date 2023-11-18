@@ -7,7 +7,7 @@ let settings = {
         proxy: null
     },
     encrypt: {
-        key: "AhBWt15WFj8PrMnnZhX8AF1IM4V2x0A3"
+        key: "my_key"
     },
     mongo: {
         url: 'mongodb://127.0.0.1/hola',

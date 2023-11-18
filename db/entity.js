@@ -59,7 +59,7 @@ class Entity {
      * @param {entity meta obj} meta 
      */
     constructor(meta) {
-        this.meta = meta;
+        this.meta = (typeof meta === 'string' || meta instanceof String) ? get_entity_meta(meta) : meta;
         this.db = get_db();
     }
 
