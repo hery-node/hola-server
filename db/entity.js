@@ -1067,6 +1067,7 @@ class Entity {
         }
 
         const search_fields = this.meta.search_fields;
+        let search_query = {};
         //client query: key:value, key:value
         if (client_query && client_query.trim().length > 0 && search_fields && search_fields.length > 0) {
             const queries = client_query.split(",");
@@ -1075,7 +1076,7 @@ class Entity {
                 if (query_values && query_values.length == 2) {
                     const field_name = query_values[0];
                     const [search_field] = search_fields.filter(f => f.name == field_name);
-                    search_field && (query[field_name] = parse_search_value(field_name, search_field.type, query_values[1]))
+                    search_field && (search_query = parse_search_value(field_name, search_field.type, query_values[1]))
                 }
             }
         }
@@ -1087,7 +1088,7 @@ class Entity {
                 query = { ...query, ...this.meta.ref_filter["*"] };
             }
         }
-        return this.find_sort(query, { [this.meta.ref_label]: 1 }, { [this.meta.ref_label]: 1 });
+        return this.find_sort({ ...search_query, ...query }, { [this.meta.ref_label]: 1 }, { [this.meta.ref_label]: 1 });
     }
 
     /**
