@@ -1060,11 +1060,23 @@ class Entity {
     * get ref labels of the object, use ref_filter
     * @returns 
     */
-    get_filtered_ref_labels(ref_by_entity) {
+    get_filtered_ref_labels(ref_by_entity, client_query) {
         let query = {};
         if (this.meta.user_field) {
             query[this.meta.user_field] = get_session_userid();
         }
+
+        //client query: key:value, key:value
+        if (client_query && client_query.trim().length > 0) {
+            const queries = client_query.split(",");
+            for (let i = 0; i < queries.length; i++) {
+                const query_values = queries[i].split(":");
+                if (query_values && query_values.length == 2) {
+                    query[query_values[0]] = query_values[1];
+                }
+            }
+        }
+
         if (this.meta.ref_filter && ref_by_entity) {
             if (this.meta.ref_filter[ref_by_entity]) {
                 query = { ...query, ...this.meta.ref_filter[ref_by_entity] };

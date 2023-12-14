@@ -53,8 +53,8 @@ const init_read_router = function (router, meta) {
             return;
         }
 
-        const { ref_by_entity } = get_params(req, ["ref_by_entity"]);
-        const list = await entity.get_filtered_ref_labels(ref_by_entity);
+        const { ref_by_entity, query } = get_params(req, ["ref_by_entity", "query"]);
+        const list = await entity.get_filtered_ref_labels(ref_by_entity, query);
         const items = list.map(obj => ({ "text": obj[meta.ref_label], "value": obj["_id"] + "" }));
         res.json({ code: SUCCESS, data: items });
     }));
