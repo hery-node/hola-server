@@ -1066,13 +1066,16 @@ class Entity {
             query[this.meta.user_field] = get_session_userid();
         }
 
+        const search_fields = this.meta.search_fields;
         //client query: key:value, key:value
-        if (client_query && client_query.trim().length > 0) {
+        if (client_query && client_query.trim().length > 0 && search_fields && search_fields.length > 0) {
             const queries = client_query.split(",");
             for (let i = 0; i < queries.length; i++) {
                 const query_values = queries[i].split(":");
                 if (query_values && query_values.length == 2) {
-                    query[query_values[0]] = query_values[1];
+                    const field_name = query_values[0];
+                    const [search_field] = search_fields.filter(f => f.name == field_name);
+                    search_field && (query[field_name] = parse_search_value(field_name, search_field.type, query_values[1]))
                 }
             }
         }
