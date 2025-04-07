@@ -580,7 +580,7 @@ class Entity {
         }
 
         const field_names = this.meta.property_fields.map(f => f.name);
-        const attrs = {};
+        const attrs = { _id: 1 };
         attr_names.split(",").forEach((attr) => {
             if (field_names.includes(attr)) {
                 attrs[attr] = 1;
@@ -624,7 +624,7 @@ class Entity {
         const field_names = this.meta.property_fields.map(f => f.name);
         const ref_fields = [];
         const link_fields = [];
-        const attrs = {};
+        const attrs = { _id: 1 };
 
         const fields_map = this.meta.fields_map;
         attr_names.split(",").forEach((attr) => {
