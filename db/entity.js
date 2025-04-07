@@ -258,7 +258,7 @@ class Entity {
     * @returns object with code and err
     */
     async create_entity(param_obj, view) {
-        const fields = view == "*" ? this.meta.create_fields : this.meta.create_fields.filter(field => field.view == view || field.view == "*");
+        const fields = view && view !== "*" ? this.meta.create_fields.filter(field => Array.isArray(field.view) ? field.view.includes(view) || field.view.includes("*") : field.view === view || field.view === "*") : this.meta.create_fields;
         const { obj, error_field_names } = convert_type(param_obj, fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
@@ -421,7 +421,7 @@ class Entity {
      * 
      */
     async update_entity(_id, param_obj, view) {
-        const fields = view == "*" ? this.meta.update_fields : this.meta.update_fields.filter(field => field.view == view || field.view == "*");
+        const fields = view && view !== "*" ? this.meta.update_fields.filter(field => Array.isArray(field.view) ? field.view.includes(view) || field.view.includes("*") : field.view === view || field.view === "*") : this.meta.update_fields;
 
         const { obj, error_field_names } = convert_update_type(param_obj, fields);
         if (error_field_names.length > 0) {
