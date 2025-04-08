@@ -319,7 +319,7 @@ class EntityMeta {
 
             this.roles.forEach(role => {
                 const role_config = role.split(":");
-                if (role_config.length != 2) {
+                if (!(role_config.length == 2 || role_config.length == 3)) {
                     throw new Error("wrong role config [" + role + "] in meta [" + this.collection + "]. You should use : to seperate the role name with mode.");
                 }
 

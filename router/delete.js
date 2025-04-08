@@ -1,7 +1,7 @@
 const { required_post_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { NO_PARAMS, NO_RIGHTS } = require('../http/code');
-const { check_user_role } = require('../core/role');
+const { get_user_role_right } = require('../core/role');
 const { is_owner } = require('../http/session');
 const { oid_query } = require('../db/db');
 const { wrap_http } = require('../http/error');
@@ -16,7 +16,8 @@ const init_delete_router = function (router, meta) {
     const entity = new Entity(meta);
 
     router.post('/delete', wrap_http(async function (req, res) {
-        const has_right = check_user_role(req, meta, "d", "*");
+        const [role_mode, role_view] = get_user_role_right(req, meta);
+        const has_right = role_mode.includes("d");
         if (!has_right) {
             res.json({ code: NO_RIGHTS, err: "no rights error" });
             return;

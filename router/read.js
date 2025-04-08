@@ -1,7 +1,7 @@
 const { required_post_params, get_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { NO_PARAMS, SUCCESS, NO_RIGHTS } = require('../http/code');
-const { check_user_role, get_user_role_right } = require('../core/role');
+const { get_user_role_right } = require('../core/role');
 const { get_session_userid, get_session_user_groups, is_owner } = require('../http/session');
 const { wrap_http } = require('../http/error');
 const { oid_query } = require('../db/db');
@@ -48,18 +48,20 @@ const init_read_router = function (router, meta) {
     }));
 
     router.get('/mode', wrap_http(async function (req, res) {
-        const has_right = check_user_role(req, meta, "r", "*");
+        const [role_mode, role_view] = get_user_role_right(req, meta);
+        const has_right = role_mode.includes("r");
+
         if (!has_right) {
             res.json({ code: NO_RIGHTS, err: "no rights error" });
             return;
         }
 
-        const [mode, view] = get_user_role_right(req, meta);
-        res.json({ code: SUCCESS, mode: mode, view: view });
+        res.json({ code: SUCCESS, mode: role_mode, view: role_view });
     }));
 
     router.get('/ref', wrap_http(async function (req, res) {
-        const has_right = check_user_role(req, meta, "r");
+        const [role_mode, role_view] = get_user_role_right(req, meta);
+        const has_right = role_mode.includes("r");
         if (!has_right) {
             res.json({ code: NO_RIGHTS, err: "no rights error" });
             return;
