@@ -20,16 +20,16 @@ const init_create_router = function (router, meta) {
     const cp_upload = meta.upload_fields.length > 0 ? upload_file.fields(meta.upload_fields) : upload_file.none();
 
     router.post('/create', cp_upload, wrap_http(async function (req, res) {
-        const has_right = check_user_role(req, meta, "c");
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
-            return;
-        }
-
         //which view to create the entity
         let { _view } = post_params(req, ["_view"]);
         if (!_view) {
             _view = "*";
+        }
+
+        const has_right = check_user_role(req, meta, "c", _view);
+        if (!has_right) {
+            res.json({ code: NO_RIGHTS, err: "no rights error" });
+            return;
         }
 
         const param_obj = post_params(req, meta.field_names);

@@ -45,21 +45,29 @@ const get_session_user_role = (req) => {
 }
 
 /**
+ * 
+ * @param {*} req 
+ */
+const is_root_user = (req) => {
+    return is_root_role(get_session_user_role(req));
+}
+
+/**
  * Get the meta mode based on user's role
  * @param {request} req 
  * @param {meta} meta 
  * @returns 
  */
-const get_user_role_mode = (req, meta) => {
+const get_user_role_right = (req, meta) => {
     const settings = get_settings();
     //no role defined in settings or no roles defined in meta, use meta mode
     if (!settings.roles || !meta.roles) {
-        return meta.mode;
+        return [meta.mode, "*"];
     }
 
     const user_role = get_session_user_role(req);
     if (!user_role) {
-        return "";
+        return ["", ""];
     }
 
     if (is_valid_role(user_role)) {
@@ -69,17 +77,18 @@ const get_user_role_mode = (req, meta) => {
             const role_settings = role.split(":");
             const role_name = role_settings[0];
             const role_mode = role_settings[1];
+            const role_view = role_settings.length == 3 ? role_settings[2] : "*";
             if (user_role == role_name) {
                 // * stands to get the mode from meta definition
                 if (role_mode == "*") {
-                    return meta.mode;
+                    return [meta.mode, role_view];
                 } else {
-                    return role_mode;
+                    return [role_mode, role_view];
                 }
             }
         }
     }
-    return "";
+    return ["", ""];
 }
 
 /**
@@ -87,11 +96,12 @@ const get_user_role_mode = (req, meta) => {
  * @param {http request} req 
  * @param {meta defination} meta 
  * @param {meta mode} mode 
+ * @param {view} view
  * @returns 
  */
-const check_user_role = (req, meta, mode) => {
-    const role_mode = get_user_role_mode(req, meta);
-    return role_mode.includes(mode);
+const check_user_role = (req, meta, mode, view) => {
+    const [role_mode, role_view] = get_user_role_right(req, meta);
+    return role_mode.includes(mode) && (role_view == "*" || role_view.includes(view));
 }
 
-module.exports = { is_root_role, validate_meta_role, check_user_role, get_user_role_mode };
+module.exports = { is_root_role, is_root_user, validate_meta_role, check_user_role, get_user_role_right };

@@ -188,7 +188,7 @@ class Entity {
      * @param {search object and all the search attributes object} param_obj 
      * @returns 
      */
-    async list_entity(query_params, query, param_obj) {
+    async list_entity(query_params, query, param_obj, view) {
         const error_required_field_names = validate_required_fields(query_params, ["attr_names", "sort_by", "desc"]);
         if (error_required_field_names.length > 0) {
             if (is_log_error()) {
@@ -206,7 +206,9 @@ class Entity {
             sort[value] = descs[index] === "false" ? 1 : -1;
         });
 
-        const list_field_names = this.meta.list_fields.map(f => f.name);
+        const list_fields = view && view !== "*" ? this.meta.list_fields.filter(field => Array.isArray(field.view) ? this.contain_view(field.view, view) || field.view.includes("*") : view.includes(field.view) || field.view === "*") : this.meta.list_fields;
+        const list_field_names = list_fields.map(f => f.name);
+
         const ref_fields = [];
         const link_fields = [];
 
@@ -337,8 +339,8 @@ class Entity {
     * @param {param obj from user input} param_obj
     * @returns object with code and err
     */
-    async clone_entity(_id, param_obj) {
-        const fields = this.meta.clone_fields
+    async clone_entity(_id, param_obj, view) {
+        const fields = view && view !== "*" ? this.meta.clone_fields.filter(field => Array.isArray(field.view) ? field.view.includes(view) || field.view.includes("*") : field.view === view || field.view === "*") : this.meta.clone_fields;
         const { obj, error_field_names } = convert_type(param_obj, fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
@@ -504,8 +506,9 @@ class Entity {
      * @param {param object from user input} param_obj 
      * 
      */
-    async batch_update_entity(_ids, param_obj) {
-        const { obj, error_field_names } = convert_update_type(param_obj, this.meta.update_fields);
+    async batch_update_entity(_ids, param_obj, view) {
+        const update_fields = view && view !== "*" ? this.meta.update_fields.filter(field => Array.isArray(field.view) ? this.contain_view(field.view, view) || field.view.includes("*") : view.includes(field.view) || field.view === "*") : this.meta.update_fields;
+        const { obj, error_field_names } = convert_update_type(param_obj, update_fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "batch_update_entity error fields:" + JSON.stringify(error_field_names));
@@ -562,6 +565,15 @@ class Entity {
         return { code: SUCCESS };
     }
 
+    contain_view(array, view) {
+        for (let i = 0; i < array.length; i++) {
+            if (view.includes(array[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Use objectid to read entity properties. Validate the param object and invoke the logic to read entity properties.
      * This method doesn't convert ref property, so all the ref properties are objectid of the ref entity.
@@ -570,7 +582,7 @@ class Entity {
      * @param {attr names to retrieve} attr_names
      *
      */
-    async read_property(_id, attr_names) {
+    async read_property(_id, attr_names, view) {
         const query = oid_query(_id);
         if (query == null) {
             if (is_log_error()) {
@@ -579,7 +591,8 @@ class Entity {
             return { code: INVALID_PARAMS, err: ["_id"] };
         }
 
-        const field_names = this.meta.property_fields.map(f => f.name);
+        const property_fields = view && view !== "*" ? this.meta.property_fields.filter(field => Array.isArray(field.view) ? this.contain_view(field.view, view) || field.view.includes("*") : view.includes(field.view) || field.view === "*") : this.meta.property_fields;
+        const field_names = property_fields.map(f => f.name);
         const attrs = { _id: 1 };
         attr_names.split(",").forEach((attr) => {
             if (field_names.includes(attr)) {
@@ -605,7 +618,7 @@ class Entity {
      * @param {attr names to retrieve} attr_names
      *
      */
-    async read_entity(_id, attr_names) {
+    async read_entity(_id, attr_names, view) {
         const query = oid_query(_id);
         if (query == null) {
             if (is_log_error()) {
@@ -621,7 +634,9 @@ class Entity {
             return { code: INVALID_PARAMS, err: ["attr_names"] };
         }
 
-        const field_names = this.meta.property_fields.map(f => f.name);
+        const property_fields = view && view !== "*" ? this.meta.property_fields.filter(field => Array.isArray(field.view) ? this.contain_view(field.view, view) || field.view.includes("*") : view.includes(field.view) || field.view === "*") : this.meta.property_fields;
+        const field_names = property_fields.map(f => f.name);
+
         const ref_fields = [];
         const link_fields = [];
         const attrs = { _id: 1 };

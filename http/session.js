@@ -1,6 +1,7 @@
 const express_session = require('express-session');
 const MongoStore = require('connect-mongo');
 const { get_settings } = require('../setting');
+const { is_root_user } = require('../core/role');
 
 const init_session = (app) => {
     const server = get_settings().server;
@@ -29,4 +30,21 @@ const get_session_user_groups = (req) => {
     return group && Array.isArray(group) ? group : null;
 }
 
-module.exports = { init_session, get_session_userid, get_session_user_groups };
+const is_owner = async (req, meta, entity, query) => {
+    if (is_root_user(req)) {
+        return true;
+    }
+
+    if (meta.user_field) {
+        const user_id = get_session_userid(req);
+        if (user_id == null) {
+            throw new Error("no user id is found in session");
+        }
+        const user_query = {};
+        user_query[meta.user_field] = user_id;
+        return await entity.count({ ...query, ...user_query }) == 1;
+    }
+    return true;
+}
+
+module.exports = { init_session, get_session_userid, get_session_user_groups, is_owner };

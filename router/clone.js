@@ -1,10 +1,11 @@
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
 const { SUCCESS, NO_PARAMS, NO_RIGHTS } = require('../http/code');
-const { get_session_userid } = require('../http/session');
+const { get_session_userid, is_owner } = require('../http/session');
 const { wrap_http } = require('../http/error');
 const { post_params, required_post_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { check_user_role } = require('../core/role');
+const { oid_query } = require('../db/db');
 const { Entity } = require('../db/entity');
 
 const multer = require('multer');
@@ -20,7 +21,13 @@ const init_clone_router = function (router, meta) {
     const cp_upload = meta.upload_fields.length > 0 ? upload_file.fields(meta.upload_fields) : upload_file.none();
 
     router.post('/clone', cp_upload, wrap_http(async function (req, res) {
-        const has_right = check_user_role(req, meta, "o");
+        //which view to clone the entity
+        let { _view } = post_params(req, ["_view"]);
+        if (!_view) {
+            _view = "*";
+        }
+
+        const has_right = check_user_role(req, meta, "o", _view);
         if (!has_right) {
             res.json({ code: NO_RIGHTS, err: "no rights error" });
             return;
@@ -35,6 +42,13 @@ const init_clone_router = function (router, meta) {
         const param_obj = post_params(req, meta.field_names);
         set_file_fields(meta, req, param_obj);
 
+        const query = params["_id"] ? oid_query(params["_id"]) : entity.primary_key_query(param_obj);
+        const owner = await is_owner(req, meta, entity, query);
+        if (!owner) {
+            res.json({ code: NO_RIGHTS, err: "no rights error" });
+            return;
+        }
+
         if (meta.user_field) {
             const user_id = get_session_userid(req);
             if (user_id == null) {
@@ -43,7 +57,7 @@ const init_clone_router = function (router, meta) {
             param_obj[meta.user_field] = user_id;
         }
 
-        const { code, err } = await entity.clone_entity(params["_id"], param_obj);
+        const { code, err } = await entity.clone_entity(params["_id"], param_obj, _view);
         if (!has_value(code)) {
             throw new Error("the method should return code");
         }

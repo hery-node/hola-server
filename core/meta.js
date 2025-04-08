@@ -251,6 +251,7 @@ class EntityMeta {
         this.field_names = this.fields.map(field => field.name);
         this.user_field = meta.user_field;
 
+        this.client_fields = this.fields.filter(field => field.sys != true);
         this.property_fields = this.fields.filter(field => field.sys != true && field.secure != true);
         this.create_fields = this.fields.filter(field => field.create != false && field.sys != true);
         this.update_fields = this.fields.filter(field => field.create != false && field.update != false && field.sys != true);
