@@ -45,6 +45,15 @@ const get_session_user_role = (req) => {
 }
 
 /**
+ * get user from user session
+ * @param {*} req 
+ * @returns 
+ */
+const get_session_user = (req) => {
+    return req && req.session ? req.session.user : null;
+}
+
+/**
  * 
  * @param {*} req 
  */
@@ -104,4 +113,4 @@ const check_user_role = (req, meta, mode, view) => {
     return role_mode.includes(mode) && (role_view == "*" || role_view.includes(view));
 }
 
-module.exports = { is_root_role, is_root_user, validate_meta_role, check_user_role, get_user_role_right };
+module.exports = { is_root_role, is_root_user, validate_meta_role, check_user_role, get_user_role_right, get_session_user };

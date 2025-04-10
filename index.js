@@ -5,7 +5,7 @@ const { init_router } = require('./http/router');
 const { init_express_server } = require('./http/express');
 const { register_type, get_type } = require('./core/type');
 const { EntityMeta, get_entity_meta } = require('./core/meta');
-const { is_root_role, is_root_user, check_user_role, get_user_role_right } = require('./core/role');
+const { is_root_role, is_root_user, check_user_role, get_user_role_right, get_session_user } = require('./core/role');
 const { url } = require('./core/url');
 const array = require('./core/array');
 const bash = require('./core/bash');
@@ -30,7 +30,7 @@ const { gen_i18n } = require('./tool/gen_i18n');
 const { log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info, is_log_warn, is_log_error, get_session_userid, oid_queries, oid_query } = require('./db/db');
 
 module.exports = {
-    init_settings, is_root_role, is_root_user, check_user_role, get_user_role_right, init_express_server, init_router, register_type, get_type, get_db, url,
+    init_settings, is_root_role, is_root_user, check_user_role, get_user_role_right, get_session_user, init_express_server, init_router, register_type, get_type, get_db, url,
     Entity, EntityMeta, get_entity_meta, array, bash, chart, cron, date, file, lhs, msg, number, obj, random, thread, validate, code, err, params, context, gridfs, gen_i18n,
     log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info, is_log_warn, is_log_error, get_session_userid, oid_queries, oid_query
 };
