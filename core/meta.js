@@ -100,7 +100,7 @@ const validate_field = (meta, field) => {
     } else {
         //no view defined for create/update field, then set view to default value "0"
         if (editable) {
-            field.view = "0";
+            field.view = "*";
         }
     }
 
