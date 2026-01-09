@@ -262,7 +262,7 @@ describe('Entity Create', function () {
             ],
             create: async function (entity, obj) {
                 obj.email = "create@test.com";
-                entity.create(obj);
+                await entity.create(obj);
                 return { code: SUCCESS };
             },
         });
