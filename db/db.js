@@ -35,8 +35,9 @@ const log_message = (category, level, message, extra = {}) => {
   const req = get_context_value("req");
   const path = req?.originalUrl || "";
   const user_id = req?.session?.user?.id || "";
+  const entry = { time, category, level, msg: message, user: user_id, path, ...extra };
 
-  db.create(col_log, { time, category, level, msg: message, user: user_id, path, ...extra }).catch(() => { });
+  db.create(col_log, entry).catch(() => { });
 };
 
 const is_log_debug = () => {
@@ -139,10 +140,11 @@ const bulk_update = async (col, items, attrs) => {
 class DB {
   constructor(url, options, callback) {
     if (!url) {
-      return;
+      throw new Error("Mongo url is required to initialize DB");
     }
 
     this.db = mongoist(url, options);
+    this.closed = false;
 
     this.db.on("error", (err) => {
       if (is_log_error()) {
@@ -150,7 +152,12 @@ class DB {
       }
     });
 
+    this.db.on("close", () => {
+      this.closed = true;
+    });
+
     this.db.on('connect', () => {
+      this.closed = false;
       if (callback) {
         callback();
       }
@@ -367,9 +374,15 @@ class DB {
    * Close the underlying Mongo connection
    */
   async close() {
-    if (this.db && typeof this.db.close === "function") {
+    if (!this.db || this.closed) {
+      return;
+    }
+
+    if (typeof this.db.close === "function") {
       await this.db.close();
     }
+
+    this.closed = true;
   }
 }
 
@@ -380,11 +393,14 @@ let db_instance = null;
  * @returns db instance of mongodb
  */
 const get_db = (callback) => {
-  if (db_instance && db_instance.db) {
+  if (db_instance && db_instance.db && !db_instance.closed) {
     return db_instance;
   }
 
   const mongo = get_settings().mongo;
+  if (!mongo || !mongo.url) {
+    throw new Error("Mongo settings are missing url");
+  }
   db_instance = new DB(mongo.url, mongo.options, callback);
   return db_instance;
 };

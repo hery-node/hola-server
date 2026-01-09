@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Delete router initialization.
+ * @module router/delete
+ */
+
 const { required_post_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { NO_PARAMS, NO_RIGHTS } = require('../http/code');
@@ -8,6 +13,24 @@ const { wrap_http } = require('../http/error');
 const { Entity } = require('../db/entity');
 
 /**
+ * Check user role mode and send error if unauthorized.
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Object} meta - Entity meta
+ * @param {string} mode - Required mode character
+ * @returns {boolean} True if authorized
+ */
+const check_mode_rights = (req, res, meta, mode) => {
+    const [role_mode] = get_user_role_right(req, meta);
+    const has_right = role_mode.includes(mode);
+    if (!has_right) {
+        res.json({ code: NO_RIGHTS, err: "no rights" });
+        return false;
+    }
+    return true;
+};
+
+/**
  * init http delete router
  * @param {express router} router 
  * @param {meta info} meta 
@@ -16,10 +39,7 @@ const init_delete_router = function (router, meta) {
     const entity = new Entity(meta);
 
     router.post('/delete', wrap_http(async function (req, res) {
-        const [role_mode, role_view] = get_user_role_right(req, meta);
-        const has_right = role_mode.includes("d");
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_mode_rights(req, res, meta, "d")) {
             return;
         }
 

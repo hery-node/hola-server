@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Create router initialization.
+ * @module router/create
+ */
+
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
 const { SUCCESS, NO_RIGHTS } = require('../http/code');
 const { get_session_user_id } = require('../http/session');
@@ -11,6 +16,24 @@ const multer = require('multer');
 const upload_file = multer({ dest: 'file_tmp/' });
 
 /**
+ * Check user rights and send error response if unauthorized.
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Object} meta - Entity meta
+ * @param {string} mode - Operation mode
+ * @param {string} view - View identifier
+ * @returns {boolean} True if authorized
+ */
+const check_rights = (req, res, meta, mode, view) => {
+    const has_right = check_user_role(req, meta, mode, view);
+    if (!has_right) {
+        res.json({ code: NO_RIGHTS, err: "no rights" });
+        return false;
+    }
+    return true;
+};
+
+/**
  * init http create router
  * @param {express router} router 
  * @param {entity meta info} meta 
@@ -20,15 +43,12 @@ const init_create_router = function (router, meta) {
     const cp_upload = meta.upload_fields.length > 0 ? upload_file.fields(meta.upload_fields) : upload_file.none();
 
     router.post('/create', cp_upload, wrap_http(async function (req, res) {
-        //which view to create the entity
         let { _view } = post_params(req, ["_view"]);
         if (!_view) {
             _view = "*";
         }
 
-        const has_right = check_user_role(req, meta, "c", _view);
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_rights(req, res, meta, "c", _view)) {
             return;
         }
 

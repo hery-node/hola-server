@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Read router initialization.
+ * @module router/read
+ */
+
 const { required_post_params, get_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { NO_PARAMS, SUCCESS, NO_RIGHTS } = require('../http/code');
@@ -7,6 +12,12 @@ const { wrap_http } = require('../http/error');
 const { oid_query } = require('../db/db');
 const { Entity } = require('../db/entity');
 
+/**
+ * Check if view array contains target view.
+ * @param {string[]} array - View array
+ * @param {string} view - Target view
+ * @returns {boolean}
+ */
 const contain_view = (array, view) => {
     for (let i = 0; i < array.length; i++) {
         if (view.includes(array[i])) {
@@ -14,7 +25,25 @@ const contain_view = (array, view) => {
         }
     }
     return false;
-}
+};
+
+/**
+ * Check user role mode and send error if unauthorized.
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Object} meta - Entity meta
+ * @param {string} mode - Required mode character
+ * @returns {boolean} True if authorized
+ */
+const check_mode_rights = (req, res, meta, mode) => {
+    const [role_mode] = get_user_role_right(req, meta);
+    const has_right = role_mode.includes(mode);
+    if (!has_right) {
+        res.json({ code: NO_RIGHTS, err: "no rights" });
+        return false;
+    }
+    return true;
+};
 
 /**
  * init http read router
@@ -26,9 +55,7 @@ const init_read_router = function (router, meta) {
 
     router.get('/meta', wrap_http(async function (req, res) {
         const [role_mode, role_view] = get_user_role_right(req, meta);
-        const has_right = role_mode.includes("r");
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_mode_rights(req, res, meta, "r")) {
             return;
         }
 
@@ -49,10 +76,7 @@ const init_read_router = function (router, meta) {
 
     router.get('/mode', wrap_http(async function (req, res) {
         const [role_mode, role_view] = get_user_role_right(req, meta);
-        const has_right = role_mode.includes("r");
-
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_mode_rights(req, res, meta, "r")) {
             return;
         }
 
@@ -60,10 +84,7 @@ const init_read_router = function (router, meta) {
     }));
 
     router.get('/ref', wrap_http(async function (req, res) {
-        const [role_mode, role_view] = get_user_role_right(req, meta);
-        const has_right = role_mode.includes("r");
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_mode_rights(req, res, meta, "r")) {
             return;
         }
 
@@ -75,9 +96,7 @@ const init_read_router = function (router, meta) {
 
     router.post('/list', wrap_http(async function (req, res) {
         const [role_mode, role_view] = get_user_role_right(req, meta);
-        const has_right = role_mode.includes("r");
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_mode_rights(req, res, meta, "r")) {
             return;
         }
 
@@ -117,9 +136,7 @@ const init_read_router = function (router, meta) {
 
     router.post('/read_entity', wrap_http(async function (req, res) {
         const [role_mode, role_view] = get_user_role_right(req, meta);
-        const has_right = role_mode.includes("r");
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_mode_rights(req, res, meta, "r")) {
             return;
         }
 
@@ -146,9 +163,7 @@ const init_read_router = function (router, meta) {
 
     router.post('/read_property', wrap_http(async function (req, res) {
         const [role_mode, role_view] = get_user_role_right(req, meta);
-        const has_right = role_mode.includes("r");
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_mode_rights(req, res, meta, "r")) {
             return;
         }
 

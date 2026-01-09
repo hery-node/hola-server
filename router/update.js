@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Update router initialization.
+ * @module router/update
+ */
+
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
 const { required_post_params, post_update_params, post_params } = require('../http/params');
 const { SUCCESS, NO_PARAMS, NO_RIGHTS } = require('../http/code');
@@ -12,6 +17,42 @@ const multer = require('multer');
 const upload_file = multer({ dest: 'file_tmp/' });
 
 /**
+ * Check user rights and send error response if unauthorized.
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Object} meta - Entity meta
+ * @param {string} mode - Operation mode
+ * @param {string} view - View identifier
+ * @returns {boolean} True if authorized
+ */
+const check_rights = (req, res, meta, mode, view) => {
+    const has_right = check_user_role(req, meta, mode, view);
+    if (!has_right) {
+        res.json({ code: NO_RIGHTS, err: "no rights" });
+        return false;
+    }
+    return true;
+};
+
+/**
+ * Check user role mode and send error if unauthorized.
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Object} meta - Entity meta
+ * @param {string} mode - Required mode character
+ * @returns {boolean} True if authorized
+ */
+const check_mode_rights = (req, res, meta, mode) => {
+    const [role_mode] = get_user_role_right(req, meta);
+    const has_right = role_mode.includes(mode);
+    if (!has_right) {
+        res.json({ code: NO_RIGHTS, err: "no rights" });
+        return false;
+    }
+    return true;
+};
+
+/**
  * init http update router
  * @param {express router} router 
  * @param {meta info} meta 
@@ -21,15 +62,12 @@ const init_update_router = function (router, meta) {
     const cp_upload = meta.upload_fields.length > 0 ? upload_file.fields(meta.upload_fields) : upload_file.none();
 
     router.post('/update', cp_upload, wrap_http(async function (req, res) {
-        //which view to update the entity
         let { _view } = post_params(req, ["_view"]);
         if (!_view) {
             _view = "*";
         }
 
-        const has_right = check_user_role(req, meta, "u", _view);
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_rights(req, res, meta, "u", _view)) {
             return;
         }
 
@@ -66,9 +104,7 @@ const init_update_router = function (router, meta) {
 
     router.post('/batch_update', cp_upload, wrap_http(async function (req, res) {
         const [role_mode, role_view] = get_user_role_right(req, meta);
-        const has_right = role_mode.includes("u");
-        if (!has_right) {
-            res.json({ code: NO_RIGHTS, err: "no rights error" });
+        if (!check_mode_rights(req, res, meta, "u")) {
             return;
         }
 

@@ -39,7 +39,8 @@ const parse_search_value = function (name, type_name, search_value) {
 
     if (raw_value.includes(",")) {
         const values = raw_value.split(",").map((v) => convert_search_value_by_type(type_name, v));
-        return { [name]: { "$in": values } };
+        const operator = type_name === "array" ? "$all" : "$in";
+        return { [name]: { [operator]: values } };
     }
 
     if (raw_value.startsWith(">=")) {
