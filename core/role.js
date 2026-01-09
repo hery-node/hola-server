@@ -1,116 +1,103 @@
+/**
+ * @fileoverview Role-based access control utility functions.
+ * @module core/role
+ */
+
 const { get_settings } = require("../setting");
 
 /**
- * Validate the role defination in meta config
- * @param {*} role_name 
- * @returns 
+ * Validate role name exists in settings configuration.
+ * @param {string} role_name - Role name to validate.
+ * @returns {boolean} True if role is valid and configured.
  */
 const validate_meta_role = (role_name) => {
     const settings = get_settings();
-    //there is role defined in meta but no roles config in settings
-    if (!settings.roles) {
-        return false;
-    }
+    if (!settings.roles) return false;
     return is_valid_role(role_name);
-}
-
-const is_valid_role = (role_name) => {
-    const settings = get_settings();
-    const roles = settings.roles.filter(role => role.name == role_name);
-    return roles.length == 1;
-}
-
-const is_root_role = (role_name) => {
-    const settings = get_settings();
-    //no role defined, then there is no role limition, so treat each user as root
-    if (!settings.roles) {
-        return true;
-    }
-
-    if (is_valid_role(role_name)) {
-        return settings.roles.filter(role => role.name == role_name)[0].root == true;
-    } else {
-        return false;
-    }
-}
+};
 
 /**
- * get user's role from user session
- * @param {request} req 
- * @returns 
+ * Check if role name exists in settings.
+ * @param {string} role_name - Role name to check.
+ * @returns {boolean} True if role exists.
+ */
+const is_valid_role = (role_name) => {
+    const settings = get_settings();
+    return settings.roles.filter((role) => role.name === role_name).length === 1;
+};
+
+/**
+ * Check if role has root/admin privileges.
+ * @param {string} role_name - Role name to check.
+ * @returns {boolean} True if role is root.
+ */
+const is_root_role = (role_name) => {
+    const settings = get_settings();
+    if (!settings.roles) return true;
+    if (!is_valid_role(role_name)) return false;
+    return settings.roles.filter((role) => role.name === role_name)[0].root === true;
+};
+
+/**
+ * Get user role from session.
+ * @param {Object} req - HTTP request object.
+ * @returns {string|null} User's role or null.
  */
 const get_session_user_role = (req) => {
     const user = req && req.session ? req.session.user : null;
     return user ? user.role : null;
-}
+};
 
 /**
- * get user from user session
- * @param {*} req 
- * @returns 
+ * Get user object from session.
+ * @param {Object} req - HTTP request object.
+ * @returns {Object|null} User object or null.
  */
-const get_session_user = (req) => {
-    return req && req.session ? req.session.user : null;
-}
+const get_session_user = (req) => req && req.session ? req.session.user : null;
 
 /**
- * 
- * @param {*} req 
+ * Check if current user has root privileges.
+ * @param {Object} req - HTTP request object.
+ * @returns {boolean} True if user is root.
  */
-const is_root_user = (req) => {
-    return is_root_role(get_session_user_role(req));
-}
+const is_root_user = (req) => is_root_role(get_session_user_role(req));
 
 /**
- * Get the meta mode based on user's role
- * @param {request} req 
- * @param {meta} meta 
- * @returns 
+ * Get user's role permissions for a meta entity.
+ * @param {Object} req - HTTP request object.
+ * @param {Object} meta - Meta entity definition.
+ * @returns {[string, string]} Array of [mode, view] permissions.
  */
 const get_user_role_right = (req, meta) => {
     const settings = get_settings();
-    //no role defined in settings or no roles defined in meta, use meta mode
-    if (!settings.roles || !meta.roles) {
-        return [meta.mode, "*"];
-    }
+    if (!settings.roles || !meta.roles) return [meta.mode, "*"];
 
     const user_role = get_session_user_role(req);
-    if (!user_role) {
-        return ["", ""];
-    }
+    if (!user_role) return ["", ""];
+    if (!is_valid_role(user_role)) return ["", ""];
 
-    if (is_valid_role(user_role)) {
-        const roles = meta.roles;
-        for (let i = 0; i < roles.length; i++) {
-            const role = roles[i];
-            const role_settings = role.split(":");
-            const role_name = role_settings[0];
-            const role_mode = role_settings[1];
-            const role_view = role_settings.length == 3 ? role_settings[2] : "*";
-            if (user_role == role_name) {
-                // * stands to get the mode from meta definition
-                if (role_mode == "*") {
-                    return [meta.mode, role_view];
-                } else {
-                    return [role_mode, role_view];
-                }
-            }
+    for (const role of meta.roles) {
+        const role_settings = role.split(":");
+        const [role_name, role_mode] = role_settings;
+        const role_view = role_settings.length === 3 ? role_settings[2] : "*";
+        if (user_role === role_name) {
+            return role_mode === "*" ? [meta.mode, role_view] : [role_mode, role_view];
         }
     }
     return ["", ""];
-}
+};
 
 /**
- * Check whether the user has the mode right on the meta or not
- * @param {http request} req 
- * @param {meta defination} meta 
- * @param {meta mode} mode 
- * @param {view} view
- * @returns 
+ * Check if user has required mode permission on meta.
+ * @param {Object} req - HTTP request object.
+ * @param {Object} meta - Meta entity definition.
+ * @param {string} mode - Required mode (c/r/u/d).
+ * @param {string} view - Required view.
+ * @returns {boolean} True if user has permission.
  */
 const check_user_role = (req, meta, mode, view) => {
     const [role_mode, role_view] = get_user_role_right(req, meta);
-    return role_mode.includes(mode) && (role_view == "*" || role_view.includes(view));
-}
+    return role_mode.includes(mode) && (role_view === "*" || role_view.includes(view));
+};
 
 module.exports = { is_root_role, is_root_user, validate_meta_role, check_user_role, get_user_role_right, get_session_user };

@@ -1,55 +1,51 @@
+/**
+ * @fileoverview Date formatting and parsing utility functions.
+ * @module core/date
+ */
+
 const date_format = require("dateformat");
-// import date_format from "dateformat";
 
 /**
- * Format the date object time part using HH:MM
- * @param {date object to be formatted} date
- * @returns
+ * Format date object time part as HH:MM.
+ * @param {Date} date - Date object to format.
+ * @returns {string} Formatted time string.
  */
-const format_time = (date) => {
-  return date_format(date, "HH:MM");
-};
+const format_time = (date) => date_format(date, "HH:MM");
 
 /**
- * Format date object using mm/dd
- * @param {date object to be formatted} date
- * @returns
+ * Format date object as mm/dd.
+ * @param {Date} date - Date object to format.
+ * @returns {string} Formatted date string.
  */
-const simple_date = (date) => {
-  return date_format(date, "mm/dd");
-};
+const simple_date = (date) => date_format(date, "mm/dd");
 
 /**
- * Format date obj using yyyymmdd
- * @param {date object to be formatted} date
- * @returns
+ * Format date object as yyyymmdd.
+ * @param {Date} date - Date object to format.
+ * @returns {string} Formatted date string.
  */
-const format_date = (date) => {
-  return date_format(date, "yyyymmdd");
-};
+const format_date = (date) => date_format(date, "yyyymmdd");
 
 /**
- * Format data obj using yyyymmdd hh:mm:ss
- * @param {date object to be formatted} date
- * @returns
+ * Format date object as yyyymmdd HH:MM:ss.
+ * @param {Date} date - Date object to format.
+ * @returns {string} Formatted datetime string.
  */
-const format_date_time = (date) => {
-  return date_format(date, "yyyymmdd HH:MM:ss");
-};
+const format_date_time = (date) => date_format(date, "yyyymmdd HH:MM:ss");
 
 /**
- * Parse the date object using yyyymmdd format
- * @param {date str to be parsed} date
- * @returns
+ * Parse yyyymmdd formatted string to Date object.
+ * @param {string} date - Date string in yyyymmdd format.
+ * @returns {Date} Parsed Date object with time set to 00:00:00.
  */
 const parse_date = (date) => {
   const year = parseInt(date.substr(0, 4));
   const month = parseInt(date.substr(4, 2));
   const day = parseInt(date.substr(6, 2));
-  const dateObj = new Date();
-  dateObj.setFullYear(year, month - 1, day);
-  dateObj.setHours(0, 0, 0, 0);
-  return dateObj;
+  const date_obj = new Date();
+  date_obj.setFullYear(year, month - 1, day);
+  date_obj.setHours(0, 0, 0, 0);
+  return date_obj;
 };
 
 module.exports = { simple_date, format_date, format_time, format_date_time, parse_date };

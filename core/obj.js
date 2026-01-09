@@ -1,22 +1,25 @@
 /**
- * Create a new object based on the attrs values of the object
- * @param {Object to be copied} obj 
- * @param {attributes to be copied} attrs 
- * @returns 
+ * @fileoverview Object manipulation utility functions.
+ * @module core/obj
+ */
+
+/**
+ * Create a new object by copying specified attributes from source object.
+ * @param {Object} obj - Source object to copy from.
+ * @param {string[]} attrs - Array of attribute names to copy.
+ * @returns {Object} New object containing only the specified attributes.
  */
 const copy_obj = (obj, attrs) => {
     const copied = {};
-    attrs.forEach(attr => copied[attr] = obj[attr]);
+    attrs.forEach((attr) => { copied[attr] = obj[attr]; });
     return copied;
 };
 
 /**
- * Check this is object or not
- * @param {Object to be checked} obj 
- * @returns 
+ * Check if a value is a plain object (not null, not array).
+ * @param {*} obj - Value to check.
+ * @returns {boolean} True if value is a plain object, false otherwise.
  */
-const is_object = (obj) => {
-    return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
-}
+const is_object = (obj) => typeof obj === 'object' && obj !== null && !Array.isArray(obj);
 
-module.exports = { copy_obj, is_object }
+module.exports = { copy_obj, is_object };
