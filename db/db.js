@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Database utilities for MongoDB using mongoist.
+ * @module db/db
+ */
+
 const mongoist = require("mongoist");
 
 const { get_settings } = require("../setting");
@@ -13,21 +18,25 @@ const LOG_DB = "database";
 const LOG_ENTITY = "entity";
 const LOG_SYSTEM = "system";
 
-const get_session_userid = () => {
+/**
+ * Resolve user id from request context if available.
+ * @returns {string} user id or empty string when unauthenticated
+ */
+const get_session_user_id = () => {
   const req = get_context_value("req");
   return req && req.session && req.session.user ? req.session.user.id : "";
 };
 
-const log_msg = (category, level, msg, extra) => {
+const log_message = (category, level, message, extra = {}) => {
   const time = format_date_time(new Date());
   const db = get_db();
   const { col_log } = get_settings().log;
 
   const req = get_context_value("req");
-  const path = req ? req.originalUrl : "";
-  const user = req && req.session && req.session.user ? req.session.user.id : "";
+  const path = req?.originalUrl || "";
+  const user_id = req?.session?.user?.id || "";
 
-  db.create(col_log, { time: time, category: category, level: level, msg: msg, user: user, path: path, ...extra }).then(() => { });
+  db.create(col_log, { time, category, level, msg: message, user: user_id, path, ...extra }).catch(() => { });
 };
 
 const is_log_debug = () => {
@@ -52,25 +61,25 @@ const is_log_error = () => {
 
 const log_debug = (category, msg, extra) => {
   if (is_log_debug()) {
-    log_msg(category, LOG_LEVEL_DEBUG, msg, extra);
+    log_message(category, LOG_LEVEL_DEBUG, msg, extra);
   }
 };
 
 const log_info = (category, msg, extra) => {
   if (is_log_info()) {
-    log_msg(category, LOG_LEVEL_INFO, msg, extra);
+    log_message(category, LOG_LEVEL_INFO, msg, extra);
   }
 };
 
 const log_warn = (category, msg, extra) => {
   if (is_log_warn()) {
-    log_msg(category, LOG_LEVEL_WARN, msg, extra);
+    log_message(category, LOG_LEVEL_WARN, msg, extra);
   }
 };
 
 const log_error = (category, msg, extra) => {
   if (is_log_error()) {
-    log_msg(category, LOG_LEVEL_ERROR, msg, extra);
+    log_message(category, LOG_LEVEL_ERROR, msg, extra);
   }
 };
 
@@ -120,14 +129,11 @@ const oid_queries = (ids) => {
 const bulk_update = async (col, items, attrs) => {
   const bulk = col.initializeOrderedBulkOp();
   for (const item of items) {
-    const query = {};
-    attrs.forEach(function (attr) {
-      query[attr] = item[attr];
-    });
-    delete item["_id"];
-    bulk.find(query).upsert().update({ $set: item }, true);
+    const query = attrs.reduce((acc, attr) => ({ ...acc, [attr]: item[attr] }), {});
+    const { _id, ...without_id } = item;
+    bulk.find(query).upsert().update({ $set: without_id }, true);
   }
-  return await bulk.execute();
+  return bulk.execute();
 };
 
 class DB {
@@ -138,14 +144,16 @@ class DB {
 
     this.db = mongoist(url, options);
 
-    this.db.on("error", function (err) {
+    this.db.on("error", (err) => {
       if (is_log_error()) {
         log_error(LOG_DB, err);
       }
     });
 
-    this.db.on('connect', function () {
-      callback && callback();
+    this.db.on('connect', () => {
+      if (callback) {
+        callback();
+      }
     });
   }
 
@@ -179,7 +187,7 @@ class DB {
    */
   update(code, query, obj) {
     if (is_log_debug()) {
-      log_debug(LOG_DB, "updating obj:" + JSON.stringify(obj) + ", for [" + code + "] with query:" + JSON.stringify(query));
+      log_debug(LOG_DB, `updating obj:${JSON.stringify(obj)}, for [${code}] with query:${JSON.stringify(query)}`);
     }
 
     const col = this.db[code];
@@ -195,7 +203,7 @@ class DB {
    */
   delete(code, query) {
     if (is_log_debug()) {
-      log_debug(LOG_DB, "deleting objects for [" + code + "] with query:" + JSON.stringify(query));
+      log_debug(LOG_DB, `deleting objects for [${code}] with query:${JSON.stringify(query)}`);
     }
 
     const col = this.db[code];
@@ -211,7 +219,7 @@ class DB {
    */
   find(code, query, attr) {
     if (is_log_debug()) {
-      log_debug(LOG_DB, "find objects for [" + code + "] with query:" + JSON.stringify(query) + " and attr:" + JSON.stringify(attr));
+      log_debug(LOG_DB, `find objects for [${code}] with query:${JSON.stringify(query)} and attr:${JSON.stringify(attr)}`);
     }
 
     const col = this.db[code];
@@ -227,7 +235,7 @@ class DB {
    */
   find_one(code, query, attr) {
     if (is_log_debug()) {
-      log_debug(LOG_DB, "find_one for [" + code + "] with query:" + JSON.stringify(query) + " and attr:" + JSON.stringify(attr));
+      log_debug(LOG_DB, `find_one for [${code}] with query:${JSON.stringify(query)} and attr:${JSON.stringify(attr)}`);
     }
 
     const col = this.db[code];
@@ -244,7 +252,7 @@ class DB {
    */
   find_sort(code, query, sort, attr) {
     if (is_log_debug()) {
-      log_debug(LOG_DB, "find_sort for [" + code + "] with query:" + JSON.stringify(query) + " and attr:" + JSON.stringify(attr) + " and sort:" + JSON.stringify(sort));
+      log_debug(LOG_DB, `find_sort for [${code}] with query:${JSON.stringify(query)} and attr:${JSON.stringify(attr)} and sort:${JSON.stringify(sort)}`);
     }
 
     const col = this.db[code];
@@ -263,7 +271,7 @@ class DB {
    */
   find_page(code, query, sort, page, limit, attr) {
     if (is_log_debug()) {
-      log_debug(LOG_DB, "find_page for [" + code + "] with query:" + JSON.stringify(query) + " and attr:" + JSON.stringify(attr) + " and sort:" + JSON.stringify(sort) + ", page:" + page + ",limit:" + limit);
+      log_debug(LOG_DB, `find_page for [${code}] with query:${JSON.stringify(query)} and attr:${JSON.stringify(attr)} and sort:${JSON.stringify(sort)}, page:${page},limit:${limit}`);
     }
 
     const skip = (page - 1) * limit > 0 ? (page - 1) * limit : 0;
@@ -279,7 +287,7 @@ class DB {
    */
   count(code, query) {
     if (is_log_debug()) {
-      log_debug(LOG_DB, "count for [" + code + "] with query:" + JSON.stringify(query));
+      log_debug(LOG_DB, `count for [${code}] with query:${JSON.stringify(query)}`);
     }
 
     const col = this.db[code];
@@ -295,11 +303,11 @@ class DB {
    */
   sum(code, query, field) {
     if (is_log_debug()) {
-      log_debug(LOG_DB, "sum for [" + code + "] with query:" + JSON.stringify(query) + ", and field:" + JSON.stringify(field));
+      log_debug(LOG_DB, `sum for [${code}] with query:${JSON.stringify(query)}, and field:${JSON.stringify(field)}`);
     }
 
     const col = this.db[code];
-    return col.aggregate([{ $match: query }, { $group: { _id: null, total: { $sum: "$" + field + "" } } }]).then((result) => (result.length > 0 ? result[0].total : 0));
+    return col.aggregate([{ $match: query }, { $group: { _id: null, total: { $sum: `$${field}` } } }]).then((result) => (result.length > 0 ? result[0].total : 0));
   }
 
   /**
@@ -354,6 +362,15 @@ class DB {
   col(code) {
     return this.db[code];
   }
+
+  /**
+   * Close the underlying Mongo connection
+   */
+  async close() {
+    if (this.db && typeof this.db.close === "function") {
+      await this.db.close();
+    }
+  }
 }
 
 let db_instance = null;
@@ -365,12 +382,17 @@ let db_instance = null;
 const get_db = (callback) => {
   if (db_instance && db_instance.db) {
     return db_instance;
-  } else {
-    const mongo = get_settings().mongo;
-
-    db_instance = new DB(mongo.url, mongo.options, callback);
-    return db_instance;
   }
+
+  const mongo = get_settings().mongo;
+  db_instance = new DB(mongo.url, mongo.options, callback);
+  return db_instance;
 };
 
-module.exports = { oid, oid_query, oid_queries, bulk_update, get_db, log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info, is_log_warn, is_log_error, LOG_DB, LOG_SYSTEM, LOG_ENTITY, get_session_userid };
+const close_db = async () => {
+  if (db_instance) {
+    await db_instance.close();
+    db_instance = null;
+  }
+};
+module.exports = { oid, oid_query, oid_queries, bulk_update, get_db, close_db, log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info, is_log_warn, is_log_error, LOG_DB, LOG_SYSTEM, LOG_ENTITY, get_session_user_id };

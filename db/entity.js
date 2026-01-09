@@ -1,10 +1,15 @@
+/**
+ * @fileoverview Entity-level CRUD helpers and metadata-driven operations.
+ * @module db/entity
+ */
+
 const { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, NOT_FOUND, REF_NOT_FOUND, REF_NOT_UNIQUE, HAS_REF } = require('../http/code');
 const { validate_required_fields, has_value } = require('../core/validate');
 const { required_params } = require('../http/params');
 const { convert_type, convert_update_type, get_type } = require('../core/type');
 const { get_entity_meta, DELETE_MODE } = require('../core/meta');
 const { unique, map_array_to_obj } = require('../core/array');
-const { LOG_ENTITY, get_db, oid_query, oid_queries, is_log_debug, is_log_error, log_debug, log_error, get_session_userid, bulk_update } = require('./db');
+const { LOG_ENTITY, get_db, oid_query, oid_queries, is_log_debug, is_log_error, log_debug, log_error, get_session_user_id, bulk_update } = require('./db');
 
 /**
  * Convert search value type, if there is error, keep it
@@ -30,23 +35,29 @@ const convert_search_value_by_type = (type_name, search_value) => {
  * @returns 
  */
 const parse_search_value = function (name, type_name, search_value) {
-    search_value = search_value + "";
-    if (search_value.startsWith(">=")) {
-        const value = search_value.substring(2);
+    const raw_value = `${search_value}`;
+
+    if (raw_value.includes(",")) {
+        const values = raw_value.split(",").map((v) => convert_search_value_by_type(type_name, v));
+        return { [name]: { "$in": values } };
+    }
+
+    if (raw_value.startsWith(">=")) {
+        const value = raw_value.substring(2);
         return { [name]: { "$gte": convert_search_value_by_type(type_name, value) } };
-    } else if (search_value.startsWith("<=")) {
-        const value = search_value.substring(2);
+    } else if (raw_value.startsWith("<=")) {
+        const value = raw_value.substring(2);
         return { [name]: { "$lte": convert_search_value_by_type(type_name, value) } };
-    } else if (search_value.startsWith(">")) {
-        const value = search_value.substring(1);
+    } else if (raw_value.startsWith(">")) {
+        const value = raw_value.substring(1);
         return { [name]: { "$gt": convert_search_value_by_type(type_name, value) } };
-    } else if (search_value.startsWith("<")) {
-        const value = search_value.substring(1);
+    } else if (raw_value.startsWith("<")) {
+        const value = raw_value.substring(1);
         return { [name]: { "$lt": convert_search_value_by_type(type_name, value) } };
     } else if (type_name === "array") {
-        return { [name]: { "$in": [search_value] } };
+        return { [name]: { "$in": [raw_value] } };
     } else {
-        let value = convert_search_value_by_type(type_name, search_value);
+        let value = convert_search_value_by_type(type_name, raw_value);
         if (typeof value === "string") {
             value = new RegExp(value, 'i');
         }
@@ -102,11 +113,11 @@ class Entity {
                         const v = value[j];
                         const ref_entities = await ref_entity.find_by_ref_value(v, { "_id": 1 }, this.meta.collection);
 
-                        if (ref_entities.length == 0) {
+                        if (ref_entities.length === 0) {
                             return { code: REF_NOT_FOUND, err: [field.name] };
                         } else if (ref_entities.length > 1) {
                             return { code: REF_NOT_UNIQUE, err: [field.name] };
-                        } else if (ref_entities.length == 1) {
+                        } else if (ref_entities.length === 1) {
                             array.push(ref_entities[0]["_id"] + "");
                         }
                     }
@@ -115,11 +126,11 @@ class Entity {
                 } else if (has_value(value)) {
                     const ref_entities = await ref_entity.find_by_ref_value(value, { "_id": 1 }, this.meta.collection);
 
-                    if (ref_entities.length == 0) {
+                    if (ref_entities.length === 0) {
                         return { code: REF_NOT_FOUND, err: [field.name] };
                     } else if (ref_entities.length > 1) {
                         return { code: REF_NOT_UNIQUE, err: [field.name] };
-                    } else if (ref_entities.length == 1) {
+                    } else if (ref_entities.length === 1) {
                         param_obj[field.name] = ref_entities[0]["_id"] + "";
                     }
                 }
@@ -146,10 +157,13 @@ class Entity {
                         //refer field
                         const refer_entity = new Entity(get_entity_meta(search_field.ref));
                         const oids = await refer_entity.find_by_ref_value(value, { _id: 1 }, this.meta.collection);
-                        if (oids.length == 1) {
+                        if (oids.length === 1) {
                             and_array.push({ [search_field.name]: oids.map(o => o._id + "")[0] });
                         } else if (oids.length > 1) {
-                            and_array.push({ [search_field.name]: { "$in": oids.map(o => o._id + "") } });
+                            const target_ids = oids.map(o => o._id + "");
+                            const raw_value = `${value}`;
+                            const operator = raw_value.includes(",") ? "$all" : "$in";
+                            and_array.push({ [search_field.name]: { [operator]: target_ids } });
                         }
                     } else {
                         and_array.push(parse_search_value(search_field.name, search_field.type, value));
@@ -159,7 +173,7 @@ class Entity {
 
             if (param_obj["_id"] && param_obj["_id"].trim().length > 0) {
                 const ids = param_obj["_id"].split(",");
-                if (ids.length == 1) {
+                if (ids.length === 1) {
                     and_array.push(oid_query(ids[0]));
                 } else if (ids.length > 1) {
                     and_array.push(oid_queries(ids));
@@ -206,7 +220,7 @@ class Entity {
             sort[value] = descs[index] === "false" ? 1 : -1;
         });
 
-        const list_fields = view && view !== "*" ? this.meta.list_fields.filter(field => Array.isArray(field.view) ? this.contain_view(field.view, view) || field.view.includes("*") : view.includes(field.view) || field.view === "*") : this.meta.list_fields;
+        const list_fields = this.filter_fields_by_view(this.meta.list_fields, view);
         const list_field_names = list_fields.map(f => f.name);
 
         const ref_fields = [];
@@ -232,8 +246,8 @@ class Entity {
         let page_limit = parseInt(limit);
         page_limit = isNaN(page_limit) || page_limit <= 0 ? 10 : page_limit;
 
-        const search_query = { ...query, ...await this.get_search_query(param_obj) };
-        if (!search_query) {
+        const search_query = await this.get_search_query(param_obj);
+        if (search_query === null) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "no search query is set for param:" + JSON.stringify(param_obj));
             }
@@ -241,8 +255,10 @@ class Entity {
             return { code: INVALID_PARAMS, err: "no search query is set" };
         }
 
-        const total = await this.count(search_query);
-        const list = await this.find_page(search_query, sort, page_int, page_limit, attrs);
+        const merged_query = { ...(query || {}), ...search_query };
+
+        const total = await this.count(merged_query);
+        const list = await this.find_page(merged_query, sort, page_int, page_limit, attrs);
         const list_link = await this.read_link_attrs(list, link_fields);
         const data = await this.convert_ref_attrs(list_link, ref_fields);
 
@@ -260,7 +276,7 @@ class Entity {
     * @returns object with code and err
     */
     async create_entity(param_obj, view) {
-        const fields = view && view !== "*" ? this.meta.create_fields.filter(field => Array.isArray(field.view) ? field.view.includes(view) || field.view.includes("*") : field.view === view || field.view === "*") : this.meta.create_fields;
+        const fields = this.filter_fields_by_view(this.meta.create_fields, view);
         const { obj, error_field_names } = convert_type(param_obj, fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
@@ -272,7 +288,7 @@ class Entity {
 
         if (this.meta.before_create) {
             const { code, err } = await this.meta.before_create(this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "before_create error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -295,7 +311,7 @@ class Entity {
 
         if (this.meta.ref_fields) {
             const { code, err } = await this.validate_ref(obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "validate_ref error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -305,7 +321,7 @@ class Entity {
 
         if (this.meta.create) {
             const { code, err } = await this.meta.create(this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "create error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -323,7 +339,7 @@ class Entity {
 
         if (this.meta.after_create) {
             const { code, err } = await this.meta.after_create(this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "after_create error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -340,7 +356,7 @@ class Entity {
     * @returns object with code and err
     */
     async clone_entity(_id, param_obj, view) {
-        const fields = view && view !== "*" ? this.meta.clone_fields.filter(field => Array.isArray(field.view) ? field.view.includes(view) || field.view.includes("*") : field.view === view || field.view === "*") : this.meta.clone_fields;
+        const fields = this.filter_fields_by_view(this.meta.clone_fields, view);
         const { obj, error_field_names } = convert_type(param_obj, fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
@@ -352,7 +368,7 @@ class Entity {
 
         if (this.meta.before_clone) {
             const { code, err } = await this.meta.before_clone(_id, this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "before_clone error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -375,7 +391,7 @@ class Entity {
 
         if (this.meta.ref_fields) {
             const { code, err } = await this.validate_ref(obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "validate_ref error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -385,7 +401,7 @@ class Entity {
 
         if (this.meta.clone) {
             const { code, err } = await this.meta.clone(_id, this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "clone error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -403,7 +419,7 @@ class Entity {
 
         if (this.meta.after_clone) {
             const { code, err } = await this.meta.after_clone(_id, this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "after_clone error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -423,7 +439,7 @@ class Entity {
      * 
      */
     async update_entity(_id, param_obj, view) {
-        const fields = view && view !== "*" ? this.meta.update_fields.filter(field => Array.isArray(field.view) ? field.view.includes(view) || field.view.includes("*") : field.view === view || field.view === "*") : this.meta.update_fields;
+        const fields = this.filter_fields_by_view(this.meta.update_fields, view);
 
         const { obj, error_field_names } = convert_update_type(param_obj, fields);
         if (error_field_names.length > 0) {
@@ -435,7 +451,7 @@ class Entity {
 
         if (this.meta.before_update) {
             const { code, err } = await this.meta.before_update(_id, this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "before_update error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -444,7 +460,7 @@ class Entity {
         }
 
         const query = _id ? oid_query(_id) : this.primary_key_query(obj);
-        if (query == null) {
+        if (query === null) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "error query _id:" + _id + ", with obj:" + JSON.stringify(obj));
             }
@@ -452,7 +468,7 @@ class Entity {
         }
 
         const total = await this.count(query);
-        if (total != 1) {
+        if (total !== 1) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "update_entity not found with query:" + JSON.stringify(query) + ", and total:" + total);
             }
@@ -461,7 +477,7 @@ class Entity {
 
         if (this.meta.ref_fields) {
             const { code, err } = await this.validate_ref(obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "update_entity validate_ref error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -471,7 +487,7 @@ class Entity {
 
         if (this.meta.update) {
             const { code, err } = await this.meta.update(_id, this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "meta update error:" + JSON.stringify(err) + ", with code:" + code + ",_id:" + _id + ",obj:" + JSON.stringify(obj));
                 }
@@ -479,7 +495,7 @@ class Entity {
             }
         } else {
             const result = await this.update(query, obj);
-            if (result.ok != 1) {
+            if (result.ok !== 1) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "update record is failed with query:" + JSON.stringify(query) + ",obj:" + JSON.stringify(obj) + ",result:" + JSON.stringify(result));
                 }
@@ -489,7 +505,7 @@ class Entity {
 
         if (this.meta.after_update) {
             const { code, err } = await this.meta.after_update(_id, this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "after_update is failed with _id:" + JSON.stringify(_id) + ",obj:" + JSON.stringify(obj) + ",err:" + JSON.stringify(err) + ",code:" + code);
                 }
@@ -507,7 +523,7 @@ class Entity {
      * 
      */
     async batch_update_entity(_ids, param_obj, view) {
-        const update_fields = view && view !== "*" ? this.meta.update_fields.filter(field => Array.isArray(field.view) ? this.contain_view(field.view, view) || field.view.includes("*") : view.includes(field.view) || field.view === "*") : this.meta.update_fields;
+        const update_fields = this.filter_fields_by_view(this.meta.update_fields, view);
         const { obj, error_field_names } = convert_update_type(param_obj, update_fields);
         if (error_field_names.length > 0) {
             if (is_log_error()) {
@@ -517,7 +533,7 @@ class Entity {
         }
 
         const query = oid_queries(_ids);
-        if (query == null) {
+        if (query === null) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "batch_update_entity invalid ids:" + JSON.stringify(_ids));
             }
@@ -526,7 +542,7 @@ class Entity {
 
         if (this.meta.ref_fields) {
             const { code, err } = await this.validate_ref(obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "batch_update_entity validate_ref error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -536,7 +552,7 @@ class Entity {
 
         if (this.meta.batch_update) {
             const { code, err } = await this.meta.batch_update(_ids, this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "batch_update_entity batch_update error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -544,7 +560,7 @@ class Entity {
             }
         } else {
             const result = await this.update(query, obj);
-            if (result.ok != 1) {
+            if (result.ok !== 1) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "batch_update_entity update record is failed with query:" + JSON.stringify(query) + ",obj:" + JSON.stringify(obj) + ",result:" + JSON.stringify(result));
                 }
@@ -554,7 +570,7 @@ class Entity {
 
         if (this.meta.after_batch_update) {
             const { code, err } = await this.meta.after_batch_update(_ids, this, obj);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "after_batch_update  error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -563,6 +579,23 @@ class Entity {
         }
 
         return { code: SUCCESS };
+    }
+
+    filter_fields_by_view(fields, view) {
+        if (!view || view === "*") {
+            return fields;
+        }
+
+        return fields.filter((field) => {
+            const field_view = field.view;
+            if (Array.isArray(field_view)) {
+                return this.contain_view(field_view, view) || field_view.includes("*");
+            }
+            if (typeof field_view === "string") {
+                return view.includes(field_view) || field_view === "*";
+            }
+            return true;
+        });
     }
 
     contain_view(array, view) {
@@ -584,14 +617,14 @@ class Entity {
      */
     async read_property(_id, attr_names, view) {
         const query = oid_query(_id);
-        if (query == null) {
+        if (query === null) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "read_property invalid id:" + _id);
             }
             return { code: INVALID_PARAMS, err: ["_id"] };
         }
 
-        const property_fields = view && view !== "*" ? this.meta.property_fields.filter(field => Array.isArray(field.view) ? this.contain_view(field.view, view) || field.view.includes("*") : view.includes(field.view) || field.view === "*") : this.meta.property_fields;
+        const property_fields = this.filter_fields_by_view(this.meta.property_fields, view);
         const field_names = property_fields.map(f => f.name);
         const attrs = { _id: 1 };
         attr_names.split(",").forEach((attr) => {
@@ -601,7 +634,7 @@ class Entity {
         });
 
         const results = await this.find(query, attrs);
-        if (results && results.length == 1) {
+        if (results && results.length === 1) {
             if (is_log_debug()) {
                 log_debug("read_property with query:" + JSON.stringify(query) + ",attrs:" + JSON.stringify(attrs) + ",result:" + JSON.stringify(results));
             }
@@ -620,7 +653,7 @@ class Entity {
      */
     async read_entity(_id, attr_names, view) {
         const query = oid_query(_id);
-        if (query == null) {
+        if (query === null) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "read_entity invalid id:" + _id);
             }
@@ -634,7 +667,7 @@ class Entity {
             return { code: INVALID_PARAMS, err: ["attr_names"] };
         }
 
-        const property_fields = view && view !== "*" ? this.meta.property_fields.filter(field => Array.isArray(field.view) ? this.contain_view(field.view, view) || field.view.includes("*") : view.includes(field.view) || field.view === "*") : this.meta.property_fields;
+        const property_fields = this.filter_fields_by_view(this.meta.property_fields, view);
         const field_names = property_fields.map(f => f.name);
 
         const ref_fields = [];
@@ -656,10 +689,10 @@ class Entity {
         });
 
         const results = await this.find(query, attrs);
-        if (results && results.length == 1) {
+        if (results && results.length === 1) {
             if (this.meta.after_read) {
                 const { code, err } = await this.meta.after_read(_id, this, attr_names, results[0]);
-                if (err || code != SUCCESS) {
+                if (err || code !== SUCCESS) {
                     if (is_log_error()) {
                         log_error(LOG_ENTITY, "after_read error:" + JSON.stringify(err) + ", with code:" + code);
                     }
@@ -670,7 +703,7 @@ class Entity {
             const list_link = await this.read_link_attrs(results, link_fields);
             const converted = await this.convert_ref_attrs(list_link, ref_fields);
 
-            if (converted && converted.length == 1) {
+            if (converted && converted.length === 1) {
                 if (is_log_debug()) {
                     log_debug("read_entity with query:" + JSON.stringify(query) + ",attrs:" + JSON.stringify(attrs) + ",converted:" + JSON.stringify(converted));
                 }
@@ -687,7 +720,7 @@ class Entity {
      */
     async delete_entity(id_array) {
         const query = oid_queries(id_array);
-        if (query == null) {
+        if (query === null) {
             if (is_log_error()) {
                 log_error(LOG_ENTITY, "delete_entity invalid id_array:" + JSON.stringify(id_array));
             }
@@ -696,7 +729,7 @@ class Entity {
 
         if (this.meta.before_delete) {
             const { code, err } = await this.meta.before_delete(this, id_array);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "before_delete error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -706,7 +739,7 @@ class Entity {
 
         if (this.meta.delete) {
             const { code, err } = await this.meta.delete(this, id_array);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "delete error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -724,7 +757,7 @@ class Entity {
             }
 
             const result = await this.delete(query);
-            if (result.ok != 1) {
+            if (result.ok !== 1) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "delete records is failed with query:" + JSON.stringify(query) + ", result:" + JSON.stringify(result));
                 }
@@ -733,10 +766,10 @@ class Entity {
             //delete other ref_by entity based on delete mode
             for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
                 const ref_by_meta = this.meta.ref_by_metas[i];
-                const ref_fields = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
+                const ref_fields = ref_by_meta.ref_fields.filter(field => field.ref === this.meta.collection);
                 for (let j = 0; j < ref_fields.length; j++) {
                     const ref_field = ref_fields[j];
-                    if (ref_field.delete == DELETE_MODE.cascade) {
+                    if (ref_field.delete === DELETE_MODE.cascade) {
                         const refer_by_entity = new Entity(ref_by_meta);
                         await refer_by_entity.delete_refer_entity(ref_field.name, id_array)
                     }
@@ -746,7 +779,7 @@ class Entity {
 
         if (this.meta.after_delete) {
             const { code, err } = await this.meta.after_delete(this, id_array);
-            if (err || code != SUCCESS) {
+            if (err || code !== SUCCESS) {
                 if (is_log_error()) {
                     log_error(LOG_ENTITY, "after_delete error:" + JSON.stringify(err) + ", with code:" + code);
                 }
@@ -835,7 +868,7 @@ class Entity {
      */
     find_by_ref_value(value, attr, ref_by_entity) {
         let query = Array.isArray(value) ? oid_queries(value) : oid_query(value);
-        if (query == null) {
+        if (query === null) {
             if (Array.isArray(value)) {
                 query = { [this.meta.ref_label]: { "$in": value } };
             } else {
@@ -848,11 +881,13 @@ class Entity {
             }
         }
 
-        if (this.meta.ref_filter && ref_by_entity) {
-            if (this.meta.ref_filter[ref_by_entity]) {
+        if (this.meta.ref_filter) {
+            if (ref_by_entity && this.meta.ref_filter[ref_by_entity]) {
                 query = { ...query, ...this.meta.ref_filter[ref_by_entity] };
             } else if (this.meta.ref_filter["*"]) {
                 query = { ...query, ...this.meta.ref_filter["*"] };
+            } else if (typeof this.meta.ref_filter === "object") {
+                query = { ...query, ...this.meta.ref_filter };
             }
         }
 
@@ -867,14 +902,14 @@ class Entity {
      * @returns 
      */
     find_one_ref_entity(field_name, value, attr) {
-        const fields = this.meta.fields.filter(field => field.name == field_name);
-        if (fields.length == 1) {
+        const fields = this.meta.fields.filter(field => field.name === field_name);
+        if (fields.length === 1) {
             const field = fields[0];
             if (field.ref) {
                 const ref_meta = get_entity_meta(field.ref);
                 const ref_entity = new Entity(ref_meta);
                 let query = oid_query(value);
-                if (query == null) {
+                if (query === null) {
                     query = { [ref_meta.ref_label]: value };
                 }
                 return ref_entity.find_one(query, attr);
@@ -897,11 +932,11 @@ class Entity {
         for (let i = 0; i < this.meta.ref_by_metas.length; i++) {
             const ref_by_meta = this.meta.ref_by_metas[i];
             const refer_by_entity = new Entity(ref_by_meta);
-            const ref_fields = ref_by_meta.ref_fields.filter(field => field.ref == this.meta.collection);
+            const ref_fields = ref_by_meta.ref_fields.filter(field => field.ref === this.meta.collection);
 
             for (let j = 0; j < ref_fields.length; j++) {
                 const ref_field = ref_fields[j];
-                if (ref_field.delete != DELETE_MODE.keep) {
+                if (ref_field.delete !== DELETE_MODE.keep) {
                     const attr = {};
                     if (ref_by_meta.ref_label) {
                         attr[ref_by_meta.ref_label] = 1;
@@ -909,7 +944,7 @@ class Entity {
 
                     const entities = await refer_by_entity.get_refer_entities(ref_field.name, id_array, attr);
                     if (entities && entities.length > 0) {
-                        if (ref_field.delete == DELETE_MODE.cascade) {
+                        if (ref_field.delete === DELETE_MODE.cascade) {
                             const ref_array = await refer_by_entity.check_refer_entity(entities.map(o => o._id + ""));
                             if (ref_array && ref_array.length > 0) {
                                 has_refer_by_array.push(...ref_array);
@@ -1057,7 +1092,7 @@ class Entity {
                         const linked_attrs = entity_filter_map[entities[i]];
                         for (let k = 0; k < linked_attrs.length; k++) {
                             const id = obj[linked_attrs[k]];
-                            const [link_obj] = ref_entity_items.filter(o => o._id + "" == id);
+                            const [link_obj] = ref_entity_items.filter(o => `${o._id}` === `${id}`);
                             if (link_obj) {
                                 const copy_obj = { ...link_obj };
                                 delete copy_obj["_id"];
@@ -1078,7 +1113,7 @@ class Entity {
     get_filtered_ref_labels(ref_by_entity, client_query) {
         let query = {};
         if (this.meta.user_field) {
-            query[this.meta.user_field] = get_session_userid();
+            query[this.meta.user_field] = get_session_user_id();
         }
 
         const search_fields = this.meta.search_fields;
@@ -1088,19 +1123,21 @@ class Entity {
             const queries = client_query.split(",");
             for (let i = 0; i < queries.length; i++) {
                 const query_values = queries[i].split(":");
-                if (query_values && query_values.length == 2) {
+                if (query_values && query_values.length === 2) {
                     const field_name = query_values[0];
-                    const [search_field] = search_fields.filter(f => f.name == field_name);
+                    const [search_field] = search_fields.filter(f => f.name === field_name);
                     search_field && (search_query = parse_search_value(field_name, search_field.type, query_values[1]))
                 }
             }
         }
 
-        if (this.meta.ref_filter && ref_by_entity) {
-            if (this.meta.ref_filter[ref_by_entity]) {
+        if (this.meta.ref_filter) {
+            if (ref_by_entity && this.meta.ref_filter[ref_by_entity]) {
                 query = { ...query, ...this.meta.ref_filter[ref_by_entity] };
             } else if (this.meta.ref_filter["*"]) {
                 query = { ...query, ...this.meta.ref_filter["*"] };
+            } else if (typeof this.meta.ref_filter === "object") {
+                query = { ...query, ...this.meta.ref_filter };
             }
         }
         return this.find_sort({ ...search_query, ...query }, { [this.meta.ref_label]: 1 }, { [this.meta.ref_label]: 1 });
@@ -1123,7 +1160,7 @@ class Entity {
      */
     find_by_oid(id, attr) {
         const query = oid_query(id);
-        if (query == null) {
+        if (query === null) {
             return null;
         }
         return this.find_one(query, attr);

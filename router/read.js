@@ -2,7 +2,7 @@ const { required_post_params, get_params } = require('../http/params');
 const { has_value } = require('../core/validate');
 const { NO_PARAMS, SUCCESS, NO_RIGHTS } = require('../http/code');
 const { get_user_role_right } = require('../core/role');
-const { get_session_userid, get_session_user_groups, is_owner } = require('../http/session');
+const { get_session_user_id, get_session_user_groups, is_owner } = require('../http/session');
 const { wrap_http } = require('../http/error');
 const { oid_query } = require('../db/db');
 const { Entity } = require('../db/entity');
@@ -98,7 +98,7 @@ const init_read_router = function (router, meta) {
                 }
                 param_obj[meta.user_field] = user_ids;
             } else {
-                const user_id = get_session_userid(req);
+                const user_id = get_session_user_id(req);
                 if (user_id == null) {
                     throw new Error("no user id is found in session");
                 }

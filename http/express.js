@@ -2,7 +2,7 @@ const express = require('express');
 
 const { init_cors } = require('./cors');
 const { NO_SESSION } = require('./code');
-const { init_session, get_session_userid } = require('./session');
+const { init_session, get_session_user_id } = require('./session');
 const { init_router_dirs } = require('./router');
 const { handle_exception } = require('./error');
 const { get_settings } = require('../setting');
@@ -42,7 +42,7 @@ const init_express_server = (base_dir, port_attr, callback) => {
 
     app.use((req, res, next) => {
         if (server.check_user && !is_excluded_url(server, req)) {
-            const user_id = get_session_userid(req);
+            const user_id = get_session_user_id(req);
             if (user_id == null) {
                 res.json({ code: NO_SESSION, err: "no session found" });
             } else {

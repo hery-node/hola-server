@@ -1,3 +1,8 @@
+/**
+ * @fileoverview GridFS file storage utilities.
+ * @module db/gridfs
+ */
+
 const fs = require('fs');
 const { GridFSBucket, MongoClient } = require('mongodb');
 const { get_settings } = require('../setting');
@@ -7,20 +12,19 @@ let gridfs_instance;
 const get_gridfs_instance = async () => {
     if (gridfs_instance) {
         return gridfs_instance;
-    } else {
-        const mongo = get_settings().mongo;
-        gridfs_instance = new GridFS();
-        const client = await gridfs_instance.connect(mongo.url);
-        gridfs_instance.db = client.db();
-        return gridfs_instance;
     }
-}
+    const mongo = get_settings().mongo;
+    gridfs_instance = new GridFS();
+    const client = await gridfs_instance.connect(mongo.url);
+    gridfs_instance.db = client.db();
+    return gridfs_instance;
+};
 
 class GridFS {
     /**
      * Connect to mongodb
      * @param {url of mongo} url 
-     * @returns 
+     * @returns {Promise<MongoClient>} mongo client instance
      */
     connect(url) {
         return new Promise((resolve, reject) => {
@@ -33,16 +37,16 @@ class GridFS {
 
     /**
      * 
-     * @param {mongodb bucket name} bucketname 
+     * @param {mongodb bucket name} bucket_name 
      * @param {the file name} filename 
      * @param {the file path} filepath 
      * @returns 
      */
-    async save_file(bucketname, filename, filepath) {
-        const bucket = new GridFSBucket(this.db, { chunkSizeBytes: 1024 * 1024, bucketName: bucketname });
-        const files = await bucket.find({ filename: filename }).toArray();
+    async save_file(bucket_name, filename, filepath) {
+        const bucket = new GridFSBucket(this.db, { chunkSizeBytes: 1024 * 1024, bucketName: bucket_name });
+        const files = await bucket.find({ filename }).toArray();
         if (files && files.length > 0) {
-            await delete_file(bucket, files[0]._id);
+            await this.delete_file(bucket, files[0]._id);
         }
         return new Promise((resolve, reject) => {
             if (typeof filepath === 'string') {
@@ -58,13 +62,13 @@ class GridFS {
     }
 
     /**
-     * 
-     * @param {mongodb bucket name} bucketname 
+     * Stream file to http response.
+     * @param {mongodb bucket name} bucket_name 
      * @param {the file name} filename 
      * @param {http response} response 
      */
-    read_file(bucketname, filename, response) {
-        const bucket = new GridFSBucket(this.db, { chunkSizeBytes: 1024 * 1024, bucketName: bucketname });
+    read_file(bucket_name, filename, response) {
+        const bucket = new GridFSBucket(this.db, { chunkSizeBytes: 1024 * 1024, bucketName: bucket_name });
         const stream = bucket.openDownloadStreamByName(filename);
         stream.on('data', (chunk) => {
             response.write(chunk);
@@ -78,13 +82,13 @@ class GridFS {
     }
 
     /**
-     * 
-     * @param {mongodb bucket name} bucketname
+     * Pipe file from gridfs to disk.
+     * @param {mongodb bucket name} bucket_name
      * @param {the file name} filename
-     * @param {the dest file name} dest_file 
+     * @param {the dest file name} dest_filename 
      */
-    async pipe_file(bucketname, filename, dest_filename) {
-        const bucket = new GridFSBucket(this.db, { chunkSizeBytes: 1024 * 1024, bucketName: bucketname });
+    async pipe_file(bucket_name, filename, dest_filename) {
+        const bucket = new GridFSBucket(this.db, { chunkSizeBytes: 1024 * 1024, bucketName: bucket_name });
         const stream = bucket.openDownloadStreamByName(filename);
         const write_stream = require("fs").createWriteStream(dest_filename);
 
@@ -96,15 +100,15 @@ class GridFS {
     }
 
     /**
-     * Delete the files by file name
-     * @param {bucket name} bucketname 
+     * Delete the files by file name.
+     * @param {bucket name} bucket_name 
      * @param {file name} filename 
      */
-    async delete_files(bucketname, filename) {
-        const bucket = new GridFSBucket(this.db, { chunkSizeBytes: 1024 * 1024, bucketName: bucketname });
-        const files = await bucket.find({ filename: filename }).toArray();
+    async delete_files(bucket_name, filename) {
+        const bucket = new GridFSBucket(this.db, { chunkSizeBytes: 1024 * 1024, bucketName: bucket_name });
+        const files = await bucket.find({ filename }).toArray();
         if (files && files.length > 0) {
-            await delete_file(bucket, files[0]._id);
+            await this.delete_file(bucket, files[0]._id);
         }
     }
 
@@ -112,17 +116,17 @@ class GridFS {
      * Delete the file using id
      * @param {mongodb bucket name} bucket 
      * @param {id of the file} id 
-     * @returns 
+     * @returns {Promise<boolean>} when delete succeeds
      */
     delete_file(bucket, id) {
         return new Promise((resolve, reject) => {
-            bucket.delete(id, (async (err) => {
+            bucket.delete(id, async (err) => {
                 if (err) {
                     reject(err);
                 } else {
                     resolve(true);
                 }
-            }));
+            });
         });
     }
 }
@@ -133,26 +137,22 @@ class GridFS {
  * @param {http request} req 
  * @param {entity object} obj 
  */
-const set_file_fields = function (meta, req, obj) {
-    const file_fields = meta.file_fields;
-
-    if (file_fields && file_fields.length > 0 && req.files) {
-        const primary_key = meta.primary_keys.map(key => obj[key]).join("_");
-        file_fields.forEach(function (field) {
-            const files = req.files[field.name];
-
-            if (files && files.length > 0) {
-                if (file_fields.length == 1) {
-                    obj[field.name] = primary_key;
-                } else {
-                    obj[field.name] = primary_key + "_" + field.name;
-                }
-            } else {
-                delete obj[field.name];
-            }
-        });
+const set_file_fields = (meta, req, obj) => {
+    const { file_fields, primary_keys } = meta;
+    if (!file_fields || file_fields.length === 0 || !req.files) {
+        return;
     }
-}
+
+    const primary_key = primary_keys.map((key) => obj[key]).join("_");
+    file_fields.forEach((field) => {
+        const files = req.files[field.name];
+        if (files && files.length > 0) {
+            obj[field.name] = file_fields.length === 1 ? primary_key : `${primary_key}_${field.name}`;
+        } else {
+            delete obj[field.name];
+        }
+    });
+};
 
 /**
  * 
@@ -161,19 +161,20 @@ const set_file_fields = function (meta, req, obj) {
  * @param {http request object} req 
  * @param {entity object} obj 
  */
-const save_file_fields_to_db = async function (collection, file_fields, req, obj) {
-    if (file_fields && file_fields.length > 0 && req.files) {
-        for (let i = 0; i < file_fields.length; i++) {
-            const field = file_fields[i];
-            if (obj[field.name]) {
-                const file = req.files[field.name][0];
-                const instance = await get_gridfs_instance();
-                await instance.save_file(collection, obj[field.name], file.path);
-                fs.unlinkSync(file.path);
-            }
+const save_file_fields_to_db = async (collection, file_fields, req, obj) => {
+    if (!file_fields || file_fields.length === 0 || !req.files) {
+        return;
+    }
+
+    for (const field of file_fields) {
+        if (obj[field.name]) {
+            const [file] = req.files[field.name];
+            const instance = await get_gridfs_instance();
+            await instance.save_file(collection, obj[field.name], file.path);
+            fs.unlinkSync(file.path);
         }
     }
-}
+};
 
 /**
  * Save file to gridfs file
@@ -184,7 +185,7 @@ const save_file_fields_to_db = async function (collection, file_fields, req, obj
 const save_file = async (collection, filename, filepath) => {
     const instance = await get_gridfs_instance();
     await instance.save_file(collection, filename, filepath);
-}
+};
 
 /**
  * read file from gridfs
@@ -195,7 +196,7 @@ const save_file = async (collection, filename, filepath) => {
 const read_file = async (collection, filename, response) => {
     const instance = await get_gridfs_instance();
     await instance.read_file(collection, filename, response);
-}
+};
 
 /**
  * pipe file from gridfs
@@ -206,7 +207,7 @@ const read_file = async (collection, filename, response) => {
 const pipe_file = async (collection, filename, dest_filename) => {
     const instance = await get_gridfs_instance();
     await instance.pipe_file(collection, filename, dest_filename);
-}
+};
 
 /**
  * delete file from gridfs
@@ -216,6 +217,6 @@ const pipe_file = async (collection, filename, dest_filename) => {
 const delete_file = async (collection, filename) => {
     const instance = await get_gridfs_instance();
     await instance.delete_files(collection, filename);
-}
+};
 
 module.exports = { set_file_fields, save_file_fields_to_db, save_file, read_file, pipe_file, delete_file };

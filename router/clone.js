@@ -1,6 +1,6 @@
 const { set_file_fields, save_file_fields_to_db } = require('../db/gridfs');
 const { SUCCESS, NO_PARAMS, NO_RIGHTS } = require('../http/code');
-const { get_session_userid, is_owner } = require('../http/session');
+const { get_session_user_id, is_owner } = require('../http/session');
 const { wrap_http } = require('../http/error');
 const { post_params, required_post_params } = require('../http/params');
 const { has_value } = require('../core/validate');
@@ -50,7 +50,7 @@ const init_clone_router = function (router, meta) {
         }
 
         if (meta.user_field) {
-            const user_id = get_session_userid(req);
+            const user_id = get_session_user_id(req);
             if (user_id == null) {
                 throw new Error("no user is found in session");
             }

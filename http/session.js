@@ -20,7 +20,7 @@ const init_session = (app) => {
     }
 }
 
-const get_session_userid = (req) => {
+const get_session_user_id = (req) => {
     const user = req && req.session ? req.session.user : null;
     return user ? user.id : null;
 }
@@ -36,7 +36,7 @@ const is_owner = async (req, meta, entity, query) => {
     }
 
     if (meta.user_field) {
-        const user_id = get_session_userid(req);
+        const user_id = get_session_user_id(req);
         if (user_id == null) {
             throw new Error("no user id is found in session");
         }
@@ -47,4 +47,4 @@ const is_owner = async (req, meta, entity, query) => {
     return true;
 }
 
-module.exports = { init_session, get_session_userid, get_session_user_groups, is_owner };
+module.exports = { init_session, get_session_user_id, get_session_user_groups, is_owner };
