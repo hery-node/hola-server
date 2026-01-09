@@ -1,8 +1,19 @@
+/**
+ * @fileoverview Request parameter extraction utilities.
+ * @module http/params
+ */
+
 const { has_value, is_undefined } = require('../core/validate');
 
-const parse_params = function (input, params) {
+/**
+ * Extract specified parameters from input object.
+ * @param {Object} input - Source object (req.query or req.body)
+ * @param {string[]} params - Parameter names to extract
+ * @returns {Object} Object containing extracted parameters
+ */
+const parse_params = (input, params) => {
     const obj = {};
-    params.forEach(function (param) {
+    params.forEach((param) => {
         if (has_value(input[param])) {
             obj[param] = input[param];
         }
@@ -10,18 +21,33 @@ const parse_params = function (input, params) {
     return obj;
 };
 
-const get_params = function (req, params) {
-    return parse_params(req.query, params);
-};
+/**
+ * Extract query parameters from request.
+ * @param {Object} req - Express request
+ * @param {string[]} params - Parameter names to extract
+ * @returns {Object} Extracted parameters
+ */
+const get_params = (req, params) => parse_params(req.query, params);
 
-const post_params = function (req, params) {
-    return parse_params(req.body, params);
-};
+/**
+ * Extract body parameters from request.
+ * @param {Object} req - Express request
+ * @param {string[]} params - Parameter names to extract
+ * @returns {Object} Extracted parameters
+ */
+const post_params = (req, params) => parse_params(req.body, params);
 
-const post_update_params = function (req, params) {
+/**
+ * Extract update parameters from request body, including undefined values.
+ * Used for partial updates where undefined means "don't change".
+ * @param {Object} req - Express request
+ * @param {string[]} params - Parameter names to extract
+ * @returns {Object} Extracted parameters
+ */
+const post_update_params = (req, params) => {
     const input = req.body;
     const obj = {};
-    params.forEach(function (param) {
+    params.forEach((param) => {
         if (!is_undefined(input[param])) {
             obj[param] = input[param];
         }
@@ -29,29 +55,41 @@ const post_update_params = function (req, params) {
     return obj;
 };
 
-const required_params = function (input, params) {
+/**
+ * Extract required parameters, returning null if any are missing.
+ * @param {Object} input - Source object
+ * @param {string[]} params - Required parameter names
+ * @returns {Object|null} Extracted parameters or null if any missing
+ */
+const required_params = (input, params) => {
     const obj = {};
-    let passed = true;
-    params.forEach(function (param) {
+    let has_all = true;
+
+    params.forEach((param) => {
         if (!has_value(input[param])) {
-            passed = false;
+            has_all = false;
         } else {
             obj[param] = input[param];
         }
     });
-    if (passed === false) {
-        return null;
-    } else {
-        return obj;
-    }
+
+    return has_all ? obj : null;
 };
 
-const required_get_params = function (req, params) {
-    return required_params(req.query, params);
-};
+/**
+ * Extract required query parameters from request.
+ * @param {Object} req - Express request
+ * @param {string[]} params - Required parameter names
+ * @returns {Object|null} Extracted parameters or null if any missing
+ */
+const required_get_params = (req, params) => required_params(req.query, params);
 
-const required_post_params = function (req, params) {
-    return required_params(req.body, params);
-};
+/**
+ * Extract required body parameters from request.
+ * @param {Object} req - Express request
+ * @param {string[]} params - Required parameter names
+ * @returns {Object|null} Extracted parameters or null if any missing
+ */
+const required_post_params = (req, params) => required_params(req.body, params);
 
-module.exports = { get_params, post_params, post_update_params, required_get_params, required_post_params, required_params }
+module.exports = { get_params, post_params, post_update_params, required_get_params, required_post_params, required_params };
