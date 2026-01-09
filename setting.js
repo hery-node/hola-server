@@ -1,5 +1,14 @@
+/**
+ * @fileoverview Application settings management.
+ * @module setting
+ */
+
 const dev_mode = true;
 
+/**
+ * Default application settings.
+ * @type {Object}
+ */
 let settings = {
     axios: {
         retry: 3,
@@ -16,7 +25,7 @@ let settings = {
     log: {
         col_log: 'log',
         log_level: 0,
-        save_db: dev_mode == false,
+        save_db: dev_mode === false,
     },
     roles: [
         { name: "admin", root: true },
@@ -29,7 +38,7 @@ let settings = {
         check_user: true,
         exclude_urls: ["/"],
         session: {
-            cookie_max_age: 1000 * 60 * 60 * 24 * 256 * 10,// ten years
+            cookie_max_age: 1000 * 60 * 60 * 24 * 256 * 10, // ten years
             secret: 'BGTDYWJ*)#*$&*%(%#'
         },
         threshold: {
@@ -40,12 +49,19 @@ let settings = {
     }
 };
 
+/**
+ * Initialize application settings with user-provided configuration.
+ * Replaces default settings completely.
+ * @param {Object} user_setting - User-provided settings object.
+ */
 const init_settings = (user_setting) => {
     settings = user_setting;
-}
+};
 
-const get_settings = () => {
-    return settings;
-}
+/**
+ * Get current application settings.
+ * @returns {Object} Current settings object.
+ */
+const get_settings = () => settings;
 
 module.exports = { init_settings, get_settings };
