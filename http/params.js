@@ -6,20 +6,29 @@
 const { has_value, is_undefined } = require('../core/validate');
 
 /**
- * Extract specified parameters from input object.
+ * Extract parameters from input object using a filter function.
+ * @param {Object} input - Source object (req.query or req.body)
+ * @param {string[]} params - Parameter names to extract
+ * @param {Function} filter_fn - Function to determine if param should be included
+ * @returns {Object} Object containing extracted parameters
+ */
+const extract_params = (input, params, filter_fn) => {
+    const obj = {};
+    for (const param of params) {
+        if (filter_fn(input[param])) {
+            obj[param] = input[param];
+        }
+    }
+    return obj;
+};
+
+/**
+ * Extract specified parameters from input object (only if values are present).
  * @param {Object} input - Source object (req.query or req.body)
  * @param {string[]} params - Parameter names to extract
  * @returns {Object} Object containing extracted parameters
  */
-const parse_params = (input, params) => {
-    const obj = {};
-    params.forEach((param) => {
-        if (has_value(input[param])) {
-            obj[param] = input[param];
-        }
-    });
-    return obj;
-};
+const parse_params = (input, params) => extract_params(input, params, has_value);
 
 /**
  * Extract query parameters from request.
@@ -44,16 +53,7 @@ const post_params = (req, params) => parse_params(req.body, params);
  * @param {string[]} params - Parameter names to extract
  * @returns {Object} Extracted parameters
  */
-const post_update_params = (req, params) => {
-    const input = req.body;
-    const obj = {};
-    params.forEach((param) => {
-        if (!is_undefined(input[param])) {
-            obj[param] = input[param];
-        }
-    });
-    return obj;
-};
+const post_update_params = (req, params) => extract_params(req.body, params, v => !is_undefined(v));
 
 /**
  * Extract required parameters, returning null if any are missing.
@@ -62,18 +62,8 @@ const post_update_params = (req, params) => {
  * @returns {Object|null} Extracted parameters or null if any missing
  */
 const required_params = (input, params) => {
-    const obj = {};
-    let has_all = true;
-
-    params.forEach((param) => {
-        if (!has_value(input[param])) {
-            has_all = false;
-        } else {
-            obj[param] = input[param];
-        }
-    });
-
-    return has_all ? obj : null;
+    const result = parse_params(input, params);
+    return Object.keys(result).length === params.length ? result : null;
 };
 
 /**

@@ -15,6 +15,15 @@ const { init_clone_router } = require('../router/clone');
 const { init_delete_router } = require('../router/delete');
 const { get_settings } = require('../setting');
 
+/** CRUD operation configurations: [capability_key, init_function] */
+const CRUD_OPERATIONS = [
+    ['creatable', init_create_router],
+    ['readable', init_read_router],
+    ['updatable', init_update_router],
+    ['cloneable', init_clone_router],
+    ['deleteable', init_delete_router],
+];
+
 /**
  * Automatically load all router modules from configured directories.
  * Scans directories specified in settings.server.routes and mounts each router.
@@ -24,31 +33,27 @@ const { get_settings } = require('../setting');
  */
 const init_router_dirs = (app, base_dir) => {
     const settings = get_settings();
-    if (!settings || !settings.server || !settings.server.routes) {
+    if (!settings?.server?.routes) {
         return;
     }
 
-    const route_dirs = settings.server.routes;
-
-    route_dirs.forEach((route_dir) => {
+    for (const route_dir of settings.server.routes) {
         const full_route_dir = path.join(base_dir, route_dir);
         if (!fs.existsSync(full_route_dir)) {
-            return;
+            continue;
         }
 
-        const routes = fs.readdirSync(full_route_dir);
-        routes.forEach((route) => {
+        for (const route of fs.readdirSync(full_route_dir)) {
             if (!route.endsWith('.js')) {
-                return;
+                continue;
             }
 
             const router = require(`${base_dir}/${route_dir}/${route}`);
             const basename = path.basename(route, '.js');
             app.use('/' + basename, router);
-        });
-    });
+        }
+    }
 
-    // After initializing all routers, validate all metadata definitions
     validate_all_metas();
 };
 
@@ -62,28 +67,13 @@ const init_router = (meta) => {
     const router = express.Router();
     const meta_entity = new EntityMeta(meta);
 
-    if (meta_entity.creatable) {
-        init_create_router(router, meta_entity);
+    for (const [capability, init_fn] of CRUD_OPERATIONS) {
+        if (meta_entity[capability]) {
+            init_fn(router, meta_entity);
+        }
     }
 
-    if (meta_entity.readable) {
-        init_read_router(router, meta_entity);
-    }
-
-    if (meta_entity.updatable) {
-        init_update_router(router, meta_entity);
-    }
-
-    if (meta_entity.cloneable) {
-        init_clone_router(router, meta_entity);
-    }
-
-    if (meta_entity.deleteable) {
-        init_delete_router(router, meta_entity);
-    }
-
-    // Allow custom route registration
-    if (meta.route && typeof meta.route === 'function') {
+    if (typeof meta.route === 'function') {
         meta.route(router, meta_entity);
     }
 

@@ -23,23 +23,37 @@ let server_initialized = false;
  * @returns {boolean} True if URL should be excluded from auth
  */
 const is_excluded_url = (server, req) => {
-    if (!server.exclude_urls || !Array.isArray(server.exclude_urls)) {
+    const patterns = server.exclude_urls;
+    if (!Array.isArray(patterns)) {
         return false;
     }
-
-    return server.exclude_urls.some((pattern) => {
-        const re = new RegExp(pattern, "i");
-        return re.test(req.originalUrl);
-    });
+    return patterns.some(pattern => new RegExp(pattern, "i").test(req.originalUrl));
 };
 
 /**
- * Initialize session context and call next middleware.
- * @param {Object} req - Express request
- * @param {Object} res - Express response
- * @param {Function} next - Next middleware
+ * Configure body parser middleware with optional size limit.
+ * @param {Object} app - Express application
+ * @param {string|undefined} body_limit - Optional body size limit
  */
-const init_request_context = (req, res, next) => {
+const configure_body_parser = (app, body_limit) => {
+    const options = body_limit ? { limit: body_limit, extended: true } : { extended: true };
+    app.use(express.json(options));
+    app.use(express.urlencoded(options));
+};
+
+/**
+ * Create authentication middleware.
+ * @param {Object} server - Server settings
+ * @returns {Function} Express middleware
+ */
+const create_auth_middleware = (server) => (req, res, next) => {
+    if (server.check_user && !is_excluded_url(server, req)) {
+        if (!get_session_user_id(req)) {
+            res.json({ code: NO_SESSION, err: "authentication required" });
+            return;
+        }
+    }
+
     asyncLocalStorage.run({}, () => {
         set_context_value("req", req);
         next();
@@ -60,48 +74,25 @@ const init_express_server = (base_dir, port_attr, callback) => {
     }
 
     const settings = get_settings();
-    if (!settings || !settings.server) {
+    if (!settings?.server) {
         throw new Error('Server settings required for initialization');
     }
 
     const { server } = settings;
-    const { threshold } = server;
-
-    init_cors(app);
-
-    if (threshold && threshold.body_limit) {
-        app.use(express.json({ limit: threshold.body_limit, extended: true }));
-        app.use(express.urlencoded({ limit: threshold.body_limit, extended: true }));
-    } else {
-        app.use(express.json());
-        app.use(express.urlencoded({ extended: true }));
-    }
-
-    init_session(app);
-
-    app.use((req, res, next) => {
-        if (server.check_user && !is_excluded_url(server, req)) {
-            const user_id = get_session_user_id(req);
-            if (!user_id) {
-                res.json({ code: NO_SESSION, err: "authentication required" });
-                return;
-            }
-        }
-        init_request_context(req, res, next);
-    });
-
-    init_router_dirs(app, base_dir);
-    handle_exception(app);
-
     const port = server[port_attr];
     if (!port) {
         throw new Error(`Port attribute '${port_attr}' not found in server settings`);
     }
 
+    init_cors(app);
+    configure_body_parser(app, server.threshold?.body_limit);
+    init_session(app);
+    app.use(create_auth_middleware(server));
+    init_router_dirs(app, base_dir);
+    handle_exception(app);
+
     app.listen(port, async () => {
-        if (callback) {
-            await callback();
-        }
+        if (callback) await callback();
     });
 
     server_initialized = true;

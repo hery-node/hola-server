@@ -13,18 +13,20 @@ const { get_settings } = require('../setting');
  */
 const init_cors = (app) => {
     const settings = get_settings();
-    if (!settings || !settings.server) {
+    if (!settings?.server) {
         throw new Error('Server settings required for CORS initialization');
     }
 
-    const { server } = settings;
-    if (server.client_web_url && Array.isArray(server.client_web_url)) {
-        app.use(cors({
-            origin: server.client_web_url,
-            methods: ['GET', 'POST'],
-            credentials: true
-        }));
+    const client_urls = settings.server.client_web_url;
+    if (!Array.isArray(client_urls)) {
+        return;
     }
+
+    app.use(cors({
+        origin: client_urls,
+        methods: ['GET', 'POST'],
+        credentials: true
+    }));
 };
 
 module.exports = { init_cors };
