@@ -29,36 +29,24 @@ const remove_element = (array, field, value) => {
 };
 
 /**
- * Pop n elements from end of array.
- * @param {Array} array - Source array to pop from.
- * @param {number} n - Number of elements to pop.
- * @returns {Array|undefined} Array of popped elements or undefined if empty.
+ * Extract n elements from array using specified method.
+ * @param {Array} array - Source array.
+ * @param {number} n - Number of elements to extract.
+ * @param {string} method - 'pop' or 'shift'.
+ * @returns {Array|undefined} Array of extracted elements or undefined if empty.
  */
-const pop_n = (array, n) => {
-    const subarray = [];
-    while (subarray.length < n) {
-        const ele = array.pop();
-        if (ele) subarray.push(ele);
+const extract_n = (array, n, method) => {
+    const result = [];
+    while (result.length < n) {
+        const ele = array[method]();
+        if (ele) result.push(ele);
         else break;
     }
-    return subarray.length > 0 ? subarray : undefined;
+    return result.length > 0 ? result : undefined;
 };
 
-/**
- * Shift n elements from beginning of array.
- * @param {Array} array - Source array to shift from.
- * @param {number} n - Number of elements to shift.
- * @returns {Array|undefined} Array of shifted elements or undefined if empty.
- */
-const shift_n = (array, n) => {
-    const subarray = [];
-    while (subarray.length < n) {
-        const ele = array.shift();
-        if (ele) subarray.push(ele);
-        else break;
-    }
-    return subarray.length > 0 ? subarray : undefined;
-};
+const pop_n = (array, n) => extract_n(array, n, 'pop');
+const shift_n = (array, n) => extract_n(array, n, 'shift');
 
 /**
  * Calculate sum of number array.
@@ -82,32 +70,23 @@ const avg = (arr) => arr.length === 0 ? 0 : round_to_fixed2(sum(arr) / arr.lengt
  * @returns {Object} Mapped object.
  */
 const map_array_to_obj = (arr, key_attr, value_attr) => {
-    const obj = {};
-    arr.forEach((element) => { obj[element[key_attr]] = element[value_attr]; });
-    return obj;
+    return arr.reduce((obj, el) => ({ ...obj, [el[key_attr]]: el[value_attr] }), {});
 };
 
 /**
- * Sort array of objects by attribute in descending order.
+ * Sort array of objects by attribute.
  * @param {Object[]} arr - Array to sort.
  * @param {string} attr - Attribute name to sort by.
+ * @param {boolean} [desc=false] - Sort descending if true.
  * @returns {Object[]} Sorted array.
  */
-const sort_desc = (arr, attr) => {
-    arr.sort((a, b) => b[attr] - a[attr]);
+const sort_by_attr = (arr, attr, desc = false) => {
+    arr.sort((a, b) => desc ? b[attr] - a[attr] : a[attr] - b[attr]);
     return arr;
 };
 
-/**
- * Sort array of objects by attribute in ascending order.
- * @param {Object[]} arr - Array to sort.
- * @param {string} attr - Attribute name to sort by.
- * @returns {Object[]} Sorted array.
- */
-const sort_asc = (arr, attr) => {
-    arr.sort((a, b) => a[attr] - b[attr]);
-    return arr;
-};
+const sort_desc = (arr, attr) => sort_by_attr(arr, attr, true);
+const sort_asc = (arr, attr) => sort_by_attr(arr, attr, false);
 
 /**
  * Sort array by predefined key sequence.
@@ -127,15 +106,7 @@ const sort_by_key_seq = (arr, attr, keys) => {
  * @param {Object[]} arr2 - Second array.
  * @returns {Object[]} Combined array with length arr1.length * arr2.length.
  */
-const combine = (arr1, arr2) => {
-    const result = [];
-    for (const obj1 of arr1) {
-        for (const obj2 of arr2) {
-            result.push({ ...obj1, ...obj2 });
-        }
-    }
-    return result;
-};
+const combine = (arr1, arr2) => arr1.flatMap(obj1 => arr2.map(obj2 => ({ ...obj1, ...obj2 })));
 
 /**
  * Remove duplicate elements from array.
@@ -143,9 +114,10 @@ const combine = (arr1, arr2) => {
  * @returns {Array} Array with unique elements.
  */
 const unique = (array) => {
-    return array.filter((value, index) => {
-        const value_str = JSON.stringify(value);
-        return index === array.findIndex((obj) => JSON.stringify(obj) === value_str);
+    const seen = new Map();
+    return array.filter(value => {
+        const key = JSON.stringify(value);
+        return seen.has(key) ? false : (seen.set(key, true), true);
     });
 };
 

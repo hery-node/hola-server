@@ -6,6 +6,16 @@
 const { get_settings } = require("../setting");
 
 /**
+ * Find a role by name from settings.
+ * @param {string} role_name - Role name to find.
+ * @returns {Object|undefined} Role object or undefined if not found.
+ */
+const find_role = (role_name) => {
+    const settings = get_settings();
+    return settings.roles ? settings.roles.find((role) => role.name === role_name) : undefined;
+};
+
+/**
  * Validate role name exists in settings configuration.
  * @param {string} role_name - Role name to validate.
  * @returns {boolean} True if role is valid and configured.
@@ -13,7 +23,7 @@ const { get_settings } = require("../setting");
 const validate_meta_role = (role_name) => {
     const settings = get_settings();
     if (!settings.roles) return false;
-    return is_valid_role(role_name);
+    return find_role(role_name) !== undefined;
 };
 
 /**
@@ -21,10 +31,7 @@ const validate_meta_role = (role_name) => {
  * @param {string} role_name - Role name to check.
  * @returns {boolean} True if role exists.
  */
-const is_valid_role = (role_name) => {
-    const settings = get_settings();
-    return settings.roles.filter((role) => role.name === role_name).length === 1;
-};
+const is_valid_role = (role_name) => find_role(role_name) !== undefined;
 
 /**
  * Check if role has root/admin privileges.
@@ -32,10 +39,8 @@ const is_valid_role = (role_name) => {
  * @returns {boolean} True if role is root.
  */
 const is_root_role = (role_name) => {
-    const settings = get_settings();
-    if (!settings.roles) return true;
-    if (!is_valid_role(role_name)) return false;
-    return settings.roles.filter((role) => role.name === role_name)[0].root === true;
+    const role = find_role(role_name);
+    return role ? role.root === true : true;
 };
 
 /**

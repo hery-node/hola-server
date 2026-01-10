@@ -9,6 +9,30 @@ const { random_code } = require('./random');
 const { is_log_debug, is_log_error, log_debug, log_error } = require('../db/db');
 
 const LOG_BASH = "bash";
+const SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no";
+
+/**
+ * Execute command with unified logging and error handling.
+ * @param {string} cmd - Command to execute.
+ * @param {Object} options - Exec options.
+ * @param {string} error_msg - Error message prefix.
+ * @param {string} success_msg - Success message prefix.
+ * @param {Object} [log_extra] - Additional logging context.
+ * @returns {Promise<{stdout: string, err?: string}>} Command result.
+ */
+const exec_with_logging = (cmd, options, error_msg, success_msg, log_extra) => {
+    return new Promise((resolve) => {
+        exec(cmd, options, (error, stdout) => {
+            if (error) {
+                if (is_log_error()) log_error(LOG_BASH, `${error_msg}, error:${error}`, log_extra);
+                resolve({ stdout, err: `${error_msg}, error:${error}` });
+            } else {
+                if (is_log_debug()) log_debug(LOG_BASH, `${success_msg}, stdout:${stdout}`, log_extra);
+                resolve({ stdout });
+            }
+        });
+    });
+};
 
 /**
  * Get temporary log file path.
@@ -26,8 +50,21 @@ const get_log_file = async () => {
  * @param {Object} host - Host configuration.
  * @returns {string} SSH command prefix.
  */
-const build_ssh_prefix = (host) => {
-    return `ssh ${host.auth} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p ${host.port} ${host.user}@${host.ip}`;
+const build_ssh_prefix = (host) => `ssh ${host.auth} ${SSH_OPTIONS} -p ${host.port} ${host.user}@${host.ip}`;
+
+/**
+ * Build SCP command.
+ * @param {Object} host - Host configuration.
+ * @param {string} src - Source path.
+ * @param {string} dest - Destination path.
+ * @param {boolean} to_remote - True if copying to remote.
+ * @returns {string} SCP command.
+ */
+const build_scp_cmd = (host, src, dest, to_remote) => {
+    const remote_path = `${host.user}@${host.ip}:${to_remote ? dest : src}`;
+    const local_path = to_remote ? src : dest;
+    const [first, second] = to_remote ? [local_path, remote_path] : [remote_path, local_path];
+    return `scp ${host.auth} ${SSH_OPTIONS} -P ${host.port} -q ${first} ${second}`;
 };
 
 /**
@@ -37,19 +74,11 @@ const build_ssh_prefix = (host) => {
  * @param {Object} [log_extra] - Additional logging context.
  * @returns {Promise<{stdout: string, err?: string}>} Command result.
  */
-const run_script = async (host, script, log_extra) => {
-    return new Promise((resolve) => {
-        const cmd = `${build_ssh_prefix(host)} /bin/bash <<'EOT'\n ${script} \nEOT\n`;
-        exec(cmd, { maxBuffer: 1024 * 150000 }, (error, stdout) => {
-            if (error) {
-                if (is_log_error()) log_error(LOG_BASH, `error running on host:${host.name} script:${script},error:${error}`, log_extra);
-                resolve({ stdout, err: `error running script:${script},error:${error}` });
-            } else {
-                if (is_log_debug()) log_debug(LOG_BASH, `executing on host:${host.name}, script:${script},stdout:${stdout}`, log_extra);
-                resolve({ stdout });
-            }
-        });
-    });
+const run_script = (host, script, log_extra) => {
+    const cmd = `${build_ssh_prefix(host)} /bin/bash <<'EOT'\n ${script} \nEOT\n`;
+    return exec_with_logging(cmd, { maxBuffer: 1024 * 150000 },
+        `error running on host:${host.name} script:${script}`,
+        `executing on host:${host.name}, script:${script}`, log_extra);
 };
 
 /**
@@ -61,17 +90,18 @@ const run_script = async (host, script, log_extra) => {
  */
 const run_script_extra = async (host, script, log_extra) => {
     const log_file = await get_log_file();
+    const cmd = `${build_ssh_prefix(host)} /bin/bash <<'EOT' > ${log_file} \n ${script} \nEOT\n`;
+
     return new Promise((resolve) => {
-        const cmd = `${build_ssh_prefix(host)} /bin/bash <<'EOT' > ${log_file} \n ${script} \nEOT\n`;
         exec(cmd, { maxBuffer: 1024 * 150000 }, (error, stdout) => {
             if (error) {
-                if (is_log_error()) log_error(LOG_BASH, `error running on host:${host.name} script:${script},error:${error}`, log_extra);
-                resolve({ stdout, err: `error running script:${script},error:${error}` });
+                if (is_log_error()) log_error(LOG_BASH, `error running on host:${host.name} script:${script}, error:${error}`, log_extra);
+                resolve({ stdout, err: `error running script:${script}, error:${error}` });
             } else {
                 const output = fs.readFileSync(log_file, { encoding: 'utf8', flag: 'r' });
-                if (is_log_debug()) log_debug(LOG_BASH, `executing on host:${host.name}, script:${script},stdout:${output}`, log_extra);
-                resolve({ stdout: output });
+                if (is_log_debug()) log_debug(LOG_BASH, `executing on host:${host.name}, script:${script}, stdout:${output}`, log_extra);
                 fs.unlinkSync(log_file);
+                resolve({ stdout: output });
             }
         });
     });
@@ -84,19 +114,11 @@ const run_script_extra = async (host, script, log_extra) => {
  * @param {Object} [log_extra] - Additional logging context.
  * @returns {Promise<{stdout: string, err?: string}>} Command result.
  */
-const run_script_file = async (host, script_file, log_extra) => {
-    return new Promise((resolve) => {
-        const cmd = `${build_ssh_prefix(host)} /bin/bash < ${script_file}`;
-        exec(cmd, (error, stdout) => {
-            if (error) {
-                if (is_log_error()) log_error(LOG_BASH, `error running on host:${host.name} script_file:${script_file},error:${error}`, log_extra);
-                resolve({ stdout, err: `error running script:${script_file},error:${error}` });
-            } else {
-                if (is_log_debug()) log_debug(LOG_BASH, `executing on host:${host.name}, script_file:${script_file},stdout:${stdout}`, log_extra);
-                resolve({ stdout });
-            }
-        });
-    });
+const run_script_file = (host, script_file, log_extra) => {
+    const cmd = `${build_ssh_prefix(host)} /bin/bash < ${script_file}`;
+    return exec_with_logging(cmd, {},
+        `error running on host:${host.name} script_file:${script_file}`,
+        `executing on host:${host.name}, script_file:${script_file}`, log_extra);
 };
 
 /**
@@ -105,18 +127,10 @@ const run_script_file = async (host, script_file, log_extra) => {
  * @param {Object} [log_extra] - Additional logging context.
  * @returns {Promise<{stdout: string, err?: string}>} Command result.
  */
-const run_local_cmd = async (cmd, log_extra) => {
-    return new Promise((resolve) => {
-        exec(cmd, { maxBuffer: 1024 * 15000000 }, (error, stdout) => {
-            if (error) {
-                if (is_log_error()) log_error(LOG_BASH, `error running on local host cmd:${cmd},error:${error}`, log_extra);
-                resolve({ stdout, err: `error running cmd:${cmd},error:${error}` });
-            } else {
-                if (is_log_debug()) log_debug(LOG_BASH, `executing on local host cmd:${cmd},stdout:${stdout}`, log_extra);
-                resolve({ stdout });
-            }
-        });
-    });
+const run_local_cmd = (cmd, log_extra) => {
+    return exec_with_logging(cmd, { maxBuffer: 1024 * 15000000 },
+        `error running on local host cmd:${cmd}`,
+        `executing on local host cmd:${cmd}`, log_extra);
 };
 
 /**
@@ -127,19 +141,11 @@ const run_local_cmd = async (cmd, log_extra) => {
  * @param {Object} [log_extra] - Additional logging context.
  * @returns {Promise<{stdout: string, err?: string}>} Command result.
  */
-const scp = async (host, remote_file, local_file, log_extra) => {
-    return new Promise((resolve) => {
-        const cmd = `scp ${host.auth} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${host.user}@${host.ip}:${remote_file} ${local_file}`;
-        exec(cmd, (error, stdout) => {
-            if (error) {
-                if (is_log_error()) log_error(LOG_BASH, `error scp on host:${host.name} remote:${remote_file},local:${local_file},error:${error}`, log_extra);
-                resolve({ stdout, err: `error scp:${remote_file} to local:${local_file},err:${error}` });
-            } else {
-                if (is_log_debug()) log_debug(LOG_BASH, `executing scp on host:${host.name}, remote:${remote_file},local:${local_file},stdout:${stdout}`, log_extra);
-                resolve({ stdout });
-            }
-        });
-    });
+const scp = (host, remote_file, local_file, log_extra) => {
+    const cmd = build_scp_cmd(host, remote_file, local_file, false);
+    return exec_with_logging(cmd, {},
+        `error scp on host:${host.name} remote:${remote_file}, local:${local_file}`,
+        `executing scp on host:${host.name}, remote:${remote_file}, local:${local_file}`, log_extra);
 };
 
 /**
@@ -150,19 +156,11 @@ const scp = async (host, remote_file, local_file, log_extra) => {
  * @param {Object} [log_extra] - Additional logging context.
  * @returns {Promise<{stdout: string, err?: string}>} Command result.
  */
-const scpr = async (host, local_file, remote_file, log_extra) => {
-    return new Promise((resolve) => {
-        const cmd = `scp ${host.auth} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -P ${host.port} -q ${local_file} ${host.user}@${host.ip}:${remote_file}`;
-        exec(cmd, (error, stdout) => {
-            if (error) {
-                if (is_log_error()) log_error(LOG_BASH, `error scpr on host:${host.name} remote:${remote_file},local:${local_file},error:${error}`, log_extra);
-                resolve({ stdout, err: `error scp:${remote_file} to local:${local_file},err:${error}` });
-            } else {
-                if (is_log_debug()) log_debug(LOG_BASH, `executing scpr on host:${host.name}, remote:${remote_file},local:${local_file},stdout:${stdout}`, log_extra);
-                resolve({ stdout });
-            }
-        });
-    });
+const scpr = (host, local_file, remote_file, log_extra) => {
+    const cmd = build_scp_cmd(host, local_file, remote_file, true);
+    return exec_with_logging(cmd, {},
+        `error scpr on host:${host.name} remote:${remote_file}, local:${local_file}`,
+        `executing scpr on host:${host.name}, remote:${remote_file}, local:${local_file}`, log_extra);
 };
 
 /**
@@ -200,23 +198,10 @@ const get_info = (stdout, key, log_extra) => {
     const regex = new RegExp(`\n\\s?${word_key}\\s?:(.*)\\s`, 'g');
     if (is_log_debug()) log_debug(LOG_BASH, `get_info regex:${JSON.stringify(regex)}`, log_extra);
 
-    const results = stdout.matchAll(regex);
-    const matched = [];
-    for (const result of results) {
-        matched.push(result[1].trim());
-    }
-
+    const matched = [...stdout.matchAll(regex)].map(result => result[1].trim());
     if (is_log_debug()) log_debug(LOG_BASH, `get_info matched:${JSON.stringify(matched)}`, log_extra);
     return matched;
 };
-
-/**
- * Get specific lines from array.
- * @param {string[]} array - Array of lines.
- * @param {number[]} lines - Line indices to get.
- * @returns {string[]} Selected lines.
- */
-const get_lines = (array, lines) => lines.map((line) => array[line]);
 
 /**
  * Read key-value pairs from stdout.
@@ -228,26 +213,23 @@ const get_lines = (array, lines) => lines.map((line) => array[line]);
  * @returns {Object} Parsed key-value object.
  */
 const read_key_value_line = (stdout, delimiter = ":", lines, config, exclude_mode) => {
-    const obj = {};
-    if (!stdout) return obj;
+    if (!stdout) return {};
 
     const contents = stdout.toString().split(/(?:\r\n|\r|\n)/g);
-    const line_texts = lines ? get_lines(contents, lines) : contents;
+    const line_texts = lines ? lines.map(i => contents[i]) : contents;
 
-    line_texts.forEach((content) => {
+    return line_texts.reduce((obj, content) => {
         const key_value = content.split(delimiter);
-        if (key_value.length !== 2) return;
+        if (key_value.length !== 2) return obj;
 
         const key = key_value[0].trim();
         const should_include = !config ||
             (exclude_mode !== true && config[key]) ||
             (exclude_mode === true && !config[`!${key}`]);
 
-        if (key && should_include) {
-            obj[key] = key_value[1].trim();
-        }
-    });
-    return obj;
+        if (key && should_include) obj[key] = key_value[1].trim();
+        return obj;
+    }, {});
 };
 
 /**
@@ -259,25 +241,18 @@ const read_key_value_line = (stdout, delimiter = ":", lines, config, exclude_mod
  * @returns {Object[]} Array of parsed objects.
  */
 const read_obj_line = (stdout, keys, ignore = 1, delimiter = "  ") => {
-    const results = [];
-    if (!stdout) return results;
+    if (!stdout) return [];
 
-    const contents = stdout.toString().split(/(?:\r\n|\r|\n)/g);
-    const line_texts = contents.slice(ignore);
-
-    line_texts.forEach((content) => {
-        const values = content.split(delimiter);
-        if (!values || values.length === 0 || values[0].trim().length === 0) return;
-
-        const obj = {};
-        const attrs = values.filter((f) => f.trim().length > 0);
-        for (let i = 0; i < keys.length; i++) {
-            const value = attrs[i];
-            if (value) obj[keys[i]] = value.trim();
-        }
-        results.push(obj);
-    });
-    return results;
+    return stdout.toString().split(/(?:\r\n|\r|\n)/g)
+        .slice(ignore)
+        .filter(content => content.trim().length > 0)
+        .map(content => {
+            const attrs = content.split(delimiter).filter(f => f.trim().length > 0);
+            return keys.reduce((obj, key, i) => {
+                if (attrs[i]) obj[key] = attrs[i].trim();
+                return obj;
+            }, {});
+        });
 };
 
 /**
@@ -288,12 +263,11 @@ const read_obj_line = (stdout, keys, ignore = 1, delimiter = "  ") => {
  * @returns {Promise<Object>} Object with attribute values.
  */
 const get_system_attributes = async (host, attrs, log_extra) => {
-    const obj = {};
-    for (const attr of attrs) {
-        const value = await run_simple_cmd(host, attr.cmd, log_extra);
-        if (value) obj[attr.name] = value;
-    }
-    return obj;
+    const results = await Promise.all(attrs.map(attr => run_simple_cmd(host, attr.cmd, log_extra)));
+    return attrs.reduce((obj, attr, i) => {
+        if (results[i]) obj[attr.name] = results[i];
+        return obj;
+    }, {});
 };
 
 /**
@@ -306,7 +280,7 @@ const get_system_attributes = async (host, attrs, log_extra) => {
  * @returns {Promise<boolean>} True if process was running and stopped.
  */
 const stop_process = async (host, process_name, stop_cmd, using_full, log_extra) => {
-    const grep_cmd = using_full === true ? `pgrep -f "${process_name}" | wc -l` : `pgrep ${process_name} | wc -l`;
+    const grep_cmd = using_full ? `pgrep -f "${process_name}" | wc -l` : `pgrep ${process_name} | wc -l`;
     const { stdout } = await run_script(host, grep_cmd, log_extra);
     const has_process = stdout && parseInt(stdout) > 0;
     if (has_process) await run_script(host, stop_cmd, log_extra);
@@ -314,17 +288,7 @@ const stop_process = async (host, process_name, stop_cmd, using_full, log_extra)
 };
 
 module.exports = {
-    stop_process,
-    scp,
-    scpr,
-    run_script,
-    run_script_extra,
-    run_script_file,
-    run_simple_cmd,
-    run_local_cmd,
-    run_simple_local_cmd,
-    get_info,
-    get_system_attributes,
-    read_key_value_line,
-    read_obj_line
+    stop_process, scp, scpr, run_script, run_script_extra, run_script_file,
+    run_simple_cmd, run_local_cmd, run_simple_local_cmd, get_info,
+    get_system_attributes, read_key_value_line, read_obj_line
 };

@@ -16,9 +16,8 @@ const is_undefined = (value) => typeof value === 'undefined';
  * @returns {boolean} True if value has meaningful content, false otherwise.
  */
 const has_value = (value) => {
-    // NaN is the only value that is not equal to itself
-    if (value === undefined || value === null || value !== value) return false;
-    if (typeof value === 'undefined') return false;
+    // null == undefined, value !== value checks for NaN
+    if (value == null || value !== value) return false;
     if (typeof value === 'string' && value.trim().length === 0) return false;
     return true;
 };
