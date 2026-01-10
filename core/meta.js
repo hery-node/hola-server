@@ -1,24 +1,30 @@
 /**
  * @fileoverview Meta programming core - Entity definition and validation.
  * @module core/meta
- * 
+ *
  * Field attributes:
- * - name: Field name (required)
- * - type: Data type (string, int, float, etc.)
- * - required: Whether field is required
- * - ref: Reference to another entity
- * - link: Link to another field in the entity
- * - delete: Deletion behavior for ref fields (keep|cascade)
- * - create: Show in create form (default: true)
- * - list: Show in table list (default: true)
- * - search: Show in search form (default: true)
- * - update: Allow update (default: true)
- * - clone: Include in clone (default: true)
- * - sys: System field (server-side only)
- * - secure: Hidden from client (e.g., password)
- * - group: User group sharing control
+ * - name: Field name (required).
+ * - type: Data type (string, int, float, etc., default: "string").
+ * - required: Whether field is required (default: false).
+ * - ref: Reference to another entity (collection name).
+ * - link: Link to another field in this entity (must be a field of type 'ref').
+ *         This field's value will be auto-populated from the referenced entity.
+ *         Only supports { name, link, list } attributes.
+ * - delete: Deletion behavior for ref fields.
+ *         - "keep": Keep this record when referenced entity is deleted.
+ *         - "cascade": Delete this record when referenced entity is deleted.
+ *         - Default: undefined (no action).
+ * - create: Show in create form (default: true).
+ * - list: Show in table list (default: true).
+ * - search: Show in search form (default: true).
+ * - update: Allow update (default: true).
+ * - clone: Include in clone (default: true).
+ * - sys: System field (server-side only, not sent to client unless explicitly needed).
+ * - secure: Hidden from client entirely (e.g., password hash).
+ * - group: User group sharing control (field name containing group ID).
  * - view: Form view identifier - controls which form view(s) display this field.
- *         Use "*" for all views (default for editable fields), or specify a custom view name.
+ *         - "*": All views (default for editable fields).
+ *         - "view_name": Specific view only.
  *         Only applicable to editable fields (create !== false or update !== false).
  *         Multiple form views can reference different subsets of fields for different contexts.
  */
