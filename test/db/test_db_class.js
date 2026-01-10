@@ -3,7 +3,6 @@ const {
     get_db, close_db, oid, oid_query, oid_queries, bulk_update,
     log_debug, log_info, log_warn, log_error, is_log_debug, is_log_info
 } = require("../../db/db");
-const { init_settings, get_settings } = require("../../setting");
 
 const test_col = "test_db_class_col";
 let db;
