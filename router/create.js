@@ -16,40 +16,19 @@ const multer = require('multer');
 const upload_file = multer({ dest: 'file_tmp/' });
 
 /**
- * Check user rights and send error response if unauthorized.
- * @param {Object} req - Express request
- * @param {Object} res - Express response
- * @param {Object} meta - Entity meta
- * @param {string} mode - Operation mode
- * @param {string} view - View identifier
- * @returns {boolean} True if authorized
+ * Initialize HTTP create router.
+ * @param {Object} router - Express router
+ * @param {Object} meta - Entity metadata
  */
-const check_rights = (req, res, meta, mode, view) => {
-    const has_right = check_user_role(req, meta, mode, view);
-    if (!has_right) {
-        res.json({ code: NO_RIGHTS, err: "no rights" });
-        return false;
-    }
-    return true;
-};
-
-/**
- * init http create router
- * @param {express router} router 
- * @param {entity meta info} meta 
- */
-const init_create_router = function (router, meta) {
+const init_create_router = (router, meta) => {
     const entity = new Entity(meta);
     const cp_upload = meta.upload_fields.length > 0 ? upload_file.fields(meta.upload_fields) : upload_file.none();
 
-    router.post('/create', cp_upload, wrap_http(async function (req, res) {
-        let { _view } = post_params(req, ["_view"]);
-        if (!_view) {
-            _view = "*";
-        }
+    router.post('/create', cp_upload, wrap_http(async (req, res) => {
+        const _view = post_params(req, ["_view"])._view || "*";
 
-        if (!check_rights(req, res, meta, "c", _view)) {
-            return;
+        if (!check_user_role(req, meta, "c", _view)) {
+            return res.json({ code: NO_RIGHTS, err: "no rights" });
         }
 
         const param_obj = post_params(req, meta.field_names);
@@ -57,23 +36,19 @@ const init_create_router = function (router, meta) {
 
         if (meta.user_field) {
             const user_id = get_session_user_id(req);
-            if (user_id == null) {
-                throw new Error("no user is found in session");
-            }
+            if (user_id == null) throw new Error("no user found in session");
             param_obj[meta.user_field] = user_id;
         }
 
         const { code, err } = await entity.create_entity(param_obj, _view);
-        if (!has_value(code)) {
-            throw new Error("the method should return code");
-        }
+        if (!has_value(code)) throw new Error("create_entity must return code");
 
-        if (code == SUCCESS) {
+        if (code === SUCCESS) {
             await save_file_fields_to_db(meta.collection, meta.file_fields, req, param_obj);
         }
 
-        res.json({ code: code, err: err });
+        res.json({ code, err });
     }));
-}
+};
 
-module.exports = { init_create_router }
+module.exports = { init_create_router };

@@ -13,61 +13,37 @@ const { wrap_http } = require('../http/error');
 const { Entity } = require('../db/entity');
 
 /**
- * Check user role mode and send error if unauthorized.
- * @param {Object} req - Express request
- * @param {Object} res - Express response
- * @param {Object} meta - Entity meta
- * @param {string} mode - Required mode character
- * @returns {boolean} True if authorized
+ * Initialize HTTP delete router.
+ * @param {Object} router - Express router
+ * @param {Object} meta - Entity metadata
  */
-const check_mode_rights = (req, res, meta, mode) => {
-    const [role_mode] = get_user_role_right(req, meta);
-    const has_right = role_mode.includes(mode);
-    if (!has_right) {
-        res.json({ code: NO_RIGHTS, err: "no rights" });
-        return false;
-    }
-    return true;
-};
-
-/**
- * init http delete router
- * @param {express router} router 
- * @param {meta info} meta 
- */
-const init_delete_router = function (router, meta) {
+const init_delete_router = (router, meta) => {
     const entity = new Entity(meta);
 
-    router.post('/delete', wrap_http(async function (req, res) {
-        if (!check_mode_rights(req, res, meta, "d")) {
-            return;
+    router.post('/delete', wrap_http(async (req, res) => {
+        const [role_mode] = get_user_role_right(req, meta);
+        if (!role_mode.includes("d")) {
+            return res.json({ code: NO_RIGHTS, err: "no rights" });
         }
 
         const params = required_post_params(req, ["ids"]);
-        if (params === null) {
-            res.json({ code: NO_PARAMS, err: ["ids"] });
-            return;
+        if (!params) {
+            return res.json({ code: NO_PARAMS, err: ["ids"] });
         }
 
-        const { ids } = params;
-        const id_array = ids.split(",");
+        const ids = params.ids.split(",");
 
-        for (let i = 0; i < id_array.length; i++) {
-            const id_query = oid_query(id_array[i]);
-            const owner = await is_owner(req, meta, entity, id_query);
-            if (!owner) {
-                res.json({ code: NO_RIGHTS, err: "no rights error" });
-                return;
+        for (const id of ids) {
+            if (!await is_owner(req, meta, entity, oid_query(id))) {
+                return res.json({ code: NO_RIGHTS, err: "no ownership rights" });
             }
         }
 
-        const { code, err } = await entity.delete_entity(id_array);
-        if (!has_value(code)) {
-            throw new Error("the delete_entity method should return code");
-        }
+        const { code, err } = await entity.delete_entity(ids);
+        if (!has_value(code)) throw new Error("delete_entity must return code");
 
-        res.json({ code: code, err: err });
+        res.json({ code, err });
     }));
-}
+};
 
-module.exports = { init_delete_router }
+module.exports = { init_delete_router };

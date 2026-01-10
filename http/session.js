@@ -11,29 +11,19 @@ const { is_root_user } = require('../core/role');
 /**
  * Initialize session middleware with MongoDB store.
  * @param {Object} app - Express application instance
- * @throws {Error} If session settings are invalid
  */
 const init_session = (app) => {
-    const settings = get_settings();
-    if (!settings?.server || !settings?.mongo) {
-        throw new Error('Server and mongo settings required for session initialization');
-    }
-
-    const { server, mongo } = settings;
-    if (!server.keep_session) {
-        return;
-    }
-
+    const { server, mongo } = get_settings();
+    if (!server?.keep_session) return;
     if (!server.session?.secret) {
-        throw new Error('Session secret is required when keep_session is enabled');
+        throw new Error('Session secret required when keep_session is enabled');
     }
 
-    const { session } = server;
     app.use(express_session({
-        secret: session.secret,
+        secret: server.session.secret,
         resave: true,
         saveUninitialized: true,
-        cookie: { maxAge: session.cookie_max_age || 86400000 },
+        cookie: { maxAge: server.session.cookie_max_age || 86400000 },
         store: MongoStore.create({ mongoUrl: mongo.url })
     }));
 };
@@ -70,21 +60,12 @@ const get_session_user_groups = (req) => {
  * @param {Object} entity - Entity instance
  * @param {Object} query - MongoDB query
  * @returns {Promise<boolean>} True if owner or root
- * @throws {Error} If user_field is set but no user in session
  */
 const is_owner = async (req, meta, entity, query) => {
-    if (is_root_user(req)) {
-        return true;
-    }
-
-    if (!meta.user_field) {
-        return true;
-    }
+    if (is_root_user(req) || !meta.user_field) return true;
 
     const user_id = get_session_user_id(req);
-    if (user_id == null) {
-        throw new Error("no user id is found in session");
-    }
+    if (!user_id) throw new Error("no user id found in session");
 
     return await entity.count({ ...query, [meta.user_field]: user_id }) === 1;
 };
