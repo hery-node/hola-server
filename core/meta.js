@@ -17,7 +17,10 @@
  * - sys: System field (server-side only)
  * - secure: Hidden from client (e.g., password)
  * - group: User group sharing control
- * - view: Form view identifier
+ * - view: Form view identifier - controls which form view(s) display this field.
+ *         Use "*" for all views (default for editable fields), or specify a custom view name.
+ *         Only applicable to editable fields (create !== false or update !== false).
+ *         Multiple form views can reference different subsets of fields for different contexts.
  */
 
 const { is_undefined } = require('./validate');
@@ -27,6 +30,49 @@ const { validate_meta_role } = require('./role');
 const meta_manager = {};
 
 const FIELD_ATTRS = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "group", "view"];
+
+/**
+ * Meta attributes for entity definition.
+ * 
+ * Core attributes:
+ * - collection: MongoDB collection name (required)
+ * - roles: Array of role-based access rules in format "role_name:mode[:field]"
+ * - primary_keys: Array of field names that form the primary key (required)
+ * - fields: Array of field definitions (required)
+ * 
+ * Permission flags (default: false):
+ * - creatable: Allow creating new records
+ * - readable: Allow reading/listing records
+ * - updatable: Allow updating existing records
+ * - deleteable: Allow deleting records
+ * - cloneable: Allow cloning records
+ * 
+ * Lifecycle hooks (async callbacks):
+ * - after_read: Called after reading records, receives (ctx, records)
+ * - list_query: Modify query before listing, receives (ctx, query)
+ * - before_create: Called before creating, receives (ctx, data)
+ * - after_create: Called after creating, receives (ctx, data)
+ * - before_clone: Called before cloning, receives (ctx, source, target)
+ * - after_clone: Called after cloning, receives (ctx, source, target)
+ * - before_update: Called before updating, receives (ctx, data)
+ * - after_update: Called after updating, receives (ctx, old_data, new_data)
+ * - before_delete: Called before deleting, receives (ctx, data)
+ * - after_delete: Called after deleting, receives (ctx, data)
+ * - after_batch_update: Called after batch update, receives (ctx, results)
+ * 
+ * Override handlers (replace default CRUD behavior):
+ * - create: Custom create handler, receives (ctx, data)
+ * - clone: Custom clone handler, receives (ctx, source, target)
+ * - update: Custom update handler, receives (ctx, data)
+ * - batch_update: Custom batch update handler, receives (ctx, items)
+ * - delete: Custom delete handler, receives (ctx, data)
+ * 
+ * Reference and routing:
+ * - ref_label: Field name to display when entity is referenced by others
+ * - ref_filter: Default filter object when this entity is used as reference
+ * - route: Custom route path (default: collection name)
+ * - user_field: Field name that stores owner user for record-level access control
+ */
 const META_ATTRS = ["collection", "roles", "primary_keys", "fields", "creatable", "readable", "updatable", "deleteable", "cloneable", "after_read", "list_query",
     "before_create", "after_create", "before_clone", "after_clone", "before_update", "after_update", "before_delete", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete",
     "ref_label", "ref_filter", "route", "user_field"];
