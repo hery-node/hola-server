@@ -11,6 +11,18 @@ describe('array', function () {
             // All elements should still be present
             original.forEach(el => strictEqual(arr.includes(el), true));
         });
+
+        it('should not modify single element array', function () {
+            const arr = [1];
+            shuffle(arr);
+            deepStrictEqual(arr, [1]);
+        });
+
+        it('should handle empty array', function () {
+            const arr = [];
+            shuffle(arr);
+            deepStrictEqual(arr, []);
+        });
     });
 
     describe('remove_element', function () {
@@ -27,6 +39,12 @@ describe('array', function () {
             remove_element(arr, 'id', 1);
             strictEqual(arr.length, 0);
         });
+
+        it('should handle no matching elements', function () {
+            const arr = [{ id: 1 }, { id: 2 }];
+            remove_element(arr, 'id', 999);
+            strictEqual(arr.length, 2);
+        });
     });
 
     describe('pop_n', function () {
@@ -41,6 +59,13 @@ describe('array', function () {
             const arr = [];
             const result = pop_n(arr, 2);
             strictEqual(result, undefined);
+        });
+
+        it('should return partial results when n > array length', function () {
+            const arr = [1, 2, 3];
+            const result = pop_n(arr, 5);
+            deepStrictEqual(result, [3, 2, 1]);
+            strictEqual(arr.length, 0);
         });
     });
 
@@ -57,6 +82,13 @@ describe('array', function () {
             const result = shift_n(arr, 2);
             strictEqual(result, undefined);
         });
+
+        it('should return partial results when n > array length', function () {
+            const arr = [1, 2, 3];
+            const result = shift_n(arr, 5);
+            deepStrictEqual(result, [1, 2, 3]);
+            strictEqual(arr.length, 0);
+        });
     });
 
     describe('sum', function () {
@@ -68,6 +100,10 @@ describe('array', function () {
         it('should return 0 for empty array', function () {
             strictEqual(sum([]), 0);
         });
+
+        it('should handle negative numbers', function () {
+            strictEqual(sum([10, -5, 3]), 8);
+        });
     });
 
     describe('avg', function () {
@@ -78,6 +114,10 @@ describe('array', function () {
 
         it('should return 0 for empty array', function () {
             strictEqual(avg([]), 0);
+        });
+
+        it('should handle negative numbers', function () {
+            strictEqual(avg([10, -10, 5]), 1.67);
         });
     });
 
@@ -91,6 +131,16 @@ describe('array', function () {
             deepStrictEqual(result[1], { a: 1, b: 4 });
             deepStrictEqual(result[2], { a: 2, b: 3 });
             deepStrictEqual(result[3], { a: 2, b: 4 });
+        });
+
+        it('should handle empty first array', function () {
+            const result = combine([], [{ b: 1 }]);
+            deepStrictEqual(result, []);
+        });
+
+        it('should handle empty second array', function () {
+            const result = combine([{ a: 1 }], []);
+            deepStrictEqual(result, []);
         });
     });
 
@@ -123,6 +173,14 @@ describe('array', function () {
             strictEqual(arr[1].type, 'b');
             strictEqual(arr[2].type, 'c');
         });
+
+        it('should handle elements not in key sequence', function () {
+            const arr = [{ type: 'x' }, { type: 'a' }, { type: 'b' }];
+            const keys = ['a', 'b', 'c'];
+            sort_by_key_seq(arr, 'type', keys);
+            // 'x' not in keys, indexOf returns -1, sorts to beginning
+            strictEqual(arr[0].type, 'x');
+        });
     });
 
     describe('unique', function () {
@@ -135,6 +193,16 @@ describe('array', function () {
             const result = unique([{ a: 1 }, { a: 2 }, { a: 1 }]);
             strictEqual(result.length, 2);
         });
+
+        it('should handle empty array', function () {
+            const result = unique([]);
+            deepStrictEqual(result, []);
+        });
+
+        it('should handle array with all duplicates', function () {
+            const result = unique([1, 1, 1]);
+            deepStrictEqual(result, [1]);
+        });
     });
 
     describe('map_array_to_obj', function () {
@@ -142,6 +210,17 @@ describe('array', function () {
             const arr = [{ key: 'a', val: 1 }, { key: 'b', val: 2 }];
             const result = map_array_to_obj(arr, 'key', 'val');
             deepStrictEqual(result, { a: 1, b: 2 });
+        });
+
+        it('should handle duplicate keys (last wins)', function () {
+            const arr = [{ id: 'a', val: 1 }, { id: 'a', val: 2 }];
+            const result = map_array_to_obj(arr, 'id', 'val');
+            deepStrictEqual(result, { a: 2 });
+        });
+
+        it('should handle empty array', function () {
+            const result = map_array_to_obj([], 'key', 'val');
+            deepStrictEqual(result, {});
         });
     });
 });

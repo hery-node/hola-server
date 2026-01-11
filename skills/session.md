@@ -174,7 +174,7 @@ const meta = {
     user_field: "owner_id",  // Links document to user
     fields: [
         { name: "title", type: "string" },
-        { name: "owner_id", type: "ref", ref: "user" }
+        { name: "owner_id", ref: "user" }
     ]
 };
 

@@ -250,13 +250,11 @@ Configured in field definition:
 fields: [
     {
         name: "category",
-        type: "ref",
         ref: "category",
         delete: "keep"  // Keep products when category is deleted
     },
     {
         name: "created_by",
-        type: "ref",
         ref: "user",
         delete: "cascade"  // Delete products when user is deleted
     }
