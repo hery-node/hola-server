@@ -352,4 +352,17 @@ const convert_type = (obj, fields) => convert_fields(obj, fields, false);
  */
 const convert_update_type = (obj, fields) => convert_fields(obj, fields, true);
 
-module.exports = { register_type, convert_type, convert_update_type, get_type };
+module.exports = {
+    register_type,
+    convert_type,
+    convert_update_type,
+    get_type,
+    // Helper functions for custom type creation
+    ok,
+    err,
+    is_int,
+    regex_type,
+    int_enum_type,
+    int_range_type,
+    string_type
+};

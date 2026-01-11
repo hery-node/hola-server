@@ -6,6 +6,7 @@
  * - name: Field name (required).
  * - type: Data type (string, int, float, etc., default: "string").
  * - required: Whether field is required (default: false).
+ * - default: Default value for the field. Value must be valid for the field type.
  * - ref: Reference to another entity (collection name).
  * - link: Link to another field in this entity (must be a field of type 'ref').
  *         This field's value will be auto-populated from the referenced entity.
@@ -34,7 +35,7 @@ const { validate_meta_role } = require('./role');
 
 const meta_manager = {};
 
-const FIELD_ATTRS = ["name", "type", "required", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "group", "view"];
+const FIELD_ATTRS = ["name", "type", "required", "default", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "group", "view"];
 const LINK_FIELD_ATTRS = ["name", "link", "list"];
 const CALLBACK_NAMES = ["after_read", "list_query", "before_create", "before_clone", "before_update", "before_delete",
     "after_create", "after_clone", "after_update", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete"];
@@ -66,6 +67,13 @@ const validate_field = (meta, field) => {
     else if (!field.link) field.type = "string";
 
     if (meta.primary_keys.includes(field.name)) field.required = true;
+
+    // Validate default value against field type
+    if (field.default !== undefined && field.type) {
+        const type = get_type(field.type);
+        const result = type.convert(field.default);
+        if (result.err) throw meta_error(meta.collection, `invalid default value [${field.default}] for type [${field.type}]`, field);
+    }
 
     if (field.ref && !field.link) {
         const ref_meta = meta_manager[field.ref];
