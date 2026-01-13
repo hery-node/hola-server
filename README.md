@@ -85,27 +85,15 @@ init_express_server(__dirname, "service_port", async () => {
 
 ### Field Types
 
-- `string` - String with trim
-- `int` - Integer
-- `uint` - Unsigned integer
-- `float` - Float with 2 decimal places
-- `ufloat` - Unsigned float
-- `number` - Any number
-- `boolean` - Boolean
-- `password` - Encrypted password
-- `array` - Array type
-- `obj` - Object/Reference type
-- `file` - File upload
+For a complete list of field types and their validation/conversion behavior, see [skills/type.md](skills/type.md).
+
+Common types include: `string`, `int`, `uint`, `float`, `boolean`, `password`, `email`, `date`, `datetime`, `array`, `file`.
 
 ### Field Options
 
-- `required` - Field is required
-- `primary` - Primary key (unique)
-- `searchable` - Searchable in queries
-- `invisible` - Hidden from responses
-- `sys` - System field
-- `ref` - Reference to another entity
-- `delete` - Cascade behavior: `cascade` or `keep`
+For complete field attribute documentation, see [skills/meta.md](skills/meta.md).
+
+Common options include: `required`, `default`, `ref`, `create`, `update`, `list`, `search`, `sys`, `secure`.
 
 ### CRUD Modes
 
