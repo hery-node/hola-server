@@ -6,6 +6,9 @@
 import fs from 'fs';
 import { exec, ExecOptions } from 'child_process';
 import { random_code } from './random.js';
+import { is_log_debug, is_log_error, log_debug, log_error } from '../db/db.js';
+
+export type LogExtra = Record<string, unknown>;
 
 const LOG_BASH = "bash";
 const SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no";
@@ -28,14 +31,8 @@ export interface SystemAttribute {
     cmd: string;
 }
 
-// Placeholder logging functions until db module is migrated
-const is_log_debug = (): boolean => false;
-const is_log_error = (): boolean => true;
-const log_debug = (_category: string, _msg: string, _extra?: unknown): void => { };
-const log_error = (_category: string, _msg: string, _extra?: unknown): void => { };
-
 /** Execute command with unified logging and error handling. */
-const exec_with_logging = (cmd: string, options: ExecOptions, error_msg: string, success_msg: string, log_extra?: unknown): Promise<CommandResult> => {
+const exec_with_logging = (cmd: string, options: ExecOptions, error_msg: string, success_msg: string, log_extra?: LogExtra): Promise<CommandResult> => {
     return new Promise((resolve) => {
         exec(cmd, options, (error, stdout) => {
             if (error) {
@@ -50,14 +47,14 @@ const exec_with_logging = (cmd: string, options: ExecOptions, error_msg: string,
 };
 
 /** Run command on local host. */
-export const run_local_cmd = (cmd: string, log_extra?: unknown): Promise<CommandResult> => {
+export const run_local_cmd = (cmd: string, log_extra?: LogExtra): Promise<CommandResult> => {
     return exec_with_logging(cmd, { maxBuffer: 1024 * 15000000 },
         `error running on local host cmd:${cmd}`,
         `executing on local host cmd:${cmd}`, log_extra);
 };
 
 /** Run simple command locally and get trimmed result. */
-export const run_simple_local_cmd = async (cmd: string, log_extra?: unknown): Promise<string | null> => {
+export const run_simple_local_cmd = async (cmd: string, log_extra?: LogExtra): Promise<string | null> => {
     const { err, stdout } = await run_local_cmd(cmd, log_extra);
     return err ? null : stdout.trim();
 };
@@ -82,7 +79,7 @@ const build_scp_cmd = (host: Host, src: string, dest: string, to_remote: boolean
 };
 
 /** Run script on remote host via SSH. */
-export const run_script = (host: Host, script: string, log_extra?: unknown): Promise<CommandResult> => {
+export const run_script = (host: Host, script: string, log_extra?: LogExtra): Promise<CommandResult> => {
     const cmd = `${build_ssh_prefix(host)} /bin/bash <<'EOT'\n ${script} \nEOT\n`;
     return exec_with_logging(cmd, { maxBuffer: 1024 * 150000 },
         `error running on host:${host.name} script:${script}`,
@@ -90,7 +87,7 @@ export const run_script = (host: Host, script: string, log_extra?: unknown): Pro
 };
 
 /** Run script on remote host with file redirect to avoid progress bar issues. */
-export const run_script_extra = async (host: Host, script: string, log_extra?: unknown): Promise<CommandResult> => {
+export const run_script_extra = async (host: Host, script: string, log_extra?: LogExtra): Promise<CommandResult> => {
     const log_file = await get_log_file();
     const cmd = `${build_ssh_prefix(host)} /bin/bash <<'EOT' > ${log_file} \n ${script} \nEOT\n`;
 
@@ -110,7 +107,7 @@ export const run_script_extra = async (host: Host, script: string, log_extra?: u
 };
 
 /** Run script file on remote host. */
-export const run_script_file = (host: Host, script_file: string, log_extra?: unknown): Promise<CommandResult> => {
+export const run_script_file = (host: Host, script_file: string, log_extra?: LogExtra): Promise<CommandResult> => {
     const cmd = `${build_ssh_prefix(host)} /bin/bash < ${script_file}`;
     return exec_with_logging(cmd, {},
         `error running on host:${host.name} script_file:${script_file}`,
@@ -118,7 +115,7 @@ export const run_script_file = (host: Host, script_file: string, log_extra?: unk
 };
 
 /** SCP remote file to local. */
-export const scp = (host: Host, remote_file: string, local_file: string, log_extra?: unknown): Promise<CommandResult> => {
+export const scp = (host: Host, remote_file: string, local_file: string, log_extra?: LogExtra): Promise<CommandResult> => {
     const cmd = build_scp_cmd(host, remote_file, local_file, false);
     return exec_with_logging(cmd, {},
         `error scp on host:${host.name} remote:${remote_file}, local:${local_file}`,
@@ -126,7 +123,7 @@ export const scp = (host: Host, remote_file: string, local_file: string, log_ext
 };
 
 /** SCP local file to remote. */
-export const scpr = (host: Host, local_file: string, remote_file: string, log_extra?: unknown): Promise<CommandResult> => {
+export const scpr = (host: Host, local_file: string, remote_file: string, log_extra?: LogExtra): Promise<CommandResult> => {
     const cmd = build_scp_cmd(host, local_file, remote_file, true);
     return exec_with_logging(cmd, {},
         `error scpr on host:${host.name} remote:${remote_file}, local:${local_file}`,
@@ -134,13 +131,13 @@ export const scpr = (host: Host, local_file: string, remote_file: string, log_ex
 };
 
 /** Run simple command on remote host and get trimmed result. */
-export const run_simple_cmd = async (host: Host, cmd: string, log_extra?: unknown): Promise<string | null> => {
+export const run_simple_cmd = async (host: Host, cmd: string, log_extra?: LogExtra): Promise<string | null> => {
     const { err, stdout } = await run_script(host, cmd, log_extra);
     return err ? null : stdout.trim();
 };
 
 /** Extract info from stdout using regex pattern matching. */
-export const get_info = (stdout: string, key: string, log_extra?: unknown): string[] => {
+export const get_info = (stdout: string, key: string, log_extra?: LogExtra): string[] => {
     const word_key = key.split(" ").join("\\s+");
     const regex = new RegExp(`\n\\s?${word_key}\\s?:(.*)\\s`, 'g');
     if (is_log_debug()) log_debug(LOG_BASH, `get_info regex:${JSON.stringify(regex)}`, log_extra);
@@ -188,7 +185,7 @@ export const read_obj_line = (stdout: string, keys: string[], ignore: number = 1
 };
 
 /** Get multiple system attributes from remote host. */
-export const get_system_attributes = async (host: Host, attrs: SystemAttribute[], log_extra?: unknown): Promise<Record<string, string>> => {
+export const get_system_attributes = async (host: Host, attrs: SystemAttribute[], log_extra?: LogExtra): Promise<Record<string, string>> => {
     const results = await Promise.all(attrs.map(attr => run_simple_cmd(host, attr.cmd, log_extra)));
     return attrs.reduce((obj, attr, i) => {
         if (results[i]) obj[attr.name] = results[i]!;
@@ -197,7 +194,7 @@ export const get_system_attributes = async (host: Host, attrs: SystemAttribute[]
 };
 
 /** Stop process on remote host if running. */
-export const stop_process = async (host: Host, process_name: string, stop_cmd: string, using_full?: boolean, log_extra?: unknown): Promise<boolean> => {
+export const stop_process = async (host: Host, process_name: string, stop_cmd: string, using_full?: boolean, log_extra?: LogExtra): Promise<boolean> => {
     const grep_cmd = using_full ? `pgrep -f "${process_name}" | wc -l` : `pgrep ${process_name} | wc -l`;
     const { stdout } = await run_script(host, grep_cmd, log_extra);
     const has_process = stdout && parseInt(stdout) > 0 ? true : false;
