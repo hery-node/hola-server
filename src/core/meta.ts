@@ -39,7 +39,7 @@ export interface MetaDefinition {
     exportable?: boolean;
     ref_label?: string;
     ref_filter?: Record<string, unknown>;
-    route?: string;
+    route?: CallbackFunction;
     user_field?: string;
     after_read?: CallbackFunction;
     list_query?: CallbackFunction;

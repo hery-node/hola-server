@@ -92,6 +92,9 @@ export const oid_queries = (ids: string[]): { _id: { $in: ObjectId[] } } | null 
 
 /** Execute bulk update using the items. */
 export const bulk_update = async (col: Collection, items: Document[], attrs: string[]): Promise<unknown> => {
+    if (!items || items.length === 0) {
+        return { ok: 1 };
+    }
     const operations = items.map(item => {
         const query = attrs.reduce((acc, attr) => ({ ...acc, [attr]: item[attr] }), {} as Document);
         const { _id, ...without_id } = item;
@@ -130,6 +133,7 @@ export class DB {
     }
 
     col(code: string): Collection { return this.db.collection(code); }
+    get_col(code: string): Collection { return this.db.collection(code); }
 
     async create(code: string, obj: Document): Promise<Document & { _id: ObjectId }> {
         const { _id, ...without_id } = obj;

@@ -44,3 +44,6 @@ export * as random from './core/random.js';
 export * as thread from './core/thread.js';
 export * as validate from './core/validate.js';
 export { encrypt_pwd, md5 } from './core/encrypt.js';
+
+// Tools
+export { gen_i18n } from './tool/gen_i18n.js';

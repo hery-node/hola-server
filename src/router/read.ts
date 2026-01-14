@@ -106,4 +106,15 @@ export const init_read_router = (router: Router, meta: EntityMeta): void => {
         if (!has_value(code)) throw new Error("read_entity must return code");
         res.json({ code, err, data });
     }) as any);
+
+    router.post('/read_property', wrap_http(async (req: Request, res: Response) => {
+        const [ok, , role_view] = check_read_rights(req, res, meta);
+        if (!ok) return;
+        const params = required_post_params(req, ["_id", "attr_names"]) as { _id: string; attr_names: string } | null;
+        if (!params) return res.json({ code: NO_PARAMS, err: "[_id, attr_names] required" });
+        if (!await is_owner(req as any, meta, entity, oid_query(params._id)!)) return res.json({ code: NO_RIGHTS, err: "no ownership rights" });
+        const { code, err, data } = await entity.read_property(params._id, params.attr_names, role_view || "*");
+        if (!has_value(code)) throw new Error("read_property must return code");
+        res.json({ code, err, data });
+    }) as any);
 };

@@ -335,6 +335,40 @@ export class Entity {
         return { code: SUCCESS };
     }
 
+    async batch_update_entity(_ids: string[], param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
+        const fields = this.filter_fields_by_view(this.meta.update_fields, view);
+        const { obj, error_field_names } = convert_update_type(param_obj, fields);
+        if (error_field_names.length > 0) {
+            log_err('batch_update invalid fields', { fields: error_field_names });
+            return { code: INVALID_PARAMS, err: error_field_names };
+        }
+
+        const query = oid_queries(_ids);
+        if (!query) {
+            log_err('batch_update invalid ids', { _ids });
+            return { code: INVALID_PARAMS, err: ['_ids'] };
+        }
+
+        const ref_err = await validate_refs(this, obj);
+        if (ref_err) return ref_err;
+
+        if ((this.meta as any).batch_update) {
+            const batch_err = await run_hook((this.meta as any).batch_update, 'batch_update', _ids, this, obj);
+            if (batch_err) return batch_err;
+        } else {
+            const result = await this.update(query, obj);
+            if ((result as any).ok !== 1) {
+                log_err('batch update failed', { query, obj, result });
+                return { code: ERROR, err: 'batch update record is failed' };
+            }
+        }
+
+        const after_err = await run_hook((this.meta as any).after_batch_update, 'after_batch_update', _ids, this, obj);
+        if (after_err) return after_err;
+
+        return { code: SUCCESS };
+    }
+
     async delete_entity(id_array: string[]): Promise<EntityResult> {
         const query = oid_queries(id_array);
         if (!query) {
@@ -383,6 +417,28 @@ export class Entity {
             if (typeof fv === 'string') return fv === '*' || view.includes(fv);
             return true;
         });
+    }
+
+    async read_property(_id: string, attr_names: string, view: string): Promise<EntityResult> {
+        const query = oid_query(_id);
+        if (!query) {
+            log_err('read_property invalid id', { _id });
+            return { code: INVALID_PARAMS, err: ['_id'] };
+        }
+
+        const property_fields = this.filter_fields_by_view(this.meta.property_fields, view);
+        const field_names = property_fields.map(f => f.name);
+        const attrs: Record<string, number> = { _id: 1 };
+        attr_names.split(',').forEach(attr => {
+            if (field_names.includes(attr)) attrs[attr] = 1;
+        });
+
+        const results = await this.find(query, attrs);
+        if (results?.length === 1) {
+            log_debug(LOG_ENTITY, `read_property query:${JSON.stringify(query)},result:${JSON.stringify(results[0])}`);
+            return { code: SUCCESS, data: results[0] };
+        }
+        return { code: NOT_FOUND, err: ['_id'] };
     }
 
     async read_entity(_id: string, attr_names: string, view: string): Promise<EntityResult> {
@@ -436,6 +492,10 @@ export class Entity {
     find_sort(query: Record<string, unknown>, sort: Sort, attr?: Record<string, unknown>) { return this.db.find_sort(this.meta.collection, query as Filter<Document>, sort, attr as Document); }
     find_page(query: Record<string, unknown>, sort: Sort, page: number, limit: number, attr?: Record<string, unknown>) { return this.db.find_page(this.meta.collection, query as Filter<Document>, sort, page, limit, attr as Document); }
     count(query: Record<string, unknown>) { return this.db.count(this.meta.collection, query as Filter<Document>); }
+    sum(query: Record<string, unknown>, field: string) { return this.db.sum(this.meta.collection, query as Filter<Document>, field); }
+    pull(query: Record<string, unknown>, ele: Record<string, unknown>) { return this.db.pull(this.meta.collection, query as Filter<Document>, ele as Document); }
+    push(query: Record<string, unknown>, ele: Record<string, unknown>) { return this.db.push(this.meta.collection, query as Filter<Document>, ele as Document); }
+    add_to_set(query: Record<string, unknown>, ele: Record<string, unknown>) { return this.db.add_to_set(this.meta.collection, query as Filter<Document>, ele as Document); }
 
     delete_by_id(id: string | string[]) {
         const query = Array.isArray(id) ? oid_queries(id) : oid_query(id);
@@ -588,6 +648,21 @@ export class Entity {
     find_by_oid(id: string, attr?: Record<string, unknown>): Promise<Document | null> {
         const query = oid_query(id);
         return query ? this.find_one(query, attr) : Promise.resolve(null);
+    }
+
+    find_one_ref_entity(field_name: string, value: unknown, attr?: Record<string, unknown>): Promise<Document | null> {
+        const field = this.meta.fields.find(f => f.name === field_name);
+        if (!field) {
+            throw new Error(`field not found: ${field_name} in ${this.meta.collection}`);
+        }
+        if (!field.ref) {
+            throw new Error(`field is not ref: ${field_name} in ${this.meta.collection}`);
+        }
+
+        const ref_meta = get_entity_meta(field.ref)!;
+        const ref_entity = new Entity(ref_meta);
+        const query = oid_query(value as string) || { [ref_meta.ref_label!]: value };
+        return ref_entity.find_one(query, attr);
     }
 
     oid_query(_id: string) { return oid_query(_id); }

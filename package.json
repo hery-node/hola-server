@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && mocha --timeout 10000 --recursive './test/*/*.js'",
+    "test": "npm run build && NODE_OPTIONS='--import tsx' mocha --timeout 10000 --recursive 'test/*/*.ts' --exit",
     "clean": "rm -rf dist"
   },
   "dependencies": {

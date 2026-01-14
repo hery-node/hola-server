@@ -47,18 +47,18 @@ export const init_router_dirs = async (app: express.Express, base_dir: string): 
 };
 
 /** Initialize Express router for an entity with CRUD operations. */
-export const init_router = (meta: MetaDefinition & { route?: (router: Router, meta: EntityMeta) => void }): Router => {
+export const init_router = (meta: MetaDefinition): Router => {
     const router = express.Router();
     const meta_entity = new EntityMeta(meta);
 
     for (const [capability, init_fn] of CRUD_OPERATIONS) {
-        if ((meta_entity as Record<string, unknown>)[capability]) {
+        if (meta_entity[capability]) {
             init_fn(router, meta_entity);
         }
     }
 
     if (typeof meta.route === 'function') {
-        meta.route(router, meta_entity);
+        (meta.route as (router: Router, meta: EntityMeta) => void)(router, meta_entity);
     }
 
     return router;
