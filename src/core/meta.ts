@@ -3,7 +3,8 @@
  * @module core/meta
  */
 
-import { get_type, TypeDefinition } from './type.js';
+import type { Router } from 'express';
+import { get_type } from './type.js';
 import { validate_meta_role } from './role.js';
 
 export interface FieldDefinition {
@@ -39,7 +40,7 @@ export interface MetaDefinition {
     exportable?: boolean;
     ref_label?: string;
     ref_filter?: Record<string, unknown>;
-    route?: CallbackFunction;
+    route?: RouteCallback;
     user_field?: string;
     after_read?: CallbackFunction;
     list_query?: CallbackFunction;
@@ -60,6 +61,7 @@ export interface MetaDefinition {
 }
 
 export type CallbackFunction = (...args: unknown[]) => unknown;
+export type RouteCallback = (router: Router, meta: EntityMeta) => void;
 
 const meta_manager: Record<string, EntityMeta> = {};
 

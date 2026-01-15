@@ -24,7 +24,7 @@ export * as context from './http/context.js';
 export { register_type, get_type, convert_type, convert_update_type, int_enum_type } from './core/type.js';
 export type { TypeDefinition, TypeResult, Field } from './core/type.js';
 export { EntityMeta, get_entity_meta, get_all_metas, validate_all_metas, DELETE_MODE } from './core/meta.js';
-export type { MetaDefinition, FieldDefinition, CallbackFunction } from './core/meta.js';
+export type { MetaDefinition, FieldDefinition, CallbackFunction, RouteCallback } from './core/meta.js';
 
 // Core Role System
 export { is_root_role, is_root_user, check_user_role, get_user_role_right, get_session_user, validate_meta_role } from './core/role.js';

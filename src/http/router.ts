@@ -58,7 +58,7 @@ export const init_router = (meta: MetaDefinition): Router => {
     }
 
     if (typeof meta.route === 'function') {
-        (meta.route as (router: Router, meta: EntityMeta) => void)(router, meta_entity);
+        meta.route(router, meta_entity);
     }
 
     return router;
