@@ -21,7 +21,7 @@ export * as params from './http/params.js';
 export * as context from './http/context.js';
 
 // Core Type System
-export { register_type, get_type, convert_type, convert_update_type } from './core/type.js';
+export { register_type, get_type, convert_type, convert_update_type, int_enum_type } from './core/type.js';
 export type { TypeDefinition, TypeResult, Field } from './core/type.js';
 export { EntityMeta, get_entity_meta, get_all_metas, validate_all_metas, DELETE_MODE } from './core/meta.js';
 export type { MetaDefinition, FieldDefinition, CallbackFunction } from './core/meta.js';

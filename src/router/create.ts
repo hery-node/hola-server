@@ -15,7 +15,7 @@ import { check_user_role } from '../core/role.js';
 import { Entity } from '../db/entity.js';
 import { EntityMeta } from '../core/meta.js';
 
-const upload_file = multer({ dest: 'file_tmp/' });
+const upload_file = multer({ dest: '/tmp/' });
 
 /** Initialize HTTP create router. */
 export const init_create_router = (router: Router, meta: EntityMeta): void => {

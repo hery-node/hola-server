@@ -16,7 +16,7 @@ import { wrap_http } from '../http/error.js';
 import { Entity } from '../db/entity.js';
 import { EntityMeta } from '../core/meta.js';
 
-const upload_file = multer({ dest: 'file_tmp/' });
+const upload_file = multer({ dest: '/tmp/' });
 
 export const init_update_router = (router: Router, meta: EntityMeta): void => {
     const entity = new Entity(meta);
