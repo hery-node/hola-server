@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual } from 'assert';
 import { get_context, verify_template, execute_template } from '../../src/core/lhs.js';
 

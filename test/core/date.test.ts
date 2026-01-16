@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual } from 'assert';
 import { simple_date, format_date, format_time, format_date_time, parse_date } from '../../src/core/date.js';
 

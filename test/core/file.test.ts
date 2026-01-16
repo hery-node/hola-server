@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual } from 'assert';
 import path from 'path';
 import fs from 'fs';

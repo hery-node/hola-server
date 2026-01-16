@@ -14,8 +14,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "bun run src/index.ts",
-    "test": "bun test --timeout 10000",
-    "test:mocha": "bun run build && bun --bun mocha --timeout 10000 --recursive 'test/*/*.ts' --exit",
+    "test": "bun test --timeout 10000 test/**/*.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -33,15 +32,12 @@
     "unzipper": "^0.12.3"
   },
   "devDependencies": {
+    "@types/bun": "latest",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/express-session": "^1.18.0",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.0.0",
-    "chai": "^4.3.6",
-    "chai-http": "^4.3.0",
-    "mocha": "^10.1.0",
-    "tsx": "^4.21.0",
     "typescript": "^5.7.0"
   },
   "repository": {

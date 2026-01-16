@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual, throws } from 'assert';
 import { get_type, register_type } from '../../src/core/type.js';
 

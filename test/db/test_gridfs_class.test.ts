@@ -1,3 +1,4 @@
+import { describe, it, beforeEach, beforeAll, afterAll } from 'bun:test';
 import { strictEqual, ok, deepStrictEqual } from 'assert';
 import fs from 'fs';
 import path from 'path';
@@ -20,7 +21,7 @@ describe("GridFS Class Tests", function () {
     this.timeout(15000);
     let db;
 
-    before(async function () {
+    beforeAll(async () => {
         db = get_db();
         // Create test file
         fs.writeFileSync(test_file_path, test_file_content);
@@ -34,7 +35,7 @@ describe("GridFS Class Tests", function () {
         } catch (e) { }
     });
 
-    after(async function () {
+    afterAll(async () => {
         // Cleanup test files
         if (fs.existsSync(test_file_path)) fs.unlinkSync(test_file_path);
         if (fs.existsSync(dest_file_path)) fs.unlinkSync(dest_file_path);
@@ -50,7 +51,7 @@ describe("GridFS Class Tests", function () {
         } catch (e) { }
     });
 
-    beforeEach(async function () {
+    beforeEach(async () => {
         // Clean bucket before each test
         try {
             const files = await db.col(bucket_name + ".files").find({});

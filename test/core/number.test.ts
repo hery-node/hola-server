@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual, deepStrictEqual } from 'assert';
 import {
     parse_num, extract_number, to_fixed2, round_to_fixed2,

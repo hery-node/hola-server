@@ -1,5 +1,6 @@
+import { afterAll } from 'bun:test';
 import { close_db } from '../../src/db/db.js';
 
-after(async () => {
+afterAll(async () => {
     await close_db();
 });

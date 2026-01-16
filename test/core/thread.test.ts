@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual } from 'assert';
 import { snooze } from '../../src/core/thread.js';
 

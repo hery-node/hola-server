@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual, throws } from 'assert';
 import { EntityMeta } from '../../src/core/meta.js';
 import { convert_type } from '../../src/core/type.js';

@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual } from 'assert';
 import { get_db } from '../../src/db/db.js';
 const db = get_db();

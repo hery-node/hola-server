@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual, deepStrictEqual } from 'assert';
 import { set_chart_header, merge_chart_data } from '../../src/core/chart.js';
 

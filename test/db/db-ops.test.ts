@@ -1,3 +1,4 @@
+import { describe, it, beforeEach, afterEach } from 'bun:test';
 import { strictEqual, deepStrictEqual } from 'assert';
 import { get_db, oid_query, oid_queries, bulk_update, log_error } from '../../src/db/db.js';
 import { init_settings, get_settings } from '../../src/setting.js';
@@ -6,11 +7,11 @@ const col = "user_ops";
 const db = get_db();
 
 describe("mongodb advanced ops", function () {
-    beforeEach(async function () {
+    beforeEach(async () => {
         await db.delete(col, {});
     });
 
-    afterEach(async function () {
+    afterEach(async () => {
         await db.delete(col, {});
     });
 

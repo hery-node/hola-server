@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual, deepStrictEqual } from 'assert';
 import { is_undefined, has_value, validate_required_fields } from '../../src/core/validate.js';
 

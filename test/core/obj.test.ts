@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual, deepStrictEqual } from 'assert';
 import { copy_obj, is_object } from '../../src/core/obj.js';
 

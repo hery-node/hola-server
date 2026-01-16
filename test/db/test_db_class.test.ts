@@ -1,3 +1,4 @@
+import { describe, it, beforeEach, beforeAll, afterAll } from 'bun:test';
 import { strictEqual, deepStrictEqual, throws, ok } from 'assert';
 import {
     get_db, close_db, oid, oid_query, oid_queries, bulk_update,
@@ -8,16 +9,16 @@ const test_col = "test_db_class_col";
 let db;
 
 describe("DB Class Tests", function () {
-    before(async function () {
+    beforeAll(async () => {
         db = get_db();
         await db.delete(test_col, {});
     });
 
-    after(async function () {
+    afterAll(async () => {
         await db.delete(test_col, {});
     });
 
-    beforeEach(async function () {
+    beforeEach(async () => {
         await db.delete(test_col, {});
     });
 

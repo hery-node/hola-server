@@ -1,3 +1,4 @@
+import { describe, it, beforeEach, beforeAll, afterAll } from 'bun:test';
 import { strictEqual, deepStrictEqual, ok } from 'assert';
 import { Entity } from '../../src/db/entity.js';
 import { get_db, oid } from '../../src/db/db.js';
@@ -93,7 +94,7 @@ const entity_meta = {
 describe("Entity Class Tests", function () {
     let entity, ref_entity;
 
-    before(async function () {
+    beforeAll(async () => {
         db = get_db();
         entity = new Entity(entity_meta);
         ref_entity = new Entity(ref_meta);
@@ -101,12 +102,12 @@ describe("Entity Class Tests", function () {
         await db.delete(ref_col, {});
     });
 
-    after(async function () {
+    afterAll(async () => {
         await db.delete(test_col, {});
         await db.delete(ref_col, {});
     });
 
-    beforeEach(async function () {
+    beforeEach(async () => {
         await db.delete(test_col, {});
         await db.delete(ref_col, {});
     });
@@ -515,7 +516,7 @@ describe("Entity Class Tests", function () {
         };
 
         let numeric_entity;
-        before(function () {
+        beforeAll(() => {
             numeric_entity = new Entity(numeric_meta);
         });
 

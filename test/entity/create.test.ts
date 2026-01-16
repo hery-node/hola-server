@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, REF_NOT_FOUND } from '../../src/http/code.js';
 import { strictEqual, deepStrictEqual } from 'assert';
 import { Entity } from '../../src/db/entity.js';

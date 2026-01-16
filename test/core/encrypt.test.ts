@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual } from 'assert';
 import { encrypt_pwd } from '../../src/core/encrypt.js';
 

@@ -1,3 +1,4 @@
+import { describe, it, beforeEach, afterAll } from 'bun:test';
 import { strictEqual } from 'assert';
 import { Entity } from '../../src/db/entity.js';
 import { EntityMeta } from '../../src/core/meta.js';
@@ -101,7 +102,7 @@ const user_array_entity = new Entity(user_array_meta);
 const audit_array_entity = new Entity(audit_array_meta);
 
 describe("Entity delete cascade/keep edges", function () {
-    beforeEach(async function () {
+    beforeEach(async () => {
         await role_mix_entity.delete({});
         await user_keep_entity.delete({});
         await audit_cascade_entity.delete({});
@@ -110,7 +111,7 @@ describe("Entity delete cascade/keep edges", function () {
         await audit_array_entity.delete({});
     });
 
-    after(async function () {
+    afterAll(async () => {
         await role_mix_entity.delete({});
         await user_keep_entity.delete({});
         await audit_cascade_entity.delete({});

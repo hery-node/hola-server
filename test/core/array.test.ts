@@ -1,3 +1,4 @@
+import { describe, it } from 'bun:test';
 import { strictEqual, deepStrictEqual } from 'assert';
 import { shuffle, remove_element, pop_n, shift_n, sum, avg, combine, sort_desc, sort_asc, sort_by_key_seq, unique, map_array_to_obj } from '../../src/core/array.js';
 

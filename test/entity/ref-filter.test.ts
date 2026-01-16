@@ -1,3 +1,4 @@
+import { describe, it, beforeEach, afterAll } from 'bun:test';
 import { strictEqual } from 'assert';
 import { Entity } from '../../src/db/entity.js';
 import { EntityMeta } from '../../src/core/meta.js';
@@ -28,12 +29,12 @@ user_meta.validate_meta_info();
 const user_entity = new Entity(user_meta);
 
 describe("Entity ref_filter", function () {
-    beforeEach(async function () {
+    beforeEach(async () => {
         await role_entity.delete({});
         await user_entity.delete({});
     });
 
-    after(async function () {
+    afterAll(async () => {
         await role_entity.delete({});
         await user_entity.delete({});
     });
