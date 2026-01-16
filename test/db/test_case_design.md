@@ -387,22 +387,22 @@ This document outlines detailed test case designs for the API methods in the `db
 
 Tests for all numeric types: `number`, `int`, `uint`, `float`, `ufloat`, `decimal`, `percentage`, `currency`
 
-| Test ID | Description                          | Input                       | Expected Behavior             |
-| ------- | ------------------------------------ | --------------------------- | ----------------------------- |
-| NTS-001 | int type - skip '0'                  | `{ int_field: "0" }`        | Returns empty                 |
-| NTS-002 | int type - include >0                | `{ int_field: ">0" }`       | `{ int_field: { $gt: 0 } }`   |
-| NTS-003 | uint type - skip '0'                 | `{ uint_field: "0" }`       | Returns empty                 |
-| NTS-004 | uint type - include >=10             | `{ uint_field: ">=10" }`    | `{ uint_field: { $gte: 10 } }`|
-| NTS-005 | float type - skip '0'                | `{ float_field: "0" }`      | Returns empty                 |
-| NTS-006 | float type - include <5.5            | `{ float_field: "<5.5" }`   | `{ float_field: { $lt: 5.5 } }`|
-| NTS-007 | ufloat type - skip '0'               | `{ ufloat_field: "0" }`     | Returns empty                 |
-| NTS-008 | decimal type - skip '0'              | `{ decimal_field: "0" }`    | Returns empty                 |
-| NTS-009 | percentage type - skip '0'           | `{ percentage_field: "0" }` | Returns empty                 |
-| NTS-010 | currency type - skip '0'             | `{ currency_field: "0" }`   | Returns empty                 |
-| NTS-011 | currency type - include <=100.50     | `{ currency_field: "<=100.50" }` | `{ currency_field: { $lte: 100.50 } }`|
-| NTS-012 | All numeric types with '0'           | All fields = "0"            | Returns empty                 |
-| NTS-013 | Mixed - skip 0, include comparison   | int=0, currency=>50         | Only currency in query        |
-| NTS-014 | Non-zero values included             | int=42, currency=99.99      | Both in query                 |
+| Test ID | Description                        | Input                            | Expected Behavior                      |
+| ------- | ---------------------------------- | -------------------------------- | -------------------------------------- |
+| NTS-001 | int type - skip '0'                | `{ int_field: "0" }`             | Returns empty                          |
+| NTS-002 | int type - include >0              | `{ int_field: ">0" }`            | `{ int_field: { $gt: 0 } }`            |
+| NTS-003 | uint type - skip '0'               | `{ uint_field: "0" }`            | Returns empty                          |
+| NTS-004 | uint type - include >=10           | `{ uint_field: ">=10" }`         | `{ uint_field: { $gte: 10 } }`         |
+| NTS-005 | float type - skip '0'              | `{ float_field: "0" }`           | Returns empty                          |
+| NTS-006 | float type - include <5.5          | `{ float_field: "<5.5" }`        | `{ float_field: { $lt: 5.5 } }`        |
+| NTS-007 | ufloat type - skip '0'             | `{ ufloat_field: "0" }`          | Returns empty                          |
+| NTS-008 | decimal type - skip '0'            | `{ decimal_field: "0" }`         | Returns empty                          |
+| NTS-009 | percentage type - skip '0'         | `{ percentage_field: "0" }`      | Returns empty                          |
+| NTS-010 | currency type - skip '0'           | `{ currency_field: "0" }`        | Returns empty                          |
+| NTS-011 | currency type - include <=100.50   | `{ currency_field: "<=100.50" }` | `{ currency_field: { $lte: 100.50 } }` |
+| NTS-012 | All numeric types with '0'         | All fields = "0"                 | Returns empty                          |
+| NTS-013 | Mixed - skip 0, include comparison | int=0, currency=>50              | Only currency in query                 |
+| NTS-014 | Non-zero values included           | int=42, currency=99.99           | Both in query                          |
 
 ---
 
