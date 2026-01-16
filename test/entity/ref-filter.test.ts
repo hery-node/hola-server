@@ -1,8 +1,9 @@
-import { describe, it, beforeEach, afterAll } from 'bun:test';
+import { describe, it, beforeAll, beforeEach, afterAll } from 'bun:test';
 import { strictEqual } from 'assert';
 import { Entity } from '../../src/db/entity.js';
 import { EntityMeta } from '../../src/core/meta.js';
 import { SUCCESS, REF_NOT_FOUND } from '../../src/http/code.js';
+import { get_db } from '../../src/db/db.js';
 
 const role_meta = new EntityMeta({
     collection: "role_filter",
@@ -29,6 +30,12 @@ user_meta.validate_meta_info();
 const user_entity = new Entity(user_meta);
 
 describe("Entity ref_filter", function () {
+    beforeAll(async () => {
+        // Ensure database connection is established before tests run
+        const db = get_db();
+        await db.connect();
+    });
+
     beforeEach(async () => {
         await role_entity.delete({});
         await user_entity.delete({});
