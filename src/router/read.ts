@@ -77,7 +77,7 @@ export const init_read_router = (router: Router, meta: EntityMeta): void => {
         if (!ok) return;
         const { ref_by_entity, query } = get_params(req, ["ref_by_entity", "query"]) as { ref_by_entity?: string; query?: string };
         const list = await entity.get_filtered_ref_labels(ref_by_entity || '', query);
-        const items = list.map(obj => ({ text: obj[meta.ref_label!], value: String(obj._id) }));
+        const items = list.map(obj => ({ title: obj[meta.ref_label!], value: String(obj._id) }));
         res.json({ code: SUCCESS, data: items });
     }) as any);
 
