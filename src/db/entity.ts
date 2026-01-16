@@ -27,6 +27,21 @@ export interface EntityResult {
     data?: unknown;
 }
 
+// Numeric types where "0" should be treated as "no search value" (default empty state)
+const NUMERIC_TYPES = ['number', 'int', 'uint', 'float', 'ufloat', 'decimal', 'percentage', 'currency'];
+
+/** Check if a search value should be included in the query */
+const has_search_value = (value: unknown, type_name: string): boolean => {
+    if (!has_value(value)) return false;
+    // For numeric types, "0" or 0 without comparison operators means no search value
+    if (NUMERIC_TYPES.includes(type_name)) {
+        const raw = `${value}`.trim();
+        // Include if it has comparison operators or is not just "0"
+        if (raw === '0') return false;
+    }
+    return true;
+};
+
 /** Convert search value type, keeping original on error. */
 const convert_search_value = (type_name: string, search_value: unknown): unknown => {
     const { value, err } = get_type(type_name).convert(search_value);
@@ -180,7 +195,8 @@ export class Entity {
 
         for (const field of search_fields) {
             const value = param_obj[field.name];
-            if (!has_value(value)) continue;
+            const type_name = field.type || 'string';
+            if (!has_search_value(value, type_name)) continue;
 
             if (ref_names.includes(field.name)) {
                 const ref_entity = new Entity(get_entity_meta(field.ref!)!);

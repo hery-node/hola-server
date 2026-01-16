@@ -324,6 +324,296 @@ describe("Entity Class Tests", function () {
             const q = await entity.get_search_query({});
             deepStrictEqual(q, {});
         });
+
+        // ======================================================================
+        // Numeric "0" value handling tests
+        // ======================================================================
+        it("GSQ-005: Skip numeric field with value '0' (treated as empty)", async function () {
+            const q = await entity.get_search_query({ age: "0" });
+            deepStrictEqual(q, {});
+        });
+
+        it("GSQ-006: Skip numeric field with value 0 (number type)", async function () {
+            const q = await entity.get_search_query({ age: 0 });
+            deepStrictEqual(q, {});
+        });
+
+        it("GSQ-007: Include non-zero numeric value", async function () {
+            const q = await entity.get_search_query({ age: "25" });
+            ok(q.$and);
+            const ageQ = q.$and.find(x => x.age);
+            strictEqual(ageQ.age, 25);
+        });
+
+        it("GSQ-008: Include numeric value 100", async function () {
+            const q = await entity.get_search_query({ age: "100" });
+            ok(q.$and);
+            const ageQ = q.$and.find(x => x.age);
+            strictEqual(ageQ.age, 100);
+        });
+
+        // ======================================================================
+        // Comparison operator tests
+        // ======================================================================
+        it("GSQ-009: Build $gt query for >100", async function () {
+            const q = await entity.get_search_query({ age: ">100" });
+            ok(q.$and);
+            const ageQ = q.$and.find(x => x.age);
+            strictEqual(ageQ.age.$gt, 100);
+        });
+
+        it("GSQ-010: Build $lt query for <90", async function () {
+            const q = await entity.get_search_query({ age: "<90" });
+            ok(q.$and);
+            const ageQ = q.$and.find(x => x.age);
+            strictEqual(ageQ.age.$lt, 90);
+        });
+
+        it("GSQ-011: Build $gte query for >=50", async function () {
+            const q = await entity.get_search_query({ age: ">=50" });
+            ok(q.$and);
+            const ageQ = q.$and.find(x => x.age);
+            strictEqual(ageQ.age.$gte, 50);
+        });
+
+        it("GSQ-012: Build $lte query for <=200", async function () {
+            const q = await entity.get_search_query({ age: "<=200" });
+            ok(q.$and);
+            const ageQ = q.$and.find(x => x.age);
+            strictEqual(ageQ.age.$lte, 200);
+        });
+
+        it("GSQ-013: Include >0 as valid comparison (not skipped)", async function () {
+            const q = await entity.get_search_query({ age: ">0" });
+            ok(q.$and);
+            const ageQ = q.$and.find(x => x.age);
+            strictEqual(ageQ.age.$gt, 0);
+        });
+
+        it("GSQ-014: Include <0 as valid comparison (negative range)", async function () {
+            const q = await entity.get_search_query({ age: "<0" });
+            ok(q.$and);
+            const ageQ = q.$and.find(x => x.age);
+            strictEqual(ageQ.age.$lt, 0);
+        });
+
+        // ======================================================================
+        // String field handling (should not skip "0")
+        // ======================================================================
+        it("GSQ-015: String field with value '0' is NOT skipped", async function () {
+            const q = await entity.get_search_query({ name: "0" });
+            ok(q.$and);
+            const nameQ = q.$and.find(x => x.name);
+            ok(nameQ.name instanceof RegExp); // String values are converted to RegExp
+        });
+
+        // ======================================================================
+        // Mixed field queries
+        // ======================================================================
+        it("GSQ-016: Mixed query - skip numeric 0, include string value", async function () {
+            const q = await entity.get_search_query({ name: "test", age: "0" });
+            ok(q.$and);
+            strictEqual(q.$and.length, 1);
+            ok(q.$and.find(x => x.name));
+            ok(!q.$and.find(x => x.age));
+        });
+
+        it("GSQ-017: Mixed query - include comparison and string", async function () {
+            const q = await entity.get_search_query({ name: "test", age: ">50" });
+            ok(q.$and);
+            strictEqual(q.$and.length, 2);
+            ok(q.$and.find(x => x.name));
+            ok(q.$and.find(x => x.age));
+        });
+
+        it("GSQ-018: All fields with 0 returns empty object", async function () {
+            const q = await entity.get_search_query({ age: "0", active: false });
+            // active: false is a valid boolean search, only age should be skipped
+            ok(q.$and);
+            strictEqual(q.$and.length, 1);
+            ok(q.$and.find(x => x.active !== undefined));
+        });
+
+        // ======================================================================
+        // Comma-separated values (OR query)
+        // ======================================================================
+        it("GSQ-019: Build $in query for comma-separated values", async function () {
+            const q = await entity.get_search_query({ age: "10,20,30" });
+            ok(q.$and);
+            const ageQ = q.$and.find(x => x.age);
+            ok(ageQ.age.$in);
+            deepStrictEqual(ageQ.age.$in, [10, 20, 30]);
+        });
+
+        // ======================================================================
+        // Empty and null value handling
+        // ======================================================================
+        it("GSQ-020: Empty string is skipped", async function () {
+            const q = await entity.get_search_query({ name: "", age: "" });
+            deepStrictEqual(q, {});
+        });
+
+        it("GSQ-021: Null value is skipped", async function () {
+            const q = await entity.get_search_query({ name: null, age: null });
+            deepStrictEqual(q, {});
+        });
+
+        it("GSQ-022: Undefined value is skipped", async function () {
+            const q = await entity.get_search_query({ name: undefined, age: undefined });
+            deepStrictEqual(q, {});
+        });
+    });
+
+    // ==========================================================================
+    // 2.4.1 Numeric Types Search - Additional Coverage
+    // ==========================================================================
+    describe("2.4.1 Numeric Types Search", function () {
+        // Test entity with all numeric types
+        const numeric_meta = {
+            name: "test_numeric",
+            collection: "test_numeric",
+            primary_keys: ["code"],
+            ref_label: "code",
+            ref_fields: [],
+            ref_by_metas: [],
+            ref_filter: {},
+            fields_map: {
+                code: { name: "code", type: "string" },
+                int_field: { name: "int_field", type: "int" },
+                uint_field: { name: "uint_field", type: "uint" },
+                float_field: { name: "float_field", type: "float" },
+                ufloat_field: { name: "ufloat_field", type: "ufloat" },
+                decimal_field: { name: "decimal_field", type: "decimal" },
+                percentage_field: { name: "percentage_field", type: "percentage" },
+                currency_field: { name: "currency_field", type: "currency" }
+            },
+            fields: [
+                { name: "code", type: "string" },
+                { name: "int_field", type: "int" },
+                { name: "uint_field", type: "uint" },
+                { name: "float_field", type: "float" },
+                { name: "ufloat_field", type: "ufloat" },
+                { name: "decimal_field", type: "decimal" },
+                { name: "percentage_field", type: "percentage" },
+                { name: "currency_field", type: "currency" }
+            ],
+            create_fields: [],
+            update_fields: [],
+            list_fields: [],
+            property_fields: [],
+            primary_key_fields: [{ name: "code", type: "string" }],
+            required_field_names: ["code"],
+            search_fields: [
+                { name: "int_field", type: "int" },
+                { name: "uint_field", type: "uint" },
+                { name: "float_field", type: "float" },
+                { name: "ufloat_field", type: "ufloat" },
+                { name: "decimal_field", type: "decimal" },
+                { name: "percentage_field", type: "percentage" },
+                { name: "currency_field", type: "currency" }
+            ]
+        };
+
+        let numeric_entity;
+        before(function () {
+            numeric_entity = new Entity(numeric_meta);
+        });
+
+        it("NTS-001: int type - skip '0' value", async function () {
+            const q = await numeric_entity.get_search_query({ int_field: "0" });
+            deepStrictEqual(q, {});
+        });
+
+        it("NTS-002: int type - include >0 comparison", async function () {
+            const q = await numeric_entity.get_search_query({ int_field: ">0" });
+            ok(q.$and);
+            const f = q.$and.find(x => x.int_field);
+            strictEqual(f.int_field.$gt, 0);
+        });
+
+        it("NTS-003: uint type - skip '0' value", async function () {
+            const q = await numeric_entity.get_search_query({ uint_field: "0" });
+            deepStrictEqual(q, {});
+        });
+
+        it("NTS-004: uint type - include >=10 comparison", async function () {
+            const q = await numeric_entity.get_search_query({ uint_field: ">=10" });
+            ok(q.$and);
+            const f = q.$and.find(x => x.uint_field);
+            strictEqual(f.uint_field.$gte, 10);
+        });
+
+        it("NTS-005: float type - skip '0' value", async function () {
+            const q = await numeric_entity.get_search_query({ float_field: "0" });
+            deepStrictEqual(q, {});
+        });
+
+        it("NTS-006: float type - include <5.5 comparison", async function () {
+            const q = await numeric_entity.get_search_query({ float_field: "<5.5" });
+            ok(q.$and);
+            const f = q.$and.find(x => x.float_field);
+            strictEqual(f.float_field.$lt, 5.5);
+        });
+
+        it("NTS-007: ufloat type - skip '0' value", async function () {
+            const q = await numeric_entity.get_search_query({ ufloat_field: "0" });
+            deepStrictEqual(q, {});
+        });
+
+        it("NTS-008: decimal type - skip '0' value", async function () {
+            const q = await numeric_entity.get_search_query({ decimal_field: "0" });
+            deepStrictEqual(q, {});
+        });
+
+        it("NTS-009: percentage type - skip '0' value", async function () {
+            const q = await numeric_entity.get_search_query({ percentage_field: "0" });
+            deepStrictEqual(q, {});
+        });
+
+        it("NTS-010: currency type - skip '0' value", async function () {
+            const q = await numeric_entity.get_search_query({ currency_field: "0" });
+            deepStrictEqual(q, {});
+        });
+
+        it("NTS-011: currency type - include <=100.50 comparison", async function () {
+            const q = await numeric_entity.get_search_query({ currency_field: "<=100.50" });
+            ok(q.$and);
+            const f = q.$and.find(x => x.currency_field);
+            strictEqual(f.currency_field.$lte, 100.50);
+        });
+
+        it("NTS-012: All numeric types with '0' returns empty", async function () {
+            const q = await numeric_entity.get_search_query({
+                int_field: "0",
+                uint_field: "0",
+                float_field: "0",
+                ufloat_field: "0",
+                decimal_field: "0",
+                percentage_field: "0",
+                currency_field: "0"
+            });
+            deepStrictEqual(q, {});
+        });
+
+        it("NTS-013: Mixed - skip 0, include comparison", async function () {
+            const q = await numeric_entity.get_search_query({
+                int_field: "0",
+                currency_field: ">50"
+            });
+            ok(q.$and);
+            strictEqual(q.$and.length, 1);
+            ok(q.$and.find(x => x.currency_field));
+            ok(!q.$and.find(x => x.int_field));
+        });
+
+        it("NTS-014: Non-zero values are included", async function () {
+            const q = await numeric_entity.get_search_query({
+                int_field: "42",
+                currency_field: "99.99"
+            });
+            ok(q.$and);
+            strictEqual(q.$and.length, 2);
+        });
     });
 
     // ==========================================================================
