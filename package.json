@@ -13,7 +13,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && NODE_OPTIONS='--import tsx' mocha --timeout 10000 --recursive 'test/*/*.ts' --exit",
+    "dev": "bun run src/index.ts",
+    "test": "bun test --timeout 10000",
+    "test:mocha": "bun run build && bun --bun mocha --timeout 10000 --recursive 'test/*/*.ts' --exit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
