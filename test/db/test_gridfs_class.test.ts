@@ -18,7 +18,6 @@ const test_file_path = path.join(test_dir, test_file_name);
 const dest_file_path = path.join(test_dir, "downloaded_gridfs.txt");
 
 describe("GridFS Class Tests", function () {
-    this.timeout(15000);
     let db;
 
     beforeAll(async () => {
