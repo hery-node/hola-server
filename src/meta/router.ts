@@ -10,32 +10,40 @@ import { Entity } from '../db/entity.js';
 import { NotFoundError, NoRightsError } from '../errors/index.js';
 import type { JwtPayload } from '../plugins/auth.js';
 
+/** Router context extended with auth user from derive plugin. */
+interface RouterContext {
+    user?: JwtPayload | null;
+    query: Record<string, string | undefined>;
+    body: unknown;
+    params: Record<string, string>;
+}
+
 /** Check if user has read rights for meta. */
-const check_read_rights = (user: JwtPayload | null, meta: EntityMeta): void => {
+const check_read_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
     if (!user) throw new NoRightsError('no read rights');
     // Additional role checking can be added here
 };
 
 /** Check if user has create rights for meta. */
-const check_create_rights = (user: JwtPayload | null, meta: EntityMeta): void => {
+const check_create_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
     if (!user) throw new NoRightsError('no create rights');
     if (!meta.creatable) throw new NoRightsError('entity not creatable');
 };
 
 /** Check if user has update rights for meta. */
-const check_update_rights = (user: JwtPayload | null, meta: EntityMeta): void => {
+const check_update_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
     if (!user) throw new NoRightsError('no update rights');
     if (!meta.updatable) throw new NoRightsError('entity not updatable');
 };
 
 /** Check if user has delete rights for meta. */
-const check_delete_rights = (user: JwtPayload | null, meta: EntityMeta): void => {
+const check_delete_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
     if (!user) throw new NoRightsError('no delete rights');
     if (!meta.deleteable) throw new NoRightsError('entity not deleteable');
 };
 
 /** Check if user has clone rights for meta. */
-const check_clone_rights = (user: JwtPayload | null, meta: EntityMeta): void => {
+const check_clone_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
     if (!user) throw new NoRightsError('no clone rights');
     if (!meta.cloneable) throw new NoRightsError('entity not cloneable');
 };
@@ -89,8 +97,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // GET / - List entities
     if (meta.readable) {
-        router.get('/', async (ctx) => {
-            const { user, query } = ctx as any;
+        router.get('/', async ({ user, query }: RouterContext) => {
             check_read_rights(user, meta);
 
             const query_params = query._query ? JSON.parse(query._query) : {};
@@ -108,8 +115,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // GET /meta - Get field metadata
     if (meta.readable) {
-        router.get('/meta', async (ctx) => {
-            const { user } = ctx as any;
+        router.get('/meta', async ({ user }: RouterContext) => {
             check_read_rights(user, meta);
             return {
                 code: 0, // SUCCESS
@@ -123,8 +129,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // GET /mode - Get permission mode
     if (meta.readable) {
-        router.get('/mode', async (ctx) => {
-            const { user } = ctx as any;
+        router.get('/mode', async ({ user }: RouterContext) => {
             check_read_rights(user, meta);
             return { code: 0, mode: meta.mode, view: '*' };
         });
@@ -132,8 +137,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // GET /ref - Get reference labels
     if (meta.readable && meta.ref_label) {
-        router.get('/ref', async (ctx) => {
-            const { user, query } = ctx as any;
+        router.get('/ref', async ({ user, query }: RouterContext) => {
             check_read_rights(user, meta);
             const list = await entity.get_filtered_ref_labels(query.ref_by_entity || '', query.query, user?.sub);
             const items = list.map(obj => ({
@@ -146,8 +150,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // GET /:id - Get single entity
     if (meta.readable) {
-        router.get('/:id', async (ctx) => {
-            const { user, params } = ctx as any;
+        router.get('/:id', async ({ user, params }: RouterContext) => {
             check_read_rights(user, meta);
 
             const result = await entity.read_entity(params.id, '*', '*');
@@ -158,8 +161,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // GET /:id/property - Get specific properties
     if (meta.readable) {
-        router.get('/:id/property', async (ctx) => {
-            const { user, params, query } = ctx as any;
+        router.get('/:id/property', async ({ user, params, query }: RouterContext) => {
             check_read_rights(user, meta);
 
             const attr_names = query.fields || '*';
@@ -171,8 +173,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // POST / - Create entity
     if (meta.creatable) {
-        router.post('/', async (ctx) => {
-            const { user, body } = ctx as any;
+        router.post('/', async ({ user, body }: RouterContext) => {
             check_create_rights(user, meta);
 
             const data = body as Record<string, unknown>;
@@ -189,8 +190,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // PUT /:id - Update entity
     if (meta.updatable) {
-        router.put('/:id', async (ctx) => {
-            const { user, params, body } = ctx as any;
+        router.put('/:id', async ({ user, params, body }: RouterContext) => {
             check_update_rights(user, meta);
 
             const data = body as Record<string, unknown>;
@@ -201,8 +201,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // DELETE /:id - Delete entity
     if (meta.deleteable) {
-        router.delete('/:id', async (ctx) => {
-            const { user, params } = ctx as any;
+        router.delete('/:id', async ({ user, params }: RouterContext) => {
             check_delete_rights(user, meta);
 
             const result = await entity.delete_entity([params.id]);
@@ -212,8 +211,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // POST /:id/clone - Clone entity
     if (meta.cloneable) {
-        router.post('/:id/clone', async (ctx) => {
-            const { user, params } = ctx as any;
+        router.post('/:id/clone', async ({ user, params }: RouterContext) => {
             check_clone_rights(user, meta);
 
             const result = await entity.clone_entity(params.id, {}, '*');
