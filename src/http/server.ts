@@ -23,8 +23,8 @@ const is_excluded_url = (server: ServerSettings, path: string): boolean => {
     return patterns.some(pattern => new RegExp(pattern, "i").test(path));
 };
 
-/** Initialize Elysia server with middleware and routes. */
-export const init_elysia_server = async (base_dir: string, port_attr: string, callback?: () => Promise<void> | void): Promise<Elysia<any>> => {
+/** Initialize HTTP server with middleware and routes. */
+export const init_http_server = async (base_dir: string, port_attr: string, callback?: () => Promise<void> | void): Promise<Elysia<any>> => {
     if (server_initialized && app) return app;
 
     const settings = get_settings();

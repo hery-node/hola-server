@@ -14,9 +14,7 @@ export type { Settings, ServerSettings, Role } from './setting.js';
 
 // HTTP Layer
 export { init_router } from './http/router.js';
-export { init_elysia_server, get_app } from './http/server.js';
-// Backward compatibility alias
-export { init_elysia_server as init_express_server } from './http/server.js';
+export { init_http_server, get_app } from './http/server.js';
 export * as code from './http/code.js';
 export * as err from './http/error.js';
 export * as params from './http/params.js';
