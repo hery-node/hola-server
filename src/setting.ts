@@ -48,6 +48,7 @@ export interface ServerSettings {
     session: SessionSettings;
     threshold: ThresholdSettings;
     routes: string[];
+    api_prefix?: string;
 }
 
 export interface Settings {

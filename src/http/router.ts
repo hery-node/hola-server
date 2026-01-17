@@ -14,7 +14,7 @@ import { init_clone_router } from '../router/clone.js';
 import { init_delete_router } from '../router/delete.js';
 import { get_settings } from '../setting.js';
 
-type InitRouterFn = (router: Elysia, meta: EntityMeta) => void;
+type InitRouterFn = (router: Elysia<any>, meta: EntityMeta) => void;
 
 /** CRUD operation configurations: [capability_key, init_function] */
 const CRUD_OPERATIONS: [keyof EntityMeta, InitRouterFn][] = [
@@ -26,7 +26,7 @@ const CRUD_OPERATIONS: [keyof EntityMeta, InitRouterFn][] = [
 ];
 
 /** Automatically load all router modules from configured directories. */
-export const init_router_dirs = async (app: Elysia, base_dir: string): Promise<void> => {
+export const init_router_dirs = async (app: Elysia, base_dir: string, prefix?: string): Promise<void> => {
     const settings = get_settings();
     if (!settings?.server?.routes) return;
 
@@ -43,10 +43,14 @@ export const init_router_dirs = async (app: Elysia, base_dir: string): Promise<v
 
             // If the module exports an Elysia instance, use it with prefix
             if (router instanceof Elysia) {
-                app.use(router);
+                if (prefix) {
+                    app.group(prefix, (group) => group.use(router));
+                } else {
+                    app.use(router);
+                }
             } else {
                 // For backward compatibility with old-style routers
-                app.group('/' + basename, (group) => {
+                app.group((prefix || '') + '/' + basename, (group) => {
                     if (typeof router === 'function') {
                         router(group);
                     }
@@ -60,9 +64,9 @@ export const init_router_dirs = async (app: Elysia, base_dir: string): Promise<v
 };
 
 /** Initialize Elysia router for an entity with CRUD operations. */
-export const init_router = (meta: MetaDefinition): Elysia => {
-    const router = new Elysia();
+export const init_router = (meta: MetaDefinition): Elysia<any> => {
     const meta_entity = new EntityMeta(meta);
+    const router = new Elysia({ prefix: `/${meta_entity.collection}` });
 
     for (const [capability, init_fn] of CRUD_OPERATIONS) {
         if (meta_entity[capability]) {

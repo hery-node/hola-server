@@ -67,7 +67,7 @@ export const init_http_server = async (base_dir: string, port_attr: string, call
     app = elysia_app as any;
 
     // Load routers
-    await init_router_dirs(app as any, base_dir);
+    await init_router_dirs(app as any, base_dir, settings.server.api_prefix);
 
     // Error handling
     handle_exception(app as any);
