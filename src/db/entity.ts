@@ -6,7 +6,7 @@
 import { Document, Filter, Sort, ObjectId } from 'mongodb';
 import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, NOT_FOUND, REF_NOT_FOUND, REF_NOT_UNIQUE, HAS_REF } from '../http/code.js';
 import { validate_required_fields, has_value } from '../core/validate.js';
-import { required_params } from '../http/params.js';
+
 import { convert_type, convert_update_type, get_type } from '../core/type.js';
 import { get_entity_meta, EntityMeta, DELETE_MODE, FieldDefinition } from '../core/meta.js';
 import { unique, map_array_to_obj } from '../core/array.js';
@@ -489,7 +489,7 @@ export class Entity {
     }
 
     primary_key_query(param_obj: Record<string, unknown>): Record<string, unknown> | null {
-        if (!required_params(param_obj, this.meta.primary_keys)) return null;
+        if (!this.meta.primary_keys.every(key => has_value(param_obj[key]))) return null;
         const { obj, error_field_names } = convert_type(param_obj, this.meta.primary_key_fields);
         if (error_field_names.length > 0) return null;
         return this.meta.primary_keys.reduce((q, key) => ({ ...q, [key]: obj[key] }), {});

@@ -60,7 +60,7 @@ export { encrypt_pwd, md5 } from './core/encrypt.js';
 
 // HTTP utilities
 export * as code from './http/code.js';
-export * as params from './http/params.js';
+
 
 // Tools
 export { gen_i18n } from './tool/gen_i18n.js';
