@@ -113,6 +113,8 @@ const debug_log = (operation: string, code: string, params: Record<string, unkno
 export class DB {
     private client: MongoClient;
     private db!: Db;
+    private connected: boolean = false;
+    private pending_callbacks: (() => void)[] = [];
     public closed: boolean = false;
 
     constructor(url: string, options?: Record<string, unknown>) {
@@ -121,14 +123,29 @@ export class DB {
     }
 
     async connect(callback?: () => void): Promise<void> {
+        if (callback) this.pending_callbacks.push(callback);
         try {
             await this.client.connect();
             this.db = this.client.db();
             this.closed = false;
-            callback?.();
+            this.connected = true;
+            // Invoke all pending callbacks
+            for (const cb of this.pending_callbacks) {
+                cb();
+            }
+            this.pending_callbacks = [];
         } catch (err) {
             log_error(LOG_DB, `Connection error: ${err}`);
             throw err;
+        }
+    }
+
+    /** Register a callback to be called when connected. Invokes immediately if already connected. */
+    on_connected(callback: () => void): void {
+        if (this.connected) {
+            callback();
+        } else {
+            this.pending_callbacks.push(callback);
         }
     }
 
@@ -209,7 +226,10 @@ let db_instance: DB | null = null;
 
 /** Get or create the database instance. */
 export const get_db = (callback?: () => void): DB => {
-    if (db_instance && !db_instance.closed) return db_instance;
+    if (db_instance && !db_instance.closed) {
+        if (callback) db_instance.on_connected(callback);
+        return db_instance;
+    }
     const { url, pool } = get_settings().mongo;
     if (!url) throw new Error("Mongo settings are missing url");
     db_instance = new DB(url, { maxPoolSize: pool });

@@ -11,6 +11,7 @@ import { init_router_dirs } from './router.js';
 import { handle_exception } from './error.js';
 import { get_settings, ServerSettings } from '../setting.js';
 import { asyncLocalStorage, set_context_value } from './context.js';
+import { get_db } from '../db/db.js';
 
 const app: Express = express();
 let server_initialized = false;
@@ -63,8 +64,10 @@ export const init_express_server = async (base_dir: string, port_attr: string, c
     await init_router_dirs(app, base_dir);
     handle_exception(app);
 
-    app.listen(port, async () => {
-        if (callback) await callback();
+    app.listen(port, () => {
+        get_db(async () => {
+            if (callback) await callback();
+        });
     });
 
     server_initialized = true;
