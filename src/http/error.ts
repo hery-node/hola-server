@@ -1,30 +1,25 @@
 /**
- * Error handling middleware and utilities.
+ * Error handling utilities for Elysia.
  * @module http/error
  */
 
-import { Express, Request, Response, NextFunction, RequestHandler } from 'express';
+import { Elysia } from 'elysia';
 import { ERROR } from './code.js';
 import { LOG_SYSTEM, is_log_error, log_error } from '../db/db.js';
 
-/** Wrap async route handler to catch errors. */
-export const wrap_http = (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>): RequestHandler => {
-    return (req, res, next) => fn(req, res, next).catch(next);
-};
-
-/** Global error handler middleware. */
-export const handle_exception = (app: Express): void => {
-    app.use((error: Error, req: Request, res: Response, _next: NextFunction) => {
+/** Register global error handler on Elysia app. */
+export const handle_exception = (app: Elysia<any>): void => {
+    app.onError(({ error, request, set }) => {
         if (error) {
-            const error_msg = error.stack || error.message || JSON.stringify(error);
+            const err = error as Error;
+            const error_msg = err.stack || err.message || JSON.stringify(error);
             if (is_log_error()) {
-                log_error(LOG_SYSTEM, error_msg, { path: req.originalUrl, method: req.method });
+                log_error(LOG_SYSTEM, error_msg, { path: new URL(request.url).pathname, method: request.method });
             } else {
                 console.error('[Error]', error_msg);
             }
         }
-        if (!res.headersSent) {
-            res.json({ code: ERROR, err: "server error" });
-        }
+        set.status = 500;
+        return { code: ERROR, err: "server error" };
     });
 };

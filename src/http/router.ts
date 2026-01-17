@@ -1,11 +1,11 @@
 /**
- * Express router initialization and loading utilities.
+ * Elysia router initialization and loading utilities.
  * @module http/router
  */
 
 import path from 'path';
 import fs from 'fs';
-import express, { Router } from 'express';
+import { Elysia } from 'elysia';
 import { EntityMeta, validate_all_metas, MetaDefinition } from '../core/meta.js';
 import { init_create_router } from '../router/create.js';
 import { init_read_router } from '../router/read.js';
@@ -14,7 +14,7 @@ import { init_clone_router } from '../router/clone.js';
 import { init_delete_router } from '../router/delete.js';
 import { get_settings } from '../setting.js';
 
-type InitRouterFn = (router: Router, meta: EntityMeta) => void;
+type InitRouterFn = (router: Elysia, meta: EntityMeta) => void;
 
 /** CRUD operation configurations: [capability_key, init_function] */
 const CRUD_OPERATIONS: [keyof EntityMeta, InitRouterFn][] = [
@@ -26,7 +26,7 @@ const CRUD_OPERATIONS: [keyof EntityMeta, InitRouterFn][] = [
 ];
 
 /** Automatically load all router modules from configured directories. */
-export const init_router_dirs = async (app: express.Express, base_dir: string): Promise<void> => {
+export const init_router_dirs = async (app: Elysia, base_dir: string): Promise<void> => {
     const settings = get_settings();
     if (!settings?.server?.routes) return;
 
@@ -39,16 +39,29 @@ export const init_router_dirs = async (app: express.Express, base_dir: string): 
 
             const router_module = await import(`${base_dir}/${route_dir}/${route}`);
             const basename = path.basename(route, path.extname(route));
-            app.use('/' + basename, router_module.default || router_module);
+            const router = router_module.default || router_module;
+
+            // If the module exports an Elysia instance, use it with prefix
+            if (router instanceof Elysia) {
+                app.use(router);
+            } else {
+                // For backward compatibility with old-style routers
+                app.group('/' + basename, (group) => {
+                    if (typeof router === 'function') {
+                        router(group);
+                    }
+                    return group;
+                });
+            }
         }
     }
 
     validate_all_metas();
 };
 
-/** Initialize Express router for an entity with CRUD operations. */
-export const init_router = (meta: MetaDefinition): Router => {
-    const router = express.Router();
+/** Initialize Elysia router for an entity with CRUD operations. */
+export const init_router = (meta: MetaDefinition): Elysia => {
+    const router = new Elysia();
     const meta_entity = new EntityMeta(meta);
 
     for (const [capability, init_fn] of CRUD_OPERATIONS) {

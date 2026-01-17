@@ -4,21 +4,29 @@
  */
 
 import { get_settings, Role } from '../setting.js';
-import { Request } from 'express';
 
 interface SessionUser {
     role: string;
     [key: string]: unknown;
 }
 
-interface SessionRequest extends Request {
-    session: Request['session'] & { user?: SessionUser };
+interface SessionCookie {
+    session_id?: { value: string };
+    [key: string]: unknown;
 }
 
 interface MetaWithRoles {
     mode: string;
     roles?: string[];
 }
+
+// In-memory session store reference (imported from session module at runtime)
+let session_store: Map<string, { user?: SessionUser }> | null = null;
+
+/** Set the session store reference for role checking. */
+export const set_session_store = (store: Map<string, unknown>): void => {
+    session_store = store as Map<string, { user?: SessionUser }>;
+};
 
 /** Find a role by name from settings. */
 const find_role = (role_name: string): Role | undefined => {
@@ -43,24 +51,34 @@ export const is_root_role = (role_name: string | null): boolean => {
     return role ? role.root === true : true;
 };
 
-/** Get user role from session. */
-const get_session_user_role = (req: SessionRequest): string | null => {
-    const user = req?.session?.user ?? null;
+/** Get user role from session cookie. */
+const get_session_user_role = (cookie: SessionCookie): string | null => {
+    if (!session_store) return null;
+    const session_id = cookie?.session_id?.value;
+    if (!session_id) return null;
+    const session = session_store.get(session_id);
+    const user = session?.user;
     return user ? user.role : null;
 };
 
 /** Get user object from session. */
-export const get_session_user = (req: SessionRequest): SessionUser | null => req?.session?.user ?? null;
+export const get_session_user = (cookie: SessionCookie): SessionUser | null => {
+    if (!session_store) return null;
+    const session_id = cookie?.session_id?.value;
+    if (!session_id) return null;
+    const session = session_store.get(session_id);
+    return session?.user ?? null;
+};
 
 /** Check if current user has root privileges. */
-export const is_root_user = (req: SessionRequest): boolean => is_root_role(get_session_user_role(req));
+export const is_root_user = (cookie: SessionCookie): boolean => is_root_role(get_session_user_role(cookie));
 
 /** Get user's role permissions for a meta entity. Returns [mode, view] permissions. */
-export const get_user_role_right = (req: SessionRequest, meta: MetaWithRoles): [string, string] => {
+export const get_user_role_right = (cookie: SessionCookie, meta: MetaWithRoles): [string, string] => {
     const settings = get_settings();
     if (!settings.roles || !meta.roles) return [meta.mode, "*"];
 
-    const user_role = get_session_user_role(req);
+    const user_role = get_session_user_role(cookie);
     if (!user_role) return ["", ""];
     if (!is_valid_role(user_role)) return ["", ""];
 
@@ -76,7 +94,7 @@ export const get_user_role_right = (req: SessionRequest, meta: MetaWithRoles): [
 };
 
 /** Check if user has required mode permission on meta. */
-export const check_user_role = (req: SessionRequest, meta: MetaWithRoles, mode: string, view: string): boolean => {
-    const [role_mode, role_view] = get_user_role_right(req, meta);
+export const check_user_role = (cookie: SessionCookie, meta: MetaWithRoles, mode: string, view: string): boolean => {
+    const [role_mode, role_view] = get_user_role_right(cookie, meta);
     return role_mode.includes(mode) && (role_view === "*" || role_view.includes(view));
 };

@@ -18,25 +18,17 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@elysiajs/cors": "^1.2.0",
     "axios": "^1.7.0",
-    "body-parser": "^1.20.0",
     "connect-mongo": "^5.1.0",
-    "cors": "^2.8.5",
     "dateformat": "^5.0.3",
-    "express": "^4.21.0",
-    "express-sanitizer": "^1.0.6",
-    "express-session": "^1.18.0",
+    "elysia": "^1.2.0",
     "mongodb": "^6.12.0",
-    "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
     "unzipper": "^0.12.3"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/express-session": "^1.18.0",
-    "@types/multer": "^1.4.12",
     "@types/node": "^22.0.0",
     "typescript": "^5.7.0"
   },
@@ -47,7 +39,7 @@
   "keywords": [
     "meta",
     "nodejs",
-    "express",
+    "elysia",
     "mongodb",
     "typescript"
   ],

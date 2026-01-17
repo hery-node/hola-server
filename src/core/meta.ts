@@ -3,7 +3,7 @@
  * @module core/meta
  */
 
-import type { Router } from 'express';
+import type { Elysia } from 'elysia';
 import { get_type } from './type.js';
 import { validate_meta_role } from './role.js';
 
@@ -61,7 +61,7 @@ export interface MetaDefinition {
 }
 
 export type CallbackFunction = (...args: unknown[]) => unknown;
-export type RouteCallback = (router: Router, meta: EntityMeta) => void;
+export type RouteCallback = (router: Elysia<any>, meta: EntityMeta) => void;
 
 const meta_manager: Record<string, EntityMeta> = {};
 

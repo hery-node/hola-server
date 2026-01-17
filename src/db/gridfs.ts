@@ -6,7 +6,6 @@
 import fs from 'fs';
 import { GridFSBucket, Db, MongoClient } from 'mongodb';
 import { get_settings } from '../setting.js';
-import { Response } from 'express';
 import { EntityMeta } from '../core/meta.js';
 import { Readable } from 'stream';
 
@@ -44,11 +43,19 @@ class GridFS {
         await stream_to_promise(read_stream.pipe(bucket.openUploadStream(filename)));
     }
 
-    read_file(bucket_name: string, filename: string, response: Response): void {
+    async read_file(bucket_name: string, filename: string): Promise<Buffer> {
+        const chunks: Buffer[] = [];
         const stream = this.bucket(bucket_name).openDownloadStreamByName(filename);
-        stream.on('data', chunk => response.write(chunk));
-        stream.on('error', () => response.sendStatus(404));
-        stream.on('end', () => response.end());
+
+        return new Promise((resolve, reject) => {
+            stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+            stream.on('error', reject);
+            stream.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+    }
+
+    async read_file_stream(bucket_name: string, filename: string) {
+        return this.bucket(bucket_name).openDownloadStreamByName(filename);
     }
 
     async pipe_file(bucket_name: string, filename: string, dest_path: string): Promise<void> {
@@ -121,9 +128,16 @@ export const save_file = async (collection: string, filename: string, filepath: 
     await instance.save_file(collection, filename, filepath);
 };
 
-export const read_file = async (collection: string, filename: string, response: Response): Promise<void> => {
+/** Read file from GridFS and return as Buffer. */
+export const read_file = async (collection: string, filename: string): Promise<Buffer> => {
     const instance = await get_gridfs_instance();
-    instance.read_file(collection, filename, response);
+    return instance.read_file(collection, filename);
+};
+
+/** Read file from GridFS as a stream. */
+export const read_file_stream = async (collection: string, filename: string) => {
+    const instance = await get_gridfs_instance();
+    return instance.read_file_stream(collection, filename);
 };
 
 export const pipe_file = async (collection: string, filename: string, dest_filename: string): Promise<void> => {

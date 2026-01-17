@@ -174,35 +174,21 @@ describe("GridFS Class Tests", function () {
     // 3.5 GridFS Read Operations
     // ==========================================================================
     describe("3.5 GridFS Read Operations", function () {
-        it("RDF-001: read_file function callable", async function () {
+        it("RDF-001: read_file returns Buffer with file content", async function () {
             await save_file(bucket_name, "read_test.txt", test_file_path);
 
-            // Create mock response
-            let chunks = [];
-            const mockResponse = {
-                write: (chunk) => chunks.push(chunk),
-                end: () => { },
-                sendStatus: () => { }
-            };
-
-            await read_file(bucket_name, "read_test.txt", mockResponse);
-            // read_file is async but streaming, give it time
-            await new Promise(r => setTimeout(r, 500));
-            ok(chunks.length >= 0); // May have chunks or be too fast
+            const buffer = await read_file(bucket_name, "read_test.txt");
+            ok(Buffer.isBuffer(buffer));
+            strictEqual(buffer.toString(), test_file_content);
         });
 
-        it("RDF-002: read_file with non-existent file calls sendStatus", async function () {
-            let status = null;
-            const mockResponse = {
-                write: () => { },
-                end: () => { },
-                sendStatus: (s) => { status = s; }
-            };
-
-            await read_file(bucket_name, "no_such_file.txt", mockResponse);
-            await new Promise(r => setTimeout(r, 500));
-            // Should have called sendStatus(404) or similar
-            ok(status === 404 || status === null); // Depends on timing
+        it("RDF-002: read_file with non-existent file rejects", async function () {
+            try {
+                await read_file(bucket_name, "no_such_file.txt");
+                ok(false, "Should have thrown");
+            } catch (err) {
+                ok(true, "Error thrown as expected for non-existent file");
+            }
         });
     });
 
