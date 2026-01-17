@@ -5,7 +5,6 @@
 
 import { MongoClient, Db, Collection, ObjectId, Document, Sort } from 'mongodb';
 import { get_settings } from '../setting.js';
-import { get_context_value } from '../http/context.js';
 import { format_date_time } from '../core/date.js';
 
 // Log level constants
@@ -18,17 +17,6 @@ export const LOG_LEVEL_ERROR = 3;
 export const LOG_DB = "database";
 export const LOG_ENTITY = "entity";
 export const LOG_SYSTEM = "system";
-
-interface ContextRequest {
-    session?: { user?: { id?: string } };
-    originalUrl?: string;
-}
-
-/** Resolve user id from request context if available. */
-export const get_session_user_id = (): string => {
-    const req = get_context_value("req") as ContextRequest | null;
-    return req?.session?.user?.id || "";
-};
 
 /** Check if logging is enabled for the given level. */
 const is_log_enabled = (level: number): boolean => {
@@ -43,14 +31,11 @@ export const is_log_error = (): boolean => is_log_enabled(LOG_LEVEL_ERROR);
 
 /** Write a log entry to the database. */
 const log_message = (category: string, level: number, message: string, extra: Record<string, unknown> = {}): void => {
-    const req = get_context_value("req") as ContextRequest | null;
     const entry = {
         time: format_date_time(new Date()),
         category,
         level,
         msg: message,
-        user: req?.session?.user?.id || "",
-        path: req?.originalUrl || "",
         ...extra
     };
 

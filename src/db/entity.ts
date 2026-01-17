@@ -10,7 +10,7 @@ import { required_params } from '../http/params.js';
 import { convert_type, convert_update_type, get_type } from '../core/type.js';
 import { get_entity_meta, EntityMeta, DELETE_MODE, FieldDefinition } from '../core/meta.js';
 import { unique, map_array_to_obj } from '../core/array.js';
-import { LOG_ENTITY, get_db, oid_query, oid_queries, log_debug, log_error, get_session_user_id, bulk_update, DB } from './db.js';
+import { LOG_ENTITY, get_db, oid_query, oid_queries, log_debug, log_error, bulk_update, DB } from './db.js';
 
 // Comparison operator mapping for search queries
 const COMPARISON_OPERATORS = [
@@ -637,9 +637,9 @@ export class Entity {
         return elements;
     }
 
-    get_filtered_ref_labels(ref_by_entity: string, client_query?: string): Promise<Document[]> {
+    get_filtered_ref_labels(ref_by_entity: string, client_query?: string, user_id?: string): Promise<Document[]> {
         let query: Record<string, unknown> = {};
-        if (this.meta.user_field) query[this.meta.user_field] = get_session_user_id();
+        if (this.meta.user_field && user_id) query[this.meta.user_field] = user_id;
 
         let search_query: Record<string, unknown> = {};
         if (client_query?.trim() && this.meta.search_fields?.length) {

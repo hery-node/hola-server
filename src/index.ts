@@ -1,8 +1,6 @@
 /**
  * Hola Server - Main entry point and public API.
  * 
- * This module provides namespaced exports for all Hola Server functionality.
- * 
  * @module hola-server
  * 
  * @example
@@ -23,22 +21,18 @@
  * ```
  */
 
-// Namespaced exports for new plugin architecture
+// Namespaced exports
 export * as plugins from './plugins/index.js';
 export * as errors from './errors/index.js';
 export * as db from './db/index.js';
 export * as meta from './meta/index.js';
 export * as config from './config/index.js';
 
-// Re-export commonly used items at top level for convenience
+// Commonly used items at top level for convenience
 export { EntityMeta, init_router, validate_all_metas } from './meta/index.js';
 export type { MetaDefinition, FieldDefinition, CallbackFunction, RouteCallback } from './meta/index.js';
 export { Entity } from './db/entity.js';
 export { get_db, close_db } from './db/db.js';
-
-// Settings (keep for backward compatibility)
-export { init_settings, get_settings } from './setting.js';
-export type { Settings, ServerSettings, Role } from './setting.js';
 
 // Core Type System
 export { register_type, get_type, convert_type, convert_update_type, int_enum_type } from './core/type.js';
@@ -64,13 +58,9 @@ export * as thread from './core/thread.js';
 export * as validate from './core/validate.js';
 export { encrypt_pwd, md5 } from './core/encrypt.js';
 
-// Tools
-export { gen_i18n } from './tool/gen_i18n.js';
-
-// Legacy HTTP exports (deprecated - use plugins instead)
-/** @deprecated Use plugins.holaAuth instead */
-export { init_http_server, get_app } from './http/server.js';
-/** @deprecated Use meta.init_router instead */
-export { init_router as init_router_legacy } from './http/router.js';
+// HTTP utilities
 export * as code from './http/code.js';
 export * as params from './http/params.js';
+
+// Tools
+export { gen_i18n } from './tool/gen_i18n.js';

@@ -135,7 +135,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         router.get('/ref', async (ctx) => {
             const { user, query } = ctx as any;
             check_read_rights(user, meta);
-            const list = await entity.get_filtered_ref_labels(query.ref_by_entity || '', query.query);
+            const list = await entity.get_filtered_ref_labels(query.ref_by_entity || '', query.query, user?.sub);
             const items = list.map(obj => ({
                 title: obj[meta.ref_label!],
                 value: String(obj._id)

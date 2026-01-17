@@ -13,7 +13,6 @@ export {
     is_log_info,
     is_log_warn,
     is_log_error,
-    get_session_user_id,
     oid_queries,
     oid_query,
     close_db
