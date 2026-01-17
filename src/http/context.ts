@@ -1,6 +1,14 @@
 /**
  * Request context management using AsyncLocalStorage.
  * @module http/context
+ * 
+ * @deprecated This module is deprecated. Use Elysia's derive instead:
+ * ```typescript
+ * app.derive(({ request }) => ({
+ *     requestId: crypto.randomUUID(),
+ *     startTime: Date.now()
+ * }));
+ * ```
  */
 
 import { AsyncLocalStorage } from 'async_hooks';

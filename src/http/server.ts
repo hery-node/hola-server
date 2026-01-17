@@ -1,6 +1,23 @@
 /**
  * Elysia server initialization and configuration.
  * @module http/server
+ * 
+ * @deprecated This module is deprecated. Use the new plugin architecture instead:
+ * ```typescript
+ * import { Elysia } from 'elysia';
+ * import { plugins, meta, db } from 'hola-server';
+ * 
+ * const app = new Elysia()
+ *     .use(plugins.holaCors({ origin: ['http://localhost:5173'] }))
+ *     .use(plugins.holaAuth({ secret: 'your-secret' }))
+ *     .use(plugins.holaError())
+ *     .use(userRouter)
+ *     .onStart(async () => {
+ *         await db.get_db();
+ *         meta.validate_all_metas();
+ *     })
+ *     .listen(3000);
+ * ```
  */
 
 import { Elysia } from 'elysia';

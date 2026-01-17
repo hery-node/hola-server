@@ -1,6 +1,17 @@
 /**
  * Session middleware initialization and helpers using Elysia cookies.
  * @module http/session
+ * 
+ * @deprecated This module is deprecated. Use JWT authentication instead:
+ * ```typescript
+ * import { plugins } from 'hola-server';
+ * 
+ * app.use(plugins.holaAuth({
+ *     secret: 'your-secret',
+ *     accessExpiry: '15m',
+ *     refreshExpiry: '7d'
+ * }));
+ * ```
  */
 
 import { Elysia } from 'elysia';
