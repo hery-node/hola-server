@@ -4,7 +4,7 @@
  */
 
 import { Elysia } from 'elysia';
-import { set_file_fields, save_file_fields_to_db } from '../db/gridfs.js';
+import { save_file_from_buffer } from '../db/gridfs.js';
 import { SUCCESS, NO_PARAMS, NO_RIGHTS } from '../http/code.js';
 import { get_session_user_id, is_owner } from '../http/session.js';
 import { post_params, required_post_params } from '../http/params.js';
@@ -13,6 +13,11 @@ import { check_user_role } from '../core/role.js';
 import { oid_query } from '../db/db.js';
 import { Entity } from '../db/entity.js';
 import { EntityMeta } from '../core/meta.js';
+
+interface FileData {
+    name: string;
+    buffer: ArrayBuffer;
+}
 
 export const init_clone_router = (router: Elysia, meta: EntityMeta): void => {
     const entity = new Entity(meta);
@@ -31,9 +36,8 @@ export const init_clone_router = (router: Elysia, meta: EntityMeta): void => {
         const param_obj = post_params(ctx, meta.field_names) as Record<string, unknown>;
 
         // Handle file uploads from FormData
-        if (body instanceof FormData) {
-            await set_file_fields_from_formdata(meta, body, param_obj);
-        }
+        const file_map = await extract_files_from_formdata(meta, body);
+        set_file_field_names(meta, file_map, param_obj);
 
         const query = params._id ? oid_query(params._id) : entity.primary_key_query(param_obj);
         if (!await is_owner(cookie as any, meta, entity, query!)) {
@@ -50,41 +54,49 @@ export const init_clone_router = (router: Elysia, meta: EntityMeta): void => {
         if (!has_value(code)) throw new Error("clone_entity must return code");
 
         if (code === SUCCESS) {
-            await save_file_fields_to_db_from_formdata(meta.collection, meta.file_fields, body, param_obj);
+            await save_files_to_gridfs(meta.collection, file_map, param_obj);
         }
 
         return { code, err };
     });
 };
 
-/** Extract file fields from FormData. */
-const set_file_fields_from_formdata = async (meta: EntityMeta, formData: FormData, param_obj: Record<string, unknown>): Promise<void> => {
+/** Extract files from FormData body. */
+const extract_files_from_formdata = async (meta: EntityMeta, body: unknown): Promise<Map<string, FileData>> => {
+    const file_map = new Map<string, FileData>();
+    if (!(body instanceof FormData)) return file_map;
+
     for (const field of meta.file_fields) {
-        const file = formData.get(field.name);
+        const file = body.get(field.name);
         if (file && file instanceof File) {
-            param_obj[field.name] = {
-                originalname: file.name,
-                mimetype: file.type,
-                size: file.size,
+            file_map.set(field.name, {
+                name: file.name,
                 buffer: await file.arrayBuffer()
-            };
+            });
+        }
+    }
+    return file_map;
+};
+
+/** Set file field names in param_obj based on primary keys. */
+const set_file_field_names = (meta: EntityMeta, file_map: Map<string, FileData>, param_obj: Record<string, unknown>): void => {
+    if (file_map.size === 0) return;
+
+    const primary_key = meta.primary_keys.map(key => param_obj[key]).join('_');
+
+    for (const field of meta.file_fields) {
+        if (file_map.has(field.name)) {
+            param_obj[field.name] = meta.file_fields.length === 1 ? primary_key : `${primary_key}_${field.name}`;
         }
     }
 };
 
-/** Save file fields from FormData to database. */
-const save_file_fields_to_db_from_formdata = async (
-    collection: string,
-    file_fields: any[],
-    formData: unknown,
-    param_obj: Record<string, unknown>
-): Promise<void> => {
-    if (!(formData instanceof FormData)) return;
-
-    for (const field of file_fields) {
-        const file = formData.get(field.name);
-        if (file && file instanceof File) {
-            // TODO: Implement GridFS save for Bun/Elysia file handling
+/** Save files to GridFS. */
+const save_files_to_gridfs = async (collection: string, file_map: Map<string, FileData>, param_obj: Record<string, unknown>): Promise<void> => {
+    for (const [field_name, file_data] of file_map) {
+        const filename = param_obj[field_name] as string;
+        if (filename) {
+            await save_file_from_buffer(collection, filename, file_data.buffer);
         }
     }
 };

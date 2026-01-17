@@ -128,6 +128,14 @@ export const save_file = async (collection: string, filename: string, filepath: 
     await instance.save_file(collection, filename, filepath);
 };
 
+/** Save file from Buffer/ArrayBuffer to GridFS (for Elysia FormData uploads). */
+export const save_file_from_buffer = async (collection: string, filename: string, buffer: ArrayBuffer | Buffer): Promise<void> => {
+    const instance = await get_gridfs_instance();
+    const nodeBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+    const readable = Readable.from(nodeBuffer);
+    await instance.save_file(collection, filename, readable);
+};
+
 /** Read file from GridFS and return as Buffer. */
 export const read_file = async (collection: string, filename: string): Promise<Buffer> => {
     const instance = await get_gridfs_instance();

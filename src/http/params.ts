@@ -5,7 +5,7 @@
 
 import { has_value, is_undefined } from '../core/validate.js';
 
-interface ElysiaContext {
+interface HttpContext {
     query: Record<string, unknown>;
     body: Record<string, unknown>;
 }
@@ -23,13 +23,13 @@ const extract_params = (input: Record<string, unknown>, params: string[], filter
 const parse_params = (input: Record<string, unknown>, params: string[]): Record<string, unknown> => extract_params(input, params, has_value);
 
 /** Extract query parameters from Elysia context. */
-export const get_params = (ctx: ElysiaContext, params: string[]): Record<string, unknown> => parse_params(ctx.query as Record<string, unknown>, params);
+export const get_params = (ctx: HttpContext, params: string[]): Record<string, unknown> => parse_params(ctx.query as Record<string, unknown>, params);
 
 /** Extract body parameters from Elysia context. */
-export const post_params = (ctx: ElysiaContext, params: string[]): Record<string, unknown> => parse_params(ctx.body as Record<string, unknown>, params);
+export const post_params = (ctx: HttpContext, params: string[]): Record<string, unknown> => parse_params(ctx.body as Record<string, unknown>, params);
 
 /** Extract update parameters from context body, including undefined values. */
-export const post_update_params = (ctx: ElysiaContext, params: string[]): Record<string, unknown> => extract_params(ctx.body as Record<string, unknown>, params, v => !is_undefined(v));
+export const post_update_params = (ctx: HttpContext, params: string[]): Record<string, unknown> => extract_params(ctx.body as Record<string, unknown>, params, v => !is_undefined(v));
 
 /** Extract required parameters, returning null if any are missing. */
 export const required_params = (input: Record<string, unknown>, params: string[]): Record<string, unknown> | null => {
@@ -38,7 +38,7 @@ export const required_params = (input: Record<string, unknown>, params: string[]
 };
 
 /** Extract required query parameters from Elysia context. */
-export const required_get_params = (ctx: ElysiaContext, params: string[]): Record<string, unknown> | null => required_params(ctx.query as Record<string, unknown>, params);
+export const required_get_params = (ctx: HttpContext, params: string[]): Record<string, unknown> | null => required_params(ctx.query as Record<string, unknown>, params);
 
 /** Extract required body parameters from Elysia context. */
-export const required_post_params = (ctx: ElysiaContext, params: string[]): Record<string, unknown> | null => required_params(ctx.body as Record<string, unknown>, params);
+export const required_post_params = (ctx: HttpContext, params: string[]): Record<string, unknown> | null => required_params(ctx.body as Record<string, unknown>, params);
