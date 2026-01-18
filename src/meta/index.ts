@@ -15,8 +15,7 @@ export {
 export type {
     MetaDefinition,
     FieldDefinition,
-    CallbackFunction,
-    RouteCallback
+    CallbackFunction
 } from '../core/meta.js';
 
 // Router initialization

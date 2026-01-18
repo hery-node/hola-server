@@ -40,7 +40,7 @@ export interface MetaDefinition {
     exportable?: boolean;
     ref_label?: string;
     ref_filter?: Record<string, unknown>;
-    route?: RouteCallback;
+
     user_field?: string;
     after_read?: CallbackFunction;
     list_query?: CallbackFunction;
@@ -61,7 +61,7 @@ export interface MetaDefinition {
 }
 
 export type CallbackFunction = (...args: unknown[]) => unknown;
-export type RouteCallback = (router: Elysia<any>, meta: EntityMeta) => void;
+
 
 const meta_manager: Record<string, EntityMeta> = {};
 
@@ -72,7 +72,7 @@ const CALLBACK_NAMES = ["after_read", "list_query", "before_create", "before_clo
 const OPERATION_FLAGS = ["creatable", "readable", "updatable", "deleteable", "cloneable", "importable", "exportable"] as const;
 const MODE_MAP: Record<string, string> = { creatable: "c", readable: "rs", updatable: "u", deleteable: "db", cloneable: "o", importable: "i", exportable: "e" };
 
-const META_ATTRS = ["collection", "roles", "primary_keys", "fields", ...OPERATION_FLAGS, ...CALLBACK_NAMES, "ref_label", "ref_filter", "route", "user_field"];
+const META_ATTRS = ["collection", "roles", "primary_keys", "fields", ...OPERATION_FLAGS, ...CALLBACK_NAMES, "ref_label", "ref_filter", "user_field"];
 export const DELETE_MODE = Object.freeze({ all: ["keep", "cascade"] as const, keep: "keep" as const, cascade: "cascade" as const });
 
 /** Convert fields array to name-keyed map. */

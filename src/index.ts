@@ -30,7 +30,7 @@ export * as config from './config/index.js';
 
 // Commonly used items at top level for convenience
 export { EntityMeta, init_router, validate_all_metas } from './meta/index.js';
-export type { MetaDefinition, FieldDefinition, CallbackFunction, RouteCallback } from './meta/index.js';
+export type { MetaDefinition, FieldDefinition, CallbackFunction } from './meta/index.js';
 export { Entity } from './db/entity.js';
 export { get_db, close_db } from './db/db.js';
 
@@ -47,7 +47,6 @@ export { url } from './core/url.js';
 export * as array from './core/array.js';
 export * as bash from './core/bash.js';
 export * as chart from './core/chart.js';
-export * as cron from './core/cron.js';
 export * as date from './core/date.js';
 export * as file from './core/file.js';
 export * as lhs from './core/lhs.js';

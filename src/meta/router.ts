@@ -235,11 +235,6 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         });
     }
 
-    // Apply custom routes if defined
-    if (typeof definition.route === 'function') {
-        definition.route(router as any, meta);
-    }
-
     return router as any;
 };
 
