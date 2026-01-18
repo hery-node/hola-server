@@ -3,8 +3,7 @@
  * @module core/bash
  */
 
-import fs from 'fs';
-import { exec, ExecOptions } from 'child_process';
+import { $ } from 'bun';
 import { random_code } from './random.js';
 import { is_log_debug, is_log_error, log_debug, log_error } from '../db/db.js';
 
@@ -31,24 +30,24 @@ export interface SystemAttribute {
     cmd: string;
 }
 
-/** Execute command with unified logging and error handling. */
-const exec_with_logging = (cmd: string, options: ExecOptions, error_msg: string, success_msg: string, log_extra?: LogExtra): Promise<CommandResult> => {
-    return new Promise((resolve) => {
-        exec(cmd, options, (error, stdout) => {
-            if (error) {
-                if (is_log_error()) log_error(LOG_BASH, `${error_msg}, error:${error}`, log_extra);
-                resolve({ stdout: stdout as string, err: `${error_msg}, error:${error}` });
-            } else {
-                if (is_log_debug()) log_debug(LOG_BASH, `${success_msg}, stdout:${stdout}`, log_extra);
-                resolve({ stdout: stdout as string });
-            }
-        });
-    });
+/** Execute command using Bun's native shell. */
+const exec_cmd = async (cmd: string, error_msg: string, success_msg: string, log_extra?: LogExtra): Promise<CommandResult> => {
+    try {
+        const result = await $`${{ raw: cmd }}`.quiet();
+        const stdout = result.text();
+        if (is_log_debug()) log_debug(LOG_BASH, `${success_msg}, stdout:${stdout}`, log_extra);
+        return { stdout };
+    } catch (error) {
+        const proc = error as { stdout?: { toString(): string } };
+        const stdout = proc.stdout?.toString() ?? '';
+        if (is_log_error()) log_error(LOG_BASH, `${error_msg}, error:${error}`, log_extra);
+        return { stdout, err: `${error_msg}, error:${error}` };
+    }
 };
 
 /** Run command on local host. */
 export const run_local_cmd = (cmd: string, log_extra?: LogExtra): Promise<CommandResult> => {
-    return exec_with_logging(cmd, { maxBuffer: 1024 * 15000000 },
+    return exec_cmd(cmd,
         `error running on local host cmd:${cmd}`,
         `executing on local host cmd:${cmd}`, log_extra);
 };
@@ -81,7 +80,7 @@ const build_scp_cmd = (host: Host, src: string, dest: string, to_remote: boolean
 /** Run script on remote host via SSH. */
 export const run_script = (host: Host, script: string, log_extra?: LogExtra): Promise<CommandResult> => {
     const cmd = `${build_ssh_prefix(host)} /bin/bash <<'EOT'\n ${script} \nEOT\n`;
-    return exec_with_logging(cmd, { maxBuffer: 1024 * 150000 },
+    return exec_cmd(cmd,
         `error running on host:${host.name} script:${script}`,
         `executing on host:${host.name}, script:${script}`, log_extra);
 };
@@ -91,25 +90,24 @@ export const run_script_extra = async (host: Host, script: string, log_extra?: L
     const log_file = await get_log_file();
     const cmd = `${build_ssh_prefix(host)} /bin/bash <<'EOT' > ${log_file} \n ${script} \nEOT\n`;
 
-    return new Promise((resolve) => {
-        exec(cmd, { maxBuffer: 1024 * 150000 }, (error, stdout) => {
-            if (error) {
-                if (is_log_error()) log_error(LOG_BASH, `error running on host:${host.name} script:${script}, error:${error}`, log_extra);
-                resolve({ stdout: stdout as string, err: `error running script:${script}, error:${error}` });
-            } else {
-                const output = fs.readFileSync(log_file, { encoding: 'utf8', flag: 'r' });
-                if (is_log_debug()) log_debug(LOG_BASH, `executing on host:${host.name}, script:${script}, stdout:${output}`, log_extra);
-                fs.unlinkSync(log_file);
-                resolve({ stdout: output });
-            }
-        });
-    });
+    try {
+        await $`${{ raw: cmd }}`.quiet();
+        const output = await Bun.file(log_file).text();
+        if (is_log_debug()) log_debug(LOG_BASH, `executing on host:${host.name}, script:${script}, stdout:${output}`, log_extra);
+        await Bun.file(log_file).unlink?.() ?? $`rm ${log_file}`.quiet();
+        return { stdout: output };
+    } catch (error) {
+        const proc = error as { stdout?: { toString(): string } };
+        const stdout = proc.stdout?.toString() ?? '';
+        if (is_log_error()) log_error(LOG_BASH, `error running on host:${host.name} script:${script}, error:${error}`, log_extra);
+        return { stdout, err: `error running script:${script}, error:${error}` };
+    }
 };
 
 /** Run script file on remote host. */
 export const run_script_file = (host: Host, script_file: string, log_extra?: LogExtra): Promise<CommandResult> => {
     const cmd = `${build_ssh_prefix(host)} /bin/bash < ${script_file}`;
-    return exec_with_logging(cmd, {},
+    return exec_cmd(cmd,
         `error running on host:${host.name} script_file:${script_file}`,
         `executing on host:${host.name}, script_file:${script_file}`, log_extra);
 };
@@ -117,7 +115,7 @@ export const run_script_file = (host: Host, script_file: string, log_extra?: Log
 /** SCP remote file to local. */
 export const scp = (host: Host, remote_file: string, local_file: string, log_extra?: LogExtra): Promise<CommandResult> => {
     const cmd = build_scp_cmd(host, remote_file, local_file, false);
-    return exec_with_logging(cmd, {},
+    return exec_cmd(cmd,
         `error scp on host:${host.name} remote:${remote_file}, local:${local_file}`,
         `executing scp on host:${host.name}, remote:${remote_file}, local:${local_file}`, log_extra);
 };
@@ -125,7 +123,7 @@ export const scp = (host: Host, remote_file: string, local_file: string, log_ext
 /** SCP local file to remote. */
 export const scpr = (host: Host, local_file: string, remote_file: string, log_extra?: LogExtra): Promise<CommandResult> => {
     const cmd = build_scp_cmd(host, local_file, remote_file, true);
-    return exec_with_logging(cmd, {},
+    return exec_cmd(cmd,
         `error scpr on host:${host.name} remote:${remote_file}, local:${local_file}`,
         `executing scpr on host:${host.name}, remote:${remote_file}, local:${local_file}`, log_extra);
 };

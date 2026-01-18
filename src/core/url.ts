@@ -3,23 +3,38 @@
  * @module core/url
  */
 
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { get_settings } from '../setting.js';
+export interface UrlRequestConfig {
+    headers?: Record<string, string>;
+    body?: string | FormData | Blob | ArrayBuffer | URLSearchParams;
+    signal?: AbortSignal;
+}
 
-/** Create HTTP request function with preset URL and method. */
-export const url = (target_url: string, method: string): (config?: AxiosRequestConfig) => Promise<AxiosResponse> => {
-    const settings = get_settings();
-    const axios_config = settings.axios;
+export interface UrlResponse {
+    status: number;
+    ok: boolean;
+    headers: Headers;
+    data: unknown;
+    text: () => Promise<string>;
+    json: () => Promise<unknown>;
+}
 
-    return (config?: AxiosRequestConfig) => {
-        const params: AxiosRequestConfig = {
-            url: target_url,
+/** Create HTTP request function with preset URL and method using native fetch. */
+export const url = (target_url: string, method: string): (config?: UrlRequestConfig) => Promise<UrlResponse> => {
+    return async (config?: UrlRequestConfig): Promise<UrlResponse> => {
+        const response = await fetch(target_url, {
             method,
-            validateStatus: () => true,
+            headers: config?.headers,
+            body: config?.body,
+            signal: config?.signal,
+        });
+
+        return {
+            status: response.status,
+            ok: response.ok,
+            headers: response.headers,
+            data: null,
+            text: () => response.text(),
+            json: () => response.json(),
         };
-        if (axios_config.proxy) {
-            params.proxy = axios_config.proxy as AxiosRequestConfig['proxy'];
-        }
-        return axios.request({ ...params, ...(config || {}) });
     };
 };

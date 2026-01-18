@@ -43,13 +43,13 @@ describe('file', function () {
     });
 
     describe('is_file_exist', function () {
-        it('should return true for existing file', function () {
+        it('should return true for existing file', async function () {
             const testFile = path.join(__dirname, '../../package.json');
-            strictEqual(is_file_exist(testFile), true);
+            strictEqual(await is_file_exist(testFile), true);
         });
 
-        it('should return false for non-existing file', function () {
-            strictEqual(is_file_exist('/nonexistent/path/file.txt'), false);
+        it('should return false for non-existing file', async function () {
+            strictEqual(await is_file_exist('/nonexistent/path/file.txt'), false);
         });
     });
 

@@ -3,7 +3,6 @@
  * @module core/file
  */
 
-import fs from 'fs';
 import unzipper from 'unzipper';
 
 interface ZipEntry {
@@ -26,8 +25,8 @@ export const read_from_zip = async (path: string, predicate: (file: ZipEntry) =>
 export const read_from_zip_by_extension = (path: string, extension: string) => read_from_zip(path, file => file_extension(file.path) === extension);
 export const read_from_zip_by_prefix = (path: string, prefix: string) => read_from_zip(path, file => file_prefix(file.path) === prefix);
 
-/** Check if file exists at path. */
-export const is_file_exist = (path: string): boolean => fs.existsSync(path);
+/** Check if file exists at path using Bun's native file API. */
+export const is_file_exist = async (path: string): Promise<boolean> => await Bun.file(path).exists();
 
-/** Get file size in bytes. */
-export const get_file_size = async (path: string): Promise<number> => (await fs.promises.stat(path)).size;
+/** Get file size in bytes using Bun's native file API. */
+export const get_file_size = (path: string): number => Bun.file(path).size;

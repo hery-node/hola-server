@@ -3,5 +3,5 @@
  * @module core/thread
  */
 
-/** Sleep for specified milliseconds. */
-export const snooze = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+/** Sleep for specified milliseconds using Bun's native sleep. */
+export const snooze = (ms: number): Promise<void> => Bun.sleep(ms);

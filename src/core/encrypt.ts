@@ -3,11 +3,14 @@
  * @module core/encrypt
  */
 
-import crypto from 'crypto';
 import { get_settings } from '../setting.js';
 
-/** Generate MD5 hash of content. */
-export const md5 = (content: string): string => crypto.createHash('md5').update(content).digest('hex');
+/** Generate MD5 hash of content using Bun's native CryptoHasher. */
+export const md5 = (content: string): string => {
+    const hasher = new Bun.CryptoHasher('md5');
+    hasher.update(content);
+    return hasher.digest('hex');
+};
 
 /** Encrypt password using MD5 with salt. */
 export const encrypt_pwd = (password: string): string => {
