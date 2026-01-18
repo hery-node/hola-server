@@ -9,6 +9,7 @@ import { meta_to_schema } from './schema.js';
 import { Entity } from '../db/entity.js';
 import { NotFoundError, NoRightsError } from '../errors/index.js';
 import type { JwtPayload } from '../plugins/auth.js';
+import { get_settings } from '../setting.js';
 
 /** Router context extended with auth user from derive plugin. */
 interface RouterContext {
@@ -20,31 +21,36 @@ interface RouterContext {
 
 /** Check if user has read rights for meta. */
 const check_read_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
-    if (!user) throw new NoRightsError('no read rights');
+    const settings = get_settings();
+    if (settings.server.check_user && !user) throw new NoRightsError('no read rights');
     // Additional role checking can be added here
 };
 
 /** Check if user has create rights for meta. */
 const check_create_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
-    if (!user) throw new NoRightsError('no create rights');
+    const settings = get_settings();
+    if (settings.server.check_user && !user) throw new NoRightsError('no create rights');
     if (!meta.creatable) throw new NoRightsError('entity not creatable');
 };
 
 /** Check if user has update rights for meta. */
 const check_update_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
-    if (!user) throw new NoRightsError('no update rights');
+    const settings = get_settings();
+    if (settings.server.check_user && !user) throw new NoRightsError('no update rights');
     if (!meta.updatable) throw new NoRightsError('entity not updatable');
 };
 
 /** Check if user has delete rights for meta. */
 const check_delete_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
-    if (!user) throw new NoRightsError('no delete rights');
+    const settings = get_settings();
+    if (settings.server.check_user && !user) throw new NoRightsError('no delete rights');
     if (!meta.deleteable) throw new NoRightsError('entity not deleteable');
 };
 
 /** Check if user has clone rights for meta. */
 const check_clone_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
-    if (!user) throw new NoRightsError('no clone rights');
+    const settings = get_settings();
+    if (settings.server.check_user && !user) throw new NoRightsError('no clone rights');
     if (!meta.cloneable) throw new NoRightsError('entity not cloneable');
 };
 

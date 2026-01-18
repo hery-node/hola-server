@@ -60,6 +60,12 @@ export { encrypt_pwd, md5 } from './core/encrypt.js';
 // HTTP utilities
 export * as code from './http/code.js';
 
+// Settings
+export { init_settings, get_settings } from './setting.js';
+export type { Settings } from './setting.js';
+
+// OID utilities
+export { oid_query, oid_queries } from './db/db.js';
 
 // Tools
 export { gen_i18n } from './tool/gen_i18n.js';
