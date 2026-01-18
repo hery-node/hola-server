@@ -13,7 +13,7 @@ import type { JwtPayload } from '../plugins/auth.js';
 /** Router context extended with auth user from derive plugin. */
 interface RouterContext {
     user?: JwtPayload | null;
-    query: Record<string, string | undefined>;
+    query: Record<string, unknown>;
     body: unknown;
     params: Record<string, string>;
 }
@@ -91,7 +91,7 @@ const filter_fields_by_view = (meta: EntityMeta, view: string | null): FieldDefi
 export const init_router = (definition: MetaDefinition): Elysia<any> => {
     const meta = new EntityMeta(definition);
     const entity = new Entity(meta);
-    const _schema = meta_to_schema(meta);
+    const schema = meta_to_schema(meta);
 
     const router = new Elysia({ prefix: `/${meta.collection}` });
 
@@ -100,7 +100,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         router.get('/', async ({ user, query }: RouterContext) => {
             check_read_rights(user, meta);
 
-            const query_params = query._query ? JSON.parse(query._query) : {};
+            const query_params = query._query ? JSON.parse(query._query as string) : {};
             const filter: Record<string, unknown> = {};
 
             // Apply user field filter if defined
@@ -110,6 +110,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
             const result = await entity.list_entity(query_params, filter, query, '*');
             return { ...result };
+        }, {
+            query: schema.query
         });
     }
 
@@ -139,12 +141,14 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
     if (meta.readable && meta.ref_label) {
         router.get('/ref', async ({ user, query }: RouterContext) => {
             check_read_rights(user, meta);
-            const list = await entity.get_filtered_ref_labels(query.ref_by_entity || '', query.query, user?.sub);
+            const list = await entity.get_filtered_ref_labels((query.ref_by_entity as string) || '', query.query as string, user?.sub);
             const items = list.map(obj => ({
                 title: obj[meta.ref_label!],
                 value: String(obj._id)
             }));
             return { code: 0, data: items };
+        }, {
+            query: schema.ref_query
         });
     }
 
@@ -156,6 +160,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
             const result = await entity.read_entity(params.id, '*', '*');
             if (!result.data) throw new NotFoundError();
             return { code: 0, data: result.data };
+        }, {
+            params: schema.id_param
         });
     }
 
@@ -164,10 +170,13 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         router.get('/:id/property', async ({ user, params, query }: RouterContext) => {
             check_read_rights(user, meta);
 
-            const attr_names = query.fields || '*';
+            const attr_names = (query.fields as string) || '*';
             const result = await entity.read_property(params.id, attr_names, '*');
             if (!result.data) throw new NotFoundError();
             return { code: 0, data: result.data };
+        }, {
+            params: schema.id_param,
+            query: schema.property_query
         });
     }
 
@@ -185,6 +194,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
             const result = await entity.create_entity(data, '*');
             return result;
+        }, {
+            body: schema.create
         });
     }
 
@@ -196,6 +207,9 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
             const data = body as Record<string, unknown>;
             const result = await entity.update_entity(params.id, data, '*');
             return result;
+        }, {
+            params: schema.id_param,
+            body: schema.update
         });
     }
 
@@ -203,9 +217,10 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
     if (meta.deleteable) {
         router.delete('/:id', async ({ user, params }: RouterContext) => {
             check_delete_rights(user, meta);
-
             const result = await entity.delete_entity([params.id]);
             return result;
+        }, {
+            params: schema.id_param
         });
     }
 
@@ -213,9 +228,10 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
     if (meta.cloneable) {
         router.post('/:id/clone', async ({ user, params }: RouterContext) => {
             check_clone_rights(user, meta);
-
             const result = await entity.clone_entity(params.id, {}, '*');
             return result;
+        }, {
+            params: schema.id_param
         });
     }
 

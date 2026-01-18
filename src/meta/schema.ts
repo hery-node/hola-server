@@ -51,10 +51,23 @@ export const meta_to_schema = (meta: EntityMeta) => {
         _query: t.Optional(t.Any())
     });
 
+    // Ref query schema for reference labels lookup
+    const ref_query_schema = t.Object({
+        ref_by_entity: t.Optional(t.String()),
+        query: t.Optional(t.String())
+    });
+
+    // Property query schema for reading specific fields
+    const property_query_schema = t.Object({
+        fields: t.Optional(t.String())
+    });
+
     return {
         create: t.Object(create_fields),
         update: t.Object(update_fields),
         query: query_schema,
+        ref_query: ref_query_schema,
+        property_query: property_query_schema,
         id_param: t.Object({ id: t.String() })
     };
 };
