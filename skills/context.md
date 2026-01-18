@@ -1,4 +1,32 @@
-# HTTP Context Utilities Skill
+# HTTP Context Utilities (Deprecated)
+
+> **⚠️ DEPRECATED**: This module has been replaced by Elysia's native Context object and `plugins.holaAuth` derivation.
+
+## Migration Guide
+
+### Old Way
+
+```javascript
+const { set_context_value, get_context_value } = require("hola-server/http/context");
+set_context_value("user", user);
+const user = get_context_value("user");
+```
+
+### New Way (Elysia)
+
+Use the Context object passed to every handler:
+
+```typescript
+app.get('/', ({ user, store }) => {
+    // 'user' is available if using holaAuth plugin
+    console.log(user); 
+    
+    // Use 'store' for global mutable state
+    return { user };
+});
+```
+
+See [Elysia Documentation](https://elysiajs.com/concept/context.html) for more details.
 
 ## Overview
 
