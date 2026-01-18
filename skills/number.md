@@ -13,7 +13,7 @@ const {
     range, scale,
     space, is_space, contains_space,
     is_integer, random_number, random_sample, lhs_samples
-} = require("hola-server/core/number");
+} from "hola-server/core/number";
 ```
 
 ## API Reference

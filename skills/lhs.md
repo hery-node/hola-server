@@ -10,7 +10,7 @@ The `hola-server/core/lhs.js` module provides utilities for safe template execut
 const { 
     get_context, run_in_context, 
     verify_template, execute_template 
-} = require("hola-server/core/lhs");
+} from "hola-server/core/lhs";
 ```
 
 ## API Reference

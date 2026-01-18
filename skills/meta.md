@@ -806,7 +806,7 @@ The Hola meta-programming model provides a declarative way to define entity sche
 **Developer-Facing API:**
 ```javascript
 // ✅ CORRECT - Use init_router in router files
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "user",
@@ -819,7 +819,7 @@ module.exports = init_router({
 **Internal Implementation (for reference only):**
 ```javascript
 // ❌ DON'T DO THIS - EntityMeta is internal
-const { EntityMeta } = require("hola-server/core/meta");
+import { EntityMeta } from "hola-server/core/meta";
 const meta = new EntityMeta({...}); // Don't use directly
 ```
 
@@ -910,7 +910,7 @@ For reference fields, you can specify deletion behavior:
 - `undefined` - No action (default)
 
 ```javascript
-const { DELETE_MODE } = require("hola-server/core/meta");
+import { DELETE_MODE } from "hola-server/core/meta";
 
 // DELETE_MODE.all = ["keep", "cascade"]
 // DELETE_MODE.keep = "keep"
@@ -953,7 +953,7 @@ The `EntityMeta` class is created internally by `init_router()`. Understanding i
 **What you actually write (in router files):**
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "user",
@@ -1039,7 +1039,7 @@ meta.validate_meta_info();
 Get entity meta by collection name.
 
 ```javascript
-const { get_entity_meta } = require("hola-server/core/meta");
+import { get_entity_meta } from "hola-server/core/meta";
 
 const user_meta = get_entity_meta("user");
 console.log(user_meta.collection);  // "user"
@@ -1051,7 +1051,7 @@ console.log(user_meta.field_names); // ["email", "name", "age"]
 Get all registered meta collection names.
 
 ```javascript
-const { get_all_metas } = require("hola-server/core/meta");
+import { get_all_metas } from "hola-server/core/meta";
 
 const collections = get_all_metas();
 // ["user", "product", "order", ...]
@@ -1062,7 +1062,7 @@ const collections = get_all_metas();
 Validate all registered metas. Called after all entity definitions are loaded.
 
 ```javascript
-const { validate_all_metas } = require("hola-server/core/meta");
+import { validate_all_metas } from "hola-server/core/meta";
 
 validate_all_metas();
 // Throws Error if any meta is invalid
@@ -1073,7 +1073,7 @@ validate_all_metas();
 ### Use Case 1: Simple Entity Definition
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "user",
@@ -1120,7 +1120,7 @@ module.exports = init_router({
 ### Use Case 2: Entity with References
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "task",
@@ -1171,7 +1171,7 @@ The `ref` attribute supports both one-to-one and one-to-many relationships depen
 When the field type is `"string"` (or omitted, defaulting to `"string"`), and has a `ref` attribute, it stores a single ObjectId reference:
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "task",
@@ -1204,7 +1204,7 @@ module.exports = init_router({
 When the field type is `"array"` with `ref` attribute, it stores an array of ObjectIds:
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "exec",
@@ -1252,7 +1252,7 @@ module.exports = init_router({
 Link fields automatically populate their values from referenced entities.
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "order",
@@ -1287,7 +1287,7 @@ module.exports = init_router({
 Organize complex entities into different form views.
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "product",
@@ -1347,7 +1347,7 @@ module.exports = init_router({
 Add custom logic at various points in the entity lifecycle.
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "audit_log",
@@ -1399,7 +1399,7 @@ module.exports = init_router({
 Control field visibility to client and in different operations.
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "user",
@@ -1453,7 +1453,7 @@ Control what happens to records when referenced entities are deleted.
 
 ```javascript
 // User entity - user.js
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "user",
@@ -1780,7 +1780,7 @@ module.exports = init_router({
 This is the standard way to define entity routers in Hola:
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 // init_router creates an EntityMeta internally
 module.exports = init_router({

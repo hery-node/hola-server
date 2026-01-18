@@ -15,7 +15,7 @@ const {
     INVALID_PARAMS, REF_NOT_FOUND, REF_NOT_UNIQUE, HAS_REF,
     DUPLICATE_KEY, NO_RESOURCE,
     IMPORT_EMPTY_KEY, IMPORT_WRONG_FIELDS, IMPORT_DUPLICATE_KEY, IMPORT_NO_FOUND_REF
-} = require("hola-server/http/code");
+} from "hola-server/http/code";
 ```
 
 ## Response Codes Reference
@@ -71,7 +71,7 @@ const {
 ### Basic Response Pattern
 
 ```javascript
-const { SUCCESS, NO_PARAMS } = require("hola-server/http/code");
+import { SUCCESS, NO_PARAMS } from "hola-server/http/code";
 
 router.post("/create", async (req, res) => {
     const { name, email } = req.body;
@@ -88,7 +88,7 @@ router.post("/create", async (req, res) => {
 ### Standard CRUD Operations
 
 ```javascript
-const { SUCCESS } = require("hola-server/http/code");
+import { SUCCESS } from "hola-server/http/code";
 
 // Create
 router.post("/", async (req, res) => {

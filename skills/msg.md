@@ -7,7 +7,7 @@ The `hola-server/core/msg.js` module wraps the `wxmnode` library to provide a si
 ## Importing
 
 ```javascript
-const { init_wxm, send_msg } = require("hola-server/core/msg");
+import { init_wxm, send_msg } from "hola-server/core/msg";
 ```
 
 ## API Reference

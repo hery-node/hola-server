@@ -1,6 +1,6 @@
 # Hola Server
 
-A meta-programming framework for building Node.js RESTful APIs with MongoDB. Hola Server provides a declarative, metadata-driven approach to building CRUD APIs with built-in authentication, role-based access control, and file handling.
+A meta-programming framework for building Bun + Elysia RESTful APIs with MongoDB. Hola Server provides a declarative, metadata-driven approach to building CRUD APIs with built-in JWT authentication, role-based access control, and file handling.
 
 ## Features
 
@@ -8,77 +8,67 @@ A meta-programming framework for building Node.js RESTful APIs with MongoDB. Hol
 - **Role-Based Access Control**: Fine-grained permissions per entity, operation, and view
 - **Type System**: Extensible type conversion and validation system
 - **File Handling**: Built-in GridFS integration for file uploads
-- **Session Management**: Express session with MongoDB store
+- **JWT Authentication**: Hybrid token delivery via cookies and Authorization header
 - **Entity Relationships**: Support for references with cascade/keep delete behavior
 - **Query Building**: Advanced search, filtering, and pagination
-- **Async Context**: Request-scoped context using AsyncLocalStorage
+- **Elysia Plugins**: Composable plugin architecture for CORS, auth, and error handling
 - **Comprehensive Testing**: Full test suite with 111+ passing tests
 
 ## Installation
 
 ```bash
-npm install
+bun install
 ```
 
 ## Quick Start
 
-### 1. Configure Settings
+### 1. Create Entity Router
 
-```javascript
-const { init_settings } = require("hola-server");
+```typescript
+import { init_router } from "hola-server";
 
-init_settings({
-  mongo: {
-    url: "mongodb://localhost/myapp",
-    pool: 10,
-  },
-  server: {
-    service_port: 8088,
-    client_web_url: ["http://localhost:3000"],
-    session: {
-      secret: "your-secret-key",
-      cookie_max_age: 86400000, // 1 day
-    },
-  },
-  roles: [{ name: "admin", root: true }, { name: "user" }],
-});
-```
-
-### 2. Define Entity Metadata
-
-```javascript
-const { EntityMeta } = require("hola-server");
-
-const user_meta = {
+export const userRouter = init_router({
   collection: "user",
-  mode: "crud",
+  primary_keys: ["email"],
+  ref_label: "name",
+  
+  creatable: true,
+  readable: true,
+  updatable: true,
+  deleteable: true,
+  
   fields: [
     { name: "name", type: "string", required: true },
-    { name: "email", type: "string", required: true, primary: true },
+    { name: "email", type: "string", required: true },
     { name: "age", type: "uint" },
-    { name: "role", type: "obj", ref: "role" },
+    { name: "role", ref: "role" },
   ],
-  roles: ["admin:crud:*", "user:r:*"],
-};
-```
-
-### 3. Create Router
-
-```javascript
-const { init_router } = require("hola-server");
-
-const router = init_router(user_meta);
-module.exports = router;
-```
-
-### 4. Start Server
-
-```javascript
-const { init_express_server } = require("hola-server");
-
-init_express_server(__dirname, "service_port", async () => {
-  console.log("Server started on port 8088");
+  
+  roles: ["admin:*", "user:r"],
 });
+```
+
+### 2. Start Server
+
+```typescript
+import { Elysia } from "elysia";
+import { plugins, db, meta } from "hola-server";
+import { userRouter } from "./router/user.js";
+
+const app = new Elysia()
+  .use(plugins.holaCors({ origin: ["http://localhost:5173"] }))
+  .use(plugins.holaBody({ limit: "10mb" }))
+  .use(plugins.holaAuth({ secret: process.env.JWT_SECRET! }))
+  .use(plugins.holaError())
+  .use(userRouter)
+  .onStart(async () => {
+    await db.get_db();
+    meta.validate_all_metas();
+    console.log("✓ Server ready");
+  })
+  .listen(3000);
+
+export type App = typeof app;
 ```
 
 ## Entity Metadata
@@ -95,76 +85,79 @@ For complete field attribute documentation, see [skills/meta.md](skills/meta.md)
 
 Common options include: `required`, `default`, `ref`, `create`, `update`, `list`, `search`, `sys`, `secure`.
 
-### CRUD Modes
+### Operation Flags
 
-- `c` - Create
-- `r` - Read
-- `u` - Update
-- `d` - Delete
-- `o` - Clone
-- `crud` - All operations
+- `creatable` - Enable POST endpoint
+- `readable` - Enable GET endpoints
+- `updatable` - Enable PUT endpoint
+- `deleteable` - Enable DELETE endpoint
+- `cloneable` - Enable clone endpoint
 
 ### Role Configuration
 
-Format: `role_name:mode:view`
+Format: `role_name:permissions`
 
 Example:
 
-```javascript
+```typescript
 roles: [
-  "admin:crud:*", // Admin can do all operations on all views
-  "user:r:public", // User can only read public view
-  "editor:cru:edit", // Editor can create/read/update edit view
-];
+  "admin:*",      // Admin can do everything
+  "user:r",       // User can only read
+  "editor:cru",   // Editor can create/read/update
+]
 ```
 
 ## API Endpoints
 
-For an entity with `mode: 'crud'`:
+For an entity router:
 
-- `POST /{entity}/create` - Create entity
-- `POST /{entity}/query` - Query entities
-- `POST /{entity}/count` - Count entities
-- `POST /{entity}/update` - Update entity
-- `POST /{entity}/delete` - Delete entity
-- `POST /{entity}/clone` - Clone entity (if cloneable)
+- `GET /{entity}` - List entities
+- `GET /{entity}/:id` - Get single entity
+- `POST /{entity}` - Create entity
+- `PUT /{entity}/:id` - Update entity
+- `DELETE /{entity}/:id` - Delete entity
+- `GET /{entity}/meta` - Get entity metadata
+- `POST /{entity}/:id/clone` - Clone entity (if cloneable)
 
 ## Core Utilities
 
 ### Database
 
-```javascript
-const { get_db } = require("hola-server");
+```typescript
+import { db } from "hola-server";
 
-const db = await get_db();
-const users = await db.collection("user").find({});
+const database = await db.get_db();
+const users = await database.collection("user").find({}).toArray();
 ```
 
 ### Entity Operations
 
-```javascript
-const { Entity } = require("hola-server");
+```typescript
+import { db } from "hola-server";
 
-const entity = new Entity(meta);
-await entity.create_entity(data);
-await entity.find_entity(query);
-await entity.update_entity(id, updates);
-await entity.delete_entity(id);
+const entity = new db.Entity(meta);
+await entity.create_entity(data, "*");
+await entity.read_entity(id, "*", "*");
+await entity.update_entity(id, updates, "*");
+await entity.delete_entity([id]);
 ```
 
-### Logging
+### Plugins
 
-```javascript
-const { log_info, log_error } = require("hola-server");
+See [skills/elysia.md](skills/elysia.md) for complete plugin documentation.
 
-log_info("user", "User logged in", { user_id });
-log_error("auth", "Login failed", { email });
+```typescript
+import { plugins } from "hola-server";
+
+app.use(plugins.holaCors({ origin: [...] }));
+app.use(plugins.holaAuth({ secret: "..." }));
+app.use(plugins.holaError());
 ```
 
 ## Testing
 
 ```bash
-npm test
+bun test
 ```
 
 ## Project Structure
@@ -173,7 +166,7 @@ npm test
 hola-server/
 ├── core/          # Core utilities (array, date, validate, etc.)
 ├── db/            # Database layer (connection, entity, gridfs)
-├── http/          # HTTP layer (express, router, middleware)
+├── http/          # Elysia plugins and error classes
 ├── router/        # CRUD route handlers
 ├── test/          # Test suite
 └── tool/          # Tools (i18n generation)

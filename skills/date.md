@@ -10,7 +10,7 @@ The `hola-server/core/date.js` module provides date formatting and parsing utili
 const { 
     simple_date, format_date, format_time, 
     format_date_time, parse_date 
-} = require("hola-server/core/date");
+} from "hola-server/core/date";
 ```
 
 ## API Reference

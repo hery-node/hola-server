@@ -7,7 +7,7 @@ The `hola-server/core/url.js` module provides a factory for creating pre-configu
 ## Importing
 
 ```javascript
-const { url } = require("hola-server/core/url");
+import { url } from "hola-server/core/url";
 ```
 
 ## API Reference

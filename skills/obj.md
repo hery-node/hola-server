@@ -7,7 +7,7 @@ The `hola-server/core/obj.js` module provides simple object manipulation helpers
 ## Importing
 
 ```javascript
-const { copy_obj, is_object } = require("hola-server/core/obj");
+import { copy_obj, is_object } from "hola-server/core/obj";
 ```
 
 ## API Reference

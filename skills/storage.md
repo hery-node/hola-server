@@ -27,7 +27,7 @@ The `Entity` class provides a meta-driven abstraction layer over MongoDB collect
 ### 1.2 Import
 
 ```javascript
-const { Entity } = require("hola-server/db/entity");
+import { Entity } from "hola-server/db/entity";
 ```
 
 ### 1.3 Constructor
@@ -500,7 +500,7 @@ GridFS stores files in MongoDB as chunks, suitable for files larger than 16MB BS
 const { 
     save_file, read_file, pipe_file, delete_file,
     save_file_fields_to_db, set_file_fields
-} = require("hola-server/db/gridfs");
+} from "hola-server/db/gridfs";
 ```
 
 ### 5.3 Save File
@@ -527,16 +527,14 @@ Streams a file directly to HTTP response.
 **Parameters:**
 - `collection` (string): Bucket name
 - `filename` (string): File identifier
-- `response` (Response): Express response object
+- `response` (Object): Response object (use `set.headers` for Elysia)
 
-```javascript
-// Express route
-app.get('/files/:collection/:filename', async (req, res) => {
-    await read_file(
-        req.params.collection,
-        req.params.filename,
-        res
-    );
+```typescript
+// Elysia route
+app.get('/files/:collection/:filename', async ({ params, set }) => {
+    const stream = await read_file(params.collection, params.filename);
+    set.headers['content-type'] = 'application/octet-stream';
+    return stream;
 });
 ```
 
@@ -586,7 +584,7 @@ fields: [
 In router create/update handlers:
 
 ```javascript
-const { set_file_fields, save_file_fields_to_db } = require("hola-server/db/gridfs");
+import { set_file_fields, save_file_fields_to_db } from "hola-server/db/gridfs";
 
 // In create handler
 router.post("/", upload.any(), async (req, res) => {

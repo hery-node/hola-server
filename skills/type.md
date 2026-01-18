@@ -96,7 +96,7 @@ fields: [
 **✅ CORRECT - Int Enum Type:**
 ```javascript
 // 1. Register customized type using built-in helper
-const { register_type, int_enum_type } = require("hola-server/core/type");
+import { register_type, int_enum_type } from "hola-server/core/type";
 
 register_type(int_enum_type("product_category", [0, 1, 2]));
 // 0=Electronics, 1=Clothing, 2=Food
@@ -191,7 +191,7 @@ register_type({
 Create a type definition in your entity file or a shared types file:
 
 ```javascript
-const { register_type, ok, err, is_int, int_enum_type, int_range_type, regex_type } = require("hola-server/core/type");
+import { register_type, ok, err, is_int, int_enum_type, int_range_type, regex_type } from "hola-server/core/type";
 
 // Example 1: Int Enum Type
 // Use the built-in helper function
@@ -362,7 +362,7 @@ Add translations for your custom types:
 ### Step 4: Use in Entity Definition
 
 ```javascript
-const { init_router } = require("hola-server");
+import { init_router } from "hola-server";
 
 module.exports = init_router({
   collection: "product",
@@ -391,8 +391,8 @@ Here's a complete example showing all steps:
 
 **1. Server Type (`hola-server/router/product.js`):**
 ```javascript
-const { init_router } = require("hola-server");
-const { register_type, int_enum_type } = require("hola-server/core/type");
+import { init_router } from "hola-server";
+import { register_type, int_enum_type } from "hola-server/core/type";
 
 // Define custom type using built-in helper
 register_type(int_enum_type("product_category", [0, 1, 2]));

@@ -12,7 +12,7 @@ const {
     sum, avg, map_array_to_obj, 
     sort_desc, sort_asc, sort_by_key_seq, 
     combine, unique 
-} = require("hola-server/core/array");
+} from "hola-server/core/array";
 ```
 
 ## API Reference
