@@ -7,7 +7,8 @@ The `hola-server/core/chart.js` module provides helpers for manipulating chart d
 ## Importing
 
 ```javascript
-import { set_chart_header, merge_chart_data } from "hola-server/core/chart";
+import { chart } from "hola-server";
+// Use chart.set_chart_header(), chart.merge_chart_data()
 ```
 
 ## API Reference

@@ -27,7 +27,7 @@ The `Entity` class provides a meta-driven abstraction layer over MongoDB collect
 ### 1.2 Import
 
 ```javascript
-import { Entity } from "hola-server/db/entity";
+import { Entity } from "hola-server";
 ```
 
 ### 1.3 Constructor
@@ -500,7 +500,7 @@ GridFS stores files in MongoDB as chunks, suitable for files larger than 16MB BS
 const { 
     save_file, read_file, pipe_file, delete_file,
     save_file_fields_to_db, set_file_fields
-} from "hola-server/db/gridfs";
+} from "hola-server";
 ```
 
 ### 5.3 Save File
@@ -584,7 +584,8 @@ fields: [
 In router create/update handlers:
 
 ```javascript
-import { set_file_fields, save_file_fields_to_db } from "hola-server/db/gridfs";
+import { db } from "hola-server";
+// Use db.set_file_fields(), db.save_file_fields_to_db()
 
 // In create handler
 router.post("/", upload.any(), async (req, res) => {

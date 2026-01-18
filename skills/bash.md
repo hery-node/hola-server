@@ -13,7 +13,7 @@ const {
     run_simple_cmd, run_local_cmd, run_simple_local_cmd,
     get_info, get_system_attributes,
     read_key_value_line, read_obj_line
-} from "hola-server/core/bash";
+} from "hola-server";
 ```
 
 ## API Reference

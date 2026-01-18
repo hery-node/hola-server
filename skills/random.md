@@ -7,7 +7,8 @@ The `hola-server/core/random.js` module provides simple random generation utilit
 ## Importing
 
 ```javascript
-import { random_code } from "hola-server/core/random";
+import { random } from "hola-server";
+// Use random.random_code()
 ```
 
 ## API Reference

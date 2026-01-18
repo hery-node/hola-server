@@ -10,7 +10,7 @@ The `hola-server/core/file.js` module provides helpers for file path manipulatio
 import {
     file_extension, file_prefix, is_file_exist, get_file_size,
     read_from_zip_by_extension, read_from_zip_by_prefix
-} from "hola-server/core/file";
+} from "hola-server";
 ```
 
 ## API Reference
@@ -69,7 +69,7 @@ The `hola-server/core/file.js` module provides helpers for file path manipulatio
 const {
     file_extension, file_prefix, is_file_exist, get_file_size,
     read_from_zip_by_extension, read_from_zip_by_prefix
-} from "hola-server/core/file";
+} from "hola-server";
 ```
 
 ## API Reference

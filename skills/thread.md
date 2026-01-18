@@ -7,7 +7,8 @@ The `hola-server/core/thread.js` module provides utilities for controlling execu
 ## Importing
 
 ```javascript
-import { snooze } from "hola-server/core/thread";
+import { thread } from "hola-server";
+// Use thread.snooze()
 ```
 
 ## API Reference

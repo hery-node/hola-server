@@ -9,7 +9,7 @@ The `hola-server/core/validate.js` module provides basic validation helpers to c
 ```javascript
 const { 
     is_undefined, has_value, validate_required_fields 
-} from "hola-server/core/validate";
+} from "hola-server";
 ```
 
 ## API Reference

@@ -11,7 +11,7 @@ import {
     is_root_role, is_root_user, 
     validate_meta_role, check_user_role, 
     get_user_role_right, get_session_user 
-} from "hola-server/core/role";
+} from "hola-server";
 ```
 
 ## API Reference

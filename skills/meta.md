@@ -22,7 +22,7 @@ export const router = init_router({
 **Internal Implementation (for reference only):**
 ```typescript
 // ❌ DON'T DO THIS - EntityMeta is internal
-import { EntityMeta } from "hola-server/core/meta";
+import { EntityMeta } from "hola-server";
 const meta = new EntityMeta({...}); // Don't use directly
 ```
 
@@ -112,7 +112,7 @@ For reference fields, you can specify deletion behavior:
 - `undefined` - No action (default)
 
 ```typescript
-import { DELETE_MODE } from "hola-server/core/meta";
+import { DELETE_MODE } from "hola-server";
 
 // DELETE_MODE.all = ["keep", "cascade"]
 // DELETE_MODE.keep = "keep"
@@ -239,7 +239,7 @@ meta.validate_meta_info();
 Get entity meta by collection name.
 
 ```typescript
-import { get_entity_meta } from "hola-server/core/meta";
+import { get_entity_meta } from "hola-server";
 
 const user_meta = get_entity_meta("user");
 console.log(user_meta.collection);  // "user"
@@ -251,7 +251,7 @@ console.log(user_meta.field_names); // ["email", "name", "age"]
 Get all registered meta collection names.
 
 ```typescript
-import { get_all_metas } from "hola-server/core/meta";
+import { get_all_metas } from "hola-server";
 
 const collections = get_all_metas();
 // ["user", "product", "order", ...]
@@ -262,7 +262,7 @@ const collections = get_all_metas();
 Validate all registered metas. Called after all entity definitions are loaded.
 
 ```typescript
-import { validate_all_metas } from "hola-server/core/meta";
+import { validate_all_metas } from "hola-server";
 
 validate_all_metas();
 // Throws Error if any meta is invalid
@@ -701,7 +701,7 @@ export const commentRouter = init_router({
 The `EntityMeta` class automatically organizes fields into useful subsets:
 
 ```typescript
-import { get_entity_meta } from "hola-server/core/meta";
+import { get_entity_meta } from "hola-server";
 const meta = get_entity_meta("product");
 
 // All fields
@@ -819,7 +819,7 @@ module.exports = init_router({
 **Internal Implementation (for reference only):**
 ```javascript
 // ❌ DON'T DO THIS - EntityMeta is internal
-import { EntityMeta } from "hola-server/core/meta";
+import { EntityMeta } from "hola-server";
 const meta = new EntityMeta({...}); // Don't use directly
 ```
 
@@ -910,7 +910,7 @@ For reference fields, you can specify deletion behavior:
 - `undefined` - No action (default)
 
 ```javascript
-import { DELETE_MODE } from "hola-server/core/meta";
+import { DELETE_MODE } from "hola-server";
 
 // DELETE_MODE.all = ["keep", "cascade"]
 // DELETE_MODE.keep = "keep"
@@ -1039,7 +1039,7 @@ meta.validate_meta_info();
 Get entity meta by collection name.
 
 ```javascript
-import { get_entity_meta } from "hola-server/core/meta";
+import { get_entity_meta } from "hola-server";
 
 const user_meta = get_entity_meta("user");
 console.log(user_meta.collection);  // "user"
@@ -1051,7 +1051,7 @@ console.log(user_meta.field_names); // ["email", "name", "age"]
 Get all registered meta collection names.
 
 ```javascript
-import { get_all_metas } from "hola-server/core/meta";
+import { get_all_metas } from "hola-server";
 
 const collections = get_all_metas();
 // ["user", "product", "order", ...]
@@ -1062,7 +1062,7 @@ const collections = get_all_metas();
 Validate all registered metas. Called after all entity definitions are loaded.
 
 ```javascript
-import { validate_all_metas } from "hola-server/core/meta";
+import { validate_all_metas } from "hola-server";
 
 validate_all_metas();
 // Throws Error if any meta is invalid
