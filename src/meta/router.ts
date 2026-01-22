@@ -108,7 +108,6 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
             check_read_rights(user, meta);
 
             const body_data = body as Record<string, unknown>;
-            const query_params = body_data._query ? body_data._query : {};
             const filter: Record<string, unknown> = {};
 
             // Apply user field filter if defined
@@ -116,7 +115,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
                 filter[meta.user_field] = user.sub;
             }
 
-            const result = await entity.list_entity(query_params as Record<string, unknown>, filter, body_data, '*');
+            const result = await entity.list_entity(body_data, filter, body_data, '*');
             return { ...result };
         }, {
             body: schema.query

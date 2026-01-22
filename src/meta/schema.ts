@@ -42,13 +42,16 @@ export const meta_to_schema = (meta: EntityMeta) => {
     }
 
     // Query schema for list operations
+    // All query params are now at top level of body
     const query_schema = t.Object({
         page: t.Optional(t.Number({ minimum: 1 })),
         limit: t.Optional(t.Number({ minimum: 1, maximum: 1000 })),
+        sort_by: t.Optional(t.String()),
+        desc: t.Optional(t.Boolean()),
+        attr_names: t.Optional(t.String()),
         sort: t.Optional(t.String()),
         order: t.Optional(t.Union([t.Literal('asc'), t.Literal('desc')])),
-        search: t.Optional(t.String()),
-        _query: t.Optional(t.Any())
+        search: t.Optional(t.String())
     });
 
     // Ref query schema for reference labels lookup

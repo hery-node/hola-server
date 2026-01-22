@@ -226,16 +226,18 @@ export class Entity {
     }
 
     async list_entity(query_params: Record<string, unknown>, query: Record<string, unknown>, param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
+        console.log('list_entity', { query_params, query, param_obj, view });
         const missing = validate_required_fields(query_params, ['attr_names', 'sort_by', 'desc']);
         if (missing.length > 0) {
             log_err('missing required fields', { fields: missing });
             return { code: NO_PARAMS, err: missing };
         }
 
-        const { attr_names, page, limit, sort_by, desc } = query_params as { attr_names: string; page: unknown; limit: unknown; sort_by: string; desc: string };
+        const { attr_names, page, limit, sort_by, desc } = query_params as { attr_names: string; page: unknown; limit: unknown; sort_by: string; desc: boolean | string };
         const sorts = sort_by.split(',');
-        const descs = desc.split(',');
-        const sort: Sort = sorts.reduce((s, field, i) => ({ ...s, [field]: descs[i] === 'false' ? 1 : -1 }), {});
+        // Handle desc as boolean or comma-separated string
+        const descs = typeof desc === 'boolean' ? [desc] : String(desc).split(',');
+        const sort: Sort = sorts.reduce((s, field, i) => ({ ...s, [field]: (descs[i] === 'false' || descs[i] === false) ? 1 : -1 }), {});
 
         const list_fields = this.filter_fields_by_view(this.meta.list_fields, view);
         const { attrs, ref_fields, link_fields } = extract_field_info(this.meta.fields_map, attr_names, list_fields.map(f => f.name));
