@@ -32,7 +32,7 @@ export * as config from './config/index.js';
 export { EntityMeta, init_router, validate_all_metas } from './meta/index.js';
 export type { MetaDefinition, FieldDefinition, CallbackFunction } from './meta/index.js';
 export { Entity } from './db/entity.js';
-export { get_db, close_db } from './db/db.js';
+export { get_db, init_db, close_db } from './db/db.js';
 
 // Core Type System
 export { register_type, get_type, convert_type, convert_update_type, int_enum_type } from './core/type.js';

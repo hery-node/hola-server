@@ -141,11 +141,18 @@ const extract_field_info = (fields_map: Record<string, FieldDefinition>, attr_na
 
 export class Entity {
     meta: EntityMeta;
-    db: DB;
+    private _db: DB | null = null;
 
     constructor(meta: EntityMeta | string) {
         this.meta = typeof meta === 'string' ? get_entity_meta(meta)! : meta;
-        this.db = get_db();
+    }
+
+    /** Get db instance lazily - ensures connection is established */
+    private get db(): DB {
+        if (!this._db) {
+            this._db = get_db();
+        }
+        return this._db;
     }
 
     col() { return this.db.col(this.meta.collection); }

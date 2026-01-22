@@ -244,6 +244,11 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         });
     }
 
+    // Custom route callback
+    if (definition.route) {
+        definition.route(router, meta);
+    }
+
     return router as any;
 };
 

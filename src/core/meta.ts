@@ -58,6 +58,7 @@ export interface MetaDefinition {
     batch_update?: CallbackFunction;
     after_batch_update?: CallbackFunction;
     delete?: CallbackFunction;
+    route?: (router: unknown, meta: EntityMeta) => void;
 }
 
 export type CallbackFunction = (...args: unknown[]) => unknown;
@@ -72,7 +73,7 @@ const CALLBACK_NAMES = ["after_read", "list_query", "before_create", "before_clo
 const OPERATION_FLAGS = ["creatable", "readable", "updatable", "deleteable", "cloneable", "importable", "exportable"] as const;
 const MODE_MAP: Record<string, string> = { creatable: "c", readable: "rs", updatable: "u", deleteable: "db", cloneable: "o", importable: "i", exportable: "e" };
 
-const META_ATTRS = ["collection", "roles", "primary_keys", "fields", ...OPERATION_FLAGS, ...CALLBACK_NAMES, "ref_label", "ref_filter", "user_field"];
+const META_ATTRS = ["collection", "roles", "primary_keys", "fields", ...OPERATION_FLAGS, ...CALLBACK_NAMES, "ref_label", "ref_filter", "user_field", "route"];
 export const DELETE_MODE = Object.freeze({ all: ["keep", "cascade"] as const, keep: "keep" as const, cascade: "cascade" as const });
 
 /** Convert fields array to name-keyed map. */

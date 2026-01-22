@@ -5,6 +5,7 @@
 
 export {
     get_db,
+    init_db,
     log_debug,
     log_info,
     log_warn,

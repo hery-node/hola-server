@@ -209,7 +209,19 @@ export class DB {
 
 let db_instance: DB | null = null;
 
-/** Get or create the database instance. */
+/** Initialize the database connection. Must be called and awaited before using get_db(). */
+export const init_db = async (): Promise<DB> => {
+    if (db_instance && !db_instance.closed) {
+        return db_instance;
+    }
+    const { url, pool } = get_settings().mongo;
+    if (!url) throw new Error("Mongo settings are missing url");
+    db_instance = new DB(url, { maxPoolSize: pool });
+    await db_instance.connect();
+    return db_instance;
+};
+
+/** Get the database instance. Call init_db() first to ensure connection is established. */
 export const get_db = (callback?: () => void): DB => {
     if (db_instance && !db_instance.closed) {
         if (callback) db_instance.on_connected(callback);
