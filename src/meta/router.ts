@@ -83,7 +83,7 @@ const filter_fields_by_view = (meta: EntityMeta, view: string | null): FieldDefi
  * Create RESTful router for an entity.
  * 
  * Routes:
- * - GET /           List entities
+ * - POST /list      List entities
  * - GET /:id        Get single entity
  * - POST /          Create entity
  * - PUT /:id        Update entity
@@ -102,12 +102,13 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     const router = new Elysia({ prefix: `/${meta.collection}` });
 
-    // GET / - List entities
+    // POST /list - List entities
     if (meta.readable) {
-        router.get('/', async ({ user, query }: RouterContext) => {
+        router.post('/list', async ({ user, body }: RouterContext) => {
             check_read_rights(user, meta);
 
-            const query_params = query._query ? JSON.parse(query._query as string) : {};
+            const body_data = body as Record<string, unknown>;
+            const query_params = body_data._query ? body_data._query : {};
             const filter: Record<string, unknown> = {};
 
             // Apply user field filter if defined
@@ -115,10 +116,10 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
                 filter[meta.user_field] = user.sub;
             }
 
-            const result = await entity.list_entity(query_params, filter, query, '*');
+            const result = await entity.list_entity(query_params as Record<string, unknown>, filter, body_data, '*');
             return { ...result };
         }, {
-            query: schema.query
+            body: schema.query
         });
     }
 

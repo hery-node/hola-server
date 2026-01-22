@@ -31,19 +31,19 @@ export const userRouter = init_router({
   collection: "user",
   primary_keys: ["email"],
   ref_label: "name",
-  
+
   creatable: true,
   readable: true,
   updatable: true,
   deleteable: true,
-  
+
   fields: [
     { name: "name", type: "string", required: true },
     { name: "email", type: "string", required: true },
     { name: "age", type: "uint" },
     { name: "role", ref: "role" },
   ],
-  
+
   roles: ["admin:*", "user:r"],
 });
 ```
@@ -101,17 +101,17 @@ Example:
 
 ```typescript
 roles: [
-  "admin:*",      // Admin can do everything
-  "user:r",       // User can only read
-  "editor:cru",   // Editor can create/read/update
-]
+  "admin:*", // Admin can do everything
+  "user:r", // User can only read
+  "editor:cru", // Editor can create/read/update
+];
 ```
 
 ## API Endpoints
 
 For an entity router:
 
-- `GET /{entity}` - List entities
+- `POST /{entity}/list` - List entities (with filtering, sorting, pagination)
 - `GET /{entity}/:id` - Get single entity
 - `POST /{entity}` - Create entity
 - `PUT /{entity}/:id` - Update entity
