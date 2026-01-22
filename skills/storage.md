@@ -57,12 +57,14 @@ const productEntity = new Entity("product");
 Creates a new document with full validation and hooks.
 
 **Parameters:**
+
 - `param_obj` (Object): Entity data from client
 - `view` (string): View filter (typically `"*"` for all fields)
 
 **Returns:** `{code, err?}`
 
 **Process Flow:**
+
 1. Filter fields by view
 2. Convert types using `convert_type()`
 3. Run `before_create` hook
@@ -77,24 +79,28 @@ Creates a new document with full validation and hooks.
 ```javascript
 const productEntity = new Entity("product");
 
-const result = await productEntity.create_entity({
+const result = await productEntity.create_entity(
+  {
     name: "iPhone 15",
     price: 999.99,
-    category: "Electronics",  // Will be resolved to category ObjectId
-    stock: 50
-}, "*");
+    category: "Electronics", // Will be resolved to category ObjectId
+    stock: 50,
+  },
+  "*",
+);
 
 if (result.code === SUCCESS) {
-    console.log("Product created successfully");
+  console.log("Product created successfully");
 } else {
-    console.error("Creation failed:", result.err);
+  console.error("Creation failed:", result.err);
 }
 ```
 
 **Common Error Codes:**
+
 - `NO_PARAMS`: Missing required fields
 - `INVALID_PARAMS`: Type conversion failed
-- `DUPLICATE_KEY`: Primary key already exists
+- `DUPLICATE_UNIQUE`: Unique field value already exists
 - `REF_NOT_FOUND`: Referenced entity doesn't exist
 - `REF_NOT_UNIQUE`: Multiple entities match reference label
 
@@ -107,6 +113,7 @@ if (result.code === SUCCESS) {
 Reads a single document with automatic reference and link resolution.
 
 **Parameters:**
+
 - `_id` (string): Entity ObjectId
 - `attr_names` (string): Comma-separated field names to fetch
 - `view` (string): View filter
@@ -114,7 +121,8 @@ Reads a single document with automatic reference and link resolution.
 **Returns:** `{code, data?, err?}`
 
 **Process Flow:**
-1. Validate _id parameter
+
+1. Validate \_id parameter
 2. Filter property fields by view
 3. Extract requested attributes, ref fields, and link fields
 4. Find document
@@ -125,21 +133,17 @@ Reads a single document with automatic reference and link resolution.
 **Example:**
 
 ```javascript
-const result = await productEntity.read_entity(
-    "507f1f77bcf86cd799439011",
-    "name,price,category,category_code",
-    "*"
-);
+const result = await productEntity.read_entity("507f1f77bcf86cd799439011", "name,price,category,category_code", "*");
 
 if (result.code === SUCCESS) {
-    console.log(result.data);
-    // {
-    //   _id: "507f1f77bcf86cd799439011",
-    //   name: "iPhone 15",
-    //   price: 999.99,
-    //   category: "Electronics",      // Converted from ObjectId to label
-    //   category_code: "ELEC-001"      // Link field from category entity
-    // }
+  console.log(result.data);
+  // {
+  //   _id: "507f1f77bcf86cd799439011",
+  //   name: "iPhone 15",
+  //   price: 999.99,
+  //   category: "Electronics",      // Converted from ObjectId to label
+  //   category_code: "ELEC-001"      // Link field from category entity
+  // }
 }
 ```
 
@@ -148,11 +152,7 @@ if (result.code === SUCCESS) {
 Use `read_property()` when you don't need reference conversion (faster):
 
 ```javascript
-const result = await productEntity.read_property(
-    "507f1f77bcf86cd799439011",
-    "name,price",
-    "*"
-);
+const result = await productEntity.read_property("507f1f77bcf86cd799439011", "name,price", "*");
 // Returns raw data without ref/link processing
 ```
 
@@ -165,6 +165,7 @@ const result = await productEntity.read_property(
 Updates an existing document.
 
 **Parameters:**
+
 - `_id` (string|null): Entity ObjectId, or null to use primary keys from param_obj
 - `param_obj` (Object): Update data
 - `view` (string): View filter
@@ -172,10 +173,11 @@ Updates an existing document.
 **Returns:** `{code, err?}`
 
 **Process Flow:**
+
 1. Filter update fields by view
 2. Convert types using `convert_update_type()` (preserves empty values)
 3. Run `before_update` hook
-4. Build query (by _id or primary keys)
+4. Build query (by \_id or primary keys)
 5. Verify entity exists (count must be 1)
 6. Validate reference fields
 7. Run `update` hook or perform update
@@ -185,17 +187,13 @@ Updates an existing document.
 
 ```javascript
 // Update by ID
-const result = await productEntity.update_entity(
-    "507f1f77bcf86cd799439011",
-    { price: 899.99, stock: 45 },
-    "*"
-);
+const result = await productEntity.update_entity("507f1f77bcf86cd799439011", { price: 899.99, stock: 45 }, "*");
 
 // Update by primary key (if _id is null)
 const result2 = await productEntity.update_entity(
-    null,
-    { sku: "IPHONE-15", price: 899.99 },  // sku is primary key
-    "*"
+  null,
+  { sku: "IPHONE-15", price: 899.99 }, // sku is primary key
+  "*",
 );
 ```
 
@@ -217,11 +215,13 @@ await productEntity.batch_update_entity(ids, { discount: 0.1 }, "*");
 Deletes one or more documents with reference checking and cascade delete.
 
 **Parameters:**
+
 - `id_array` (string[]): Array of entity ObjectIds
 
 **Returns:** `{code, err?}`
 
 **Process Flow:**
+
 1. Validate IDs
 2. Run `before_delete` hook
 3. Check for referring entities (unless delete mode allows it)
@@ -232,13 +232,11 @@ Deletes one or more documents with reference checking and cascade delete.
 **Example:**
 
 ```javascript
-const result = await productEntity.delete_entity([
-    "507f1f77bcf86cd799439011"
-]);
+const result = await productEntity.delete_entity(["507f1f77bcf86cd799439011"]);
 
 if (result.code === HAS_REF) {
-    console.error("Cannot delete: referenced by", result.err);
-    // e.g., ["product<-order:ORD-001", "product<-cart:CART-123"]
+  console.error("Cannot delete: referenced by", result.err);
+  // e.g., ["product<-order:ORD-001", "product<-cart:CART-123"]
 }
 ```
 
@@ -248,17 +246,17 @@ Configured in field definition:
 
 ```javascript
 fields: [
-    {
-        name: "category",
-        ref: "category",
-        delete: "keep"  // Keep products when category is deleted
-    },
-    {
-        name: "created_by",
-        ref: "user",
-        delete: "cascade"  // Delete products when user is deleted
-    }
-]
+  {
+    name: "category",
+    ref: "category",
+    delete: "keep", // Keep products when category is deleted
+  },
+  {
+    name: "created_by",
+    ref: "user",
+    delete: "cascade", // Delete products when user is deleted
+  },
+];
 ```
 
 ---
@@ -270,6 +268,7 @@ fields: [
 Lists entities with pagination, sorting, search, and filtering.
 
 **Parameters:**
+
 - `query_params` (Object): Pagination and sorting config
   - `attr_names` (string): Comma-separated fields to fetch
   - `page` (number): Page number (1-indexed)
@@ -286,21 +285,21 @@ Lists entities with pagination, sorting, search, and filtering.
 
 ```javascript
 const result = await productEntity.list_entity(
-    {
-        attr_names: "name,price,category",
-        page: 1,
-        limit: 20,
-        sort_by: "price,created_at",
-        desc: "false,true"  // price ascending, created_at descending
-    },
-    { active: true },  // Additional filter
-    { category: "Electronics", price: ">=500" },  // Search params
-    "*"
+  {
+    attr_names: "name,price,category",
+    page: 1,
+    limit: 20,
+    sort_by: "price,created_at",
+    desc: "false,true", // price ascending, created_at descending
+  },
+  { active: true }, // Additional filter
+  { category: "Electronics", price: ">=500" }, // Search params
+  "*",
 );
 
 if (result.code === SUCCESS) {
-    console.log(`Total: ${result.total}`);
-    console.log(`Page data:`, result.data);
+  console.log(`Total: ${result.total}`);
+  console.log(`Page data:`, result.data);
 }
 ```
 
@@ -328,6 +327,7 @@ The `param_obj` supports advanced search operators:
 Creates a copy of an existing entity with modifications.
 
 **Parameters:**
+
 - `_id` (string): Source entity ObjectId
 - `param_obj` (Object): New entity data (overrides)
 - `view` (string): View filter
@@ -337,11 +337,7 @@ Creates a copy of an existing entity with modifications.
 **Example:**
 
 ```javascript
-const result = await productEntity.clone_entity(
-    "507f1f77bcf86cd799439011",
-    { name: "iPhone 15 Pro", price: 1199.99 },
-    "*"
-);
+const result = await productEntity.clone_entity("507f1f77bcf86cd799439011", { name: "iPhone 15 Pro", price: 1199.99 }, "*");
 // Creates a new product based on the original, with new name and price
 ```
 
@@ -359,8 +355,8 @@ const doc = await entity.create({ name: "Test", value: 42 });
 
 // Update
 const result = await entity.update(
-    { name: "Test" },           // query
-    { $set: { value: 100 } }    // update
+  { name: "Test" }, // query
+  { $set: { value: 100 } }, // update
 );
 
 // Delete
@@ -368,8 +364,8 @@ const result = await entity.delete({ name: "Test" });
 
 // Find multiple
 const docs = await entity.find(
-    { active: true },           // query
-    { name: 1, value: 1 }       // projection
+  { active: true }, // query
+  { name: 1, value: 1 }, // projection
 );
 
 // Find one
@@ -384,18 +380,18 @@ const count = await entity.count({ active: true });
 ```javascript
 // Find with sort
 const docs = await entity.find_sort(
-    { active: true },
-    { created_at: -1 },  // sort descending
-    { name: 1, created_at: 1 }
+  { active: true },
+  { created_at: -1 }, // sort descending
+  { name: 1, created_at: 1 },
 );
 
 // Paginated find
 const docs = await entity.find_page(
-    { active: true },
-    { price: 1 },        // sort
-    2,                   // page (1-indexed)
-    20,                  // limit
-    { name: 1, price: 1 }
+  { active: true },
+  { price: 1 }, // sort
+  2, // page (1-indexed)
+  20, // limit
+  { name: 1, price: 1 },
 );
 ```
 
@@ -423,8 +419,8 @@ await entity.add_to_set({ _id: oid }, { tags: "sale" });
 
 ```javascript
 const items = [
-    { sku: "A001", price: 99 },
-    { sku: "A002", price: 149 }
+  { sku: "A001", price: 99 },
+  { sku: "A002", price: 149 },
 ];
 
 await entity.bulk_update(items, ["sku"]);
@@ -440,9 +436,9 @@ await entity.bulk_update(items, ["sku"]);
 ```javascript
 // Find by ObjectId or ref_label
 const products = await entity.find_by_ref_value(
-    "Electronics",          // Can be ObjectId or ref_label value
-    { name: 1, price: 1 }, // projection
-    "order"                 // referring entity name (for ref_filter)
+  "Electronics", // Can be ObjectId or ref_label value
+  { name: 1, price: 1 }, // projection
+  "order", // referring entity name (for ref_filter)
 );
 ```
 
@@ -450,14 +446,14 @@ const products = await entity.find_by_ref_value(
 
 ```javascript
 const param_obj = {
-    name: "iPhone",
-    category: "Electronics"  // Will be converted to ObjectId
+  name: "iPhone",
+  category: "Electronics", // Will be converted to ObjectId
 };
 
 const result = await entity.validate_ref(param_obj);
 if (result.code === SUCCESS) {
-    // param_obj.category now contains ObjectId
-    console.log(param_obj.category); // "507f1f77bcf86cd799439011"
+  // param_obj.category now contains ObjectId
+  console.log(param_obj.category); // "507f1f77bcf86cd799439011"
 }
 ```
 
@@ -465,13 +461,11 @@ if (result.code === SUCCESS) {
 
 ```javascript
 const elements = [
-    { _id: "...", name: "Product 1", category: "507f..." },
-    { _id: "...", name: "Product 2", category: "608a..." }
+  { _id: "...", name: "Product 1", category: "507f..." },
+  { _id: "...", name: "Product 2", category: "608a..." },
 ];
 
-const ref_fields = [
-    { name: "category", ref: "category" }
-];
+const ref_fields = [{ name: "category", ref: "category" }];
 
 const converted = await entity.convert_ref_attrs(elements, ref_fields);
 // converted[0].category is now "Electronics" instead of ObjectId
@@ -497,7 +491,7 @@ GridFS stores files in MongoDB as chunks, suitable for files larger than 16MB BS
 ### 5.2 Import
 
 ```javascript
-const { 
+const {
     save_file, read_file, pipe_file, delete_file,
     save_file_fields_to_db, set_file_fields
 } from "hola-server";
@@ -510,6 +504,7 @@ const {
 Uploads a file to GridFS, replacing any existing file with the same name.
 
 **Parameters:**
+
 - `collection` (string): Bucket name (typically entity collection name)
 - `filename` (string): File identifier
 - `filepath` (string): Source file path or readable stream
@@ -525,16 +520,17 @@ await save_file("product", "iphone_image_01", "/tmp/upload_xyz.jpg");
 Streams a file directly to HTTP response.
 
 **Parameters:**
+
 - `collection` (string): Bucket name
 - `filename` (string): File identifier
 - `response` (Object): Response object (use `set.headers` for Elysia)
 
 ```typescript
 // Elysia route
-app.get('/files/:collection/:filename', async ({ params, set }) => {
-    const stream = await read_file(params.collection, params.filename);
-    set.headers['content-type'] = 'application/octet-stream';
-    return stream;
+app.get("/files/:collection/:filename", async ({ params, set }) => {
+  const stream = await read_file(params.collection, params.filename);
+  set.headers["content-type"] = "application/octet-stream";
+  return stream;
 });
 ```
 
@@ -545,11 +541,7 @@ app.get('/files/:collection/:filename', async ({ params, set }) => {
 Downloads a file from GridFS to local disk.
 
 ```javascript
-await pipe_file(
-    "product",
-    "iphone_image_01",
-    "./downloads/product_image.jpg"
-);
+await pipe_file("product", "iphone_image_01", "./downloads/product_image.jpg");
 ```
 
 ### 5.6 Delete File
@@ -572,11 +564,11 @@ Define file fields in meta:
 
 ```javascript
 fields: [
-    { name: "sku", type: "string", required: true },
-    { name: "name", type: "string", required: true },
-    { name: "image", type: "file" },
-    { name: "manual", type: "file" }
-]
+  { name: "sku", type: "string", required: true },
+  { name: "name", type: "string", required: true },
+  { name: "image", type: "file" },
+  { name: "manual", type: "file" },
+];
 ```
 
 ### 6.2 Handling File Uploads
@@ -589,18 +581,19 @@ import { db } from "hola-server";
 
 // In create handler
 router.post("/", upload.any(), async (req, res) => {
-    set_file_fields(meta, req, req.body);
-    
-    const result = await entity.create_entity(req.body, "*");
-    if (result.code === SUCCESS) {
-        await save_file_fields_to_db(collection, meta.file_fields, req, req.body);
-    }
-    
-    return res.json(result);
+  set_file_fields(meta, req, req.body);
+
+  const result = await entity.create_entity(req.body, "*");
+  if (result.code === SUCCESS) {
+    await save_file_fields_to_db(collection, meta.file_fields, req, req.body);
+  }
+
+  return res.json(result);
 });
 ```
 
 **What happens:**
+
 1. `set_file_fields()` sets field values based on uploaded files (e.g., `"sku_image"`)
 2. `save_file_fields_to_db()` moves temp files to GridFS using the field values as filenames
 
@@ -611,6 +604,7 @@ router.post("/", upload.any(), async (req, res) => {
 ### 7.1 Use High-Level CRUD Methods
 
 Prefer `create_entity()`, `update_entity()`, etc. over direct database operations for:
+
 - Automatic validation
 - Type conversion
 - Reference resolution
@@ -625,16 +619,16 @@ Always check the `code` field in results:
 const result = await entity.create_entity(data, "*");
 
 switch (result.code) {
-    case SUCCESS:
-        return res.json({ success: true });
-    case NO_PARAMS:
-        return res.status(400).json({ error: "Missing fields", fields: result.err });
-    case DUPLICATE_KEY:
-        return res.status(409).json({ error: "Already exists" });
-    case REF_NOT_FOUND:
-        return res.status(400).json({ error: "Invalid reference", fields: result.err });
-    default:
-        return res.status(500).json({ error: "Internal error" });
+  case SUCCESS:
+    return res.json({ success: true });
+  case NO_PARAMS:
+    return res.status(400).json({ error: "Missing fields", fields: result.err });
+  case DUPLICATE_UNIQUE:
+    return res.status(409).json({ error: "Already exists" });
+  case REF_NOT_FOUND:
+    return res.status(400).json({ error: "Invalid reference", fields: result.err });
+  default:
+    return res.status(500).json({ error: "Internal error" });
 }
 ```
 
@@ -682,16 +676,16 @@ await save_file(collection, filename, filepath);
 
 ```javascript
 router.post("/", upload.any(), async (req, res) => {
-    set_file_fields(meta, req, req.body);
-    
-    const result = await entity.create_entity(req.body, "*");
-    
-    if (result.code === SUCCESS) {
-        await save_file_fields_to_db(collection, meta.file_fields, req, req.body);
-        return res.json({ code: SUCCESS });
-    }
-    
-    return res.json(result);
+  set_file_fields(meta, req, req.body);
+
+  const result = await entity.create_entity(req.body, "*");
+
+  if (result.code === SUCCESS) {
+    await save_file_fields_to_db(collection, meta.file_fields, req, req.body);
+    return res.json({ code: SUCCESS });
+  }
+
+  return res.json(result);
 });
 ```
 
@@ -699,16 +693,16 @@ router.post("/", upload.any(), async (req, res) => {
 
 ```javascript
 router.put("/:id", upload.any(), async (req, res) => {
-    set_file_fields(meta, req, req.body);
-    
-    const result = await entity.update_entity(req.params.id, req.body, "*");
-    
-    if (result.code === SUCCESS) {
-        await save_file_fields_to_db(collection, meta.file_fields, req, req.body);
-        return res.json({ code: SUCCESS });
-    }
-    
-    return res.json(result);
+  set_file_fields(meta, req, req.body);
+
+  const result = await entity.update_entity(req.params.id, req.body, "*");
+
+  if (result.code === SUCCESS) {
+    await save_file_fields_to_db(collection, meta.file_fields, req, req.body);
+    return res.json({ code: SUCCESS });
+  }
+
+  return res.json(result);
 });
 ```
 
@@ -716,21 +710,21 @@ router.put("/:id", upload.any(), async (req, res) => {
 
 ```javascript
 router.delete("/", async (req, res) => {
-    const ids = req.body.ids; // Array of IDs
-    
-    // Delete files first
-    for (const id of ids) {
-        const item = await entity.find_one(oid_query(id), {});
-        for (const field of meta.file_fields) {
-            if (item[field.name]) {
-                await delete_file(collection, item[field.name]);
-            }
-        }
+  const ids = req.body.ids; // Array of IDs
+
+  // Delete files first
+  for (const id of ids) {
+    const item = await entity.find_one(oid_query(id), {});
+    for (const field of meta.file_fields) {
+      if (item[field.name]) {
+        await delete_file(collection, item[field.name]);
+      }
     }
-    
-    // Then delete entity (will cascade to related entities)
-    const result = await entity.delete_entity(ids);
-    return res.json(result);
+  }
+
+  // Then delete entity (will cascade to related entities)
+  const result = await entity.delete_entity(ids);
+  return res.json(result);
 });
 ```
 
@@ -739,15 +733,15 @@ router.delete("/", async (req, res) => {
 ```javascript
 // Client sends category name, server resolves to ID
 const result = await entity.list_entity(
-    {
-        attr_names: "name,price,category",
-        page: 1,
-        limit: 20,
-        sort_by: "price",
-        desc: "false"
-    },
-    {},
-    { category: "Electronics" },  // Resolved to ObjectId automatically
-    "*"
+  {
+    attr_names: "name,price,category",
+    page: 1,
+    limit: 20,
+    sort_by: "price",
+    desc: "false",
+  },
+  {},
+  { category: "Electronics" }, // Resolved to ObjectId automatically
+  "*",
 );
 ```

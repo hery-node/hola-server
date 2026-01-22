@@ -4,7 +4,7 @@
  */
 
 import { Document, Filter, Sort, ObjectId } from 'mongodb';
-import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, NOT_FOUND, REF_NOT_FOUND, REF_NOT_UNIQUE, HAS_REF } from '../http/code.js';
+import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_UNIQUE, NOT_FOUND, REF_NOT_FOUND, REF_NOT_UNIQUE, HAS_REF } from '../http/code.js';
 import { validate_required_fields, has_value } from '../core/validate.js';
 
 import { convert_type, convert_update_type, get_type } from '../core/type.js';
@@ -280,7 +280,7 @@ export class Entity {
         }
 
         if (await this.count_by_primary_keys(obj) > 0) {
-            return { code: DUPLICATE_KEY, err: 'entity already exist in db' };
+            return { code: DUPLICATE_UNIQUE, err: 'entity already exist in db' };
         }
 
         const ref_err = await validate_refs(this, obj);

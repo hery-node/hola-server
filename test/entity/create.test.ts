@@ -1,5 +1,5 @@
 import { describe, it } from 'bun:test';
-import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, REF_NOT_FOUND } from '../../src/http/code.js';
+import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_UNIQUE, REF_NOT_FOUND } from '../../src/http/code.js';
 import { strictEqual, deepStrictEqual } from 'assert';
 import { Entity } from '../../src/db/entity.js';
 import { EntityMeta } from '../../src/core/meta.js';
@@ -69,7 +69,7 @@ describe('Entity Create', function () {
             strictEqual(result.code, SUCCESS);
             strictEqual(result.err, undefined);
             const { code } = await user_entity.create_entity(user);
-            strictEqual(code, DUPLICATE_KEY);
+            strictEqual(code, DUPLICATE_UNIQUE);
 
             await user_entity.delete({});
         });

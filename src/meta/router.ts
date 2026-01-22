@@ -8,6 +8,7 @@ import { EntityMeta, MetaDefinition, FieldDefinition, validate_all_metas } from 
 import { meta_to_schema } from './schema.js';
 import { Entity } from '../db/entity.js';
 import { NotFoundError, NoRightsError } from '../errors/index.js';
+import { SUCCESS } from '../http/code.js';
 import type { JwtPayload } from '../plugins/auth.js';
 import { get_settings } from '../setting.js';
 
@@ -126,7 +127,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         router.get('/meta', async ({ user }: RouterContext) => {
             check_read_rights(user, meta);
             return {
-                code: 0, // SUCCESS
+                code: SUCCESS,
                 data: {
                     ...build_permissions(meta),
                     fields: filter_fields_by_view(meta, '*')
@@ -139,7 +140,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
     if (meta.readable) {
         router.get('/mode', async ({ user }: RouterContext) => {
             check_read_rights(user, meta);
-            return { code: 0, mode: meta.mode, view: '*' };
+            return { code: SUCCESS, mode: meta.mode, view: '*' };
         });
     }
 
@@ -152,7 +153,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
                 title: obj[meta.ref_label!],
                 value: String(obj._id)
             }));
-            return { code: 0, data: items };
+            return { code: SUCCESS, data: items };
         }, {
             query: schema.ref_query
         });
@@ -165,7 +166,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
             const result = await entity.read_entity(params.id, '*', '*');
             if (!result.data) throw new NotFoundError();
-            return { code: 0, data: result.data };
+            return { code: SUCCESS, data: result.data };
         }, {
             params: schema.id_param
         });
@@ -179,7 +180,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
             const attr_names = (query.fields as string) || '*';
             const result = await entity.read_property(params.id, attr_names, '*');
             if (!result.data) throw new NotFoundError();
-            return { code: 0, data: result.data };
+            return { code: SUCCESS, data: result.data };
         }, {
             params: schema.id_param,
             query: schema.property_query
