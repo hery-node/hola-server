@@ -288,6 +288,58 @@ register_schema_type("order_status", () => t.Union([t.Literal(0), t.Literal(1), 
 | String patterns     | `() => t.String()`                                 |
 | Boolean flags       | `() => t.Boolean()`                                |
 
+### Step 1.6: Initialization Order in main.ts (CRITICAL)
+
+> **⚠️ CRITICAL**: Custom types and schema types MUST be registered **BEFORE** importing router files. Router files call `init_router()` at import time, which generates schemas. If custom types aren't registered yet, they will default to `t.String()`.
+
+**❌ INCORRECT - Static imports execute before `register_types()`:**
+
+```typescript
+// main.ts - WRONG ORDER
+import { plugins, init_settings } from "hola-server";
+import { register_types } from "./core/type.js";
+import userRouter from "./router/user.js"; // ❌ init_router() runs HERE at import time
+import logRouter from "./router/log.js"; // ❌ Custom types not registered yet!
+
+init_settings(settings);
+register_types(); // Too late! Routers already imported with wrong schemas
+```
+
+**✅ CORRECT - Dynamic imports AFTER type registration:**
+
+```typescript
+// main.ts - CORRECT ORDER
+import { plugins, init_settings, validate_all_metas } from "hola-server";
+import { register_types } from "./core/type.js";
+import { settings } from "./setting.js";
+
+// 1. Initialize settings and register custom types FIRST
+init_settings(settings);
+register_types();
+
+// 2. Dynamic import routers AFTER types are registered
+const userRouter = (await import("./router/user.js")).default;
+const logRouter = (await import("./router/log.js")).default;
+
+// 3. Now validate metas (optional but recommended)
+validate_all_metas();
+
+// 4. Build the app with properly typed routers
+const app = new Elysia()
+  .use(plugins.holaCors({ origin: settings.server.client_web_url }))
+  .use(userRouter)
+  .use(logRouter);
+// ...
+```
+
+**Why this matters:**
+
+- `init_router()` is called when router files are imported
+- `init_router()` generates TypeBox schemas using `meta_to_schema()`
+- `meta_to_schema()` looks up custom types from the registry
+- If custom types aren't registered yet, it defaults to `t.String()`
+- This causes validation errors like "Expected string but found: 1" for int enum fields
+
 ### Step 2: Client-Side Type Registration
 
 Register the corresponding client-side type in your Vue app:

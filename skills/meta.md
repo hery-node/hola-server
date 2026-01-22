@@ -6,7 +6,10 @@ The Hola meta-programming model provides a declarative way to define entity sche
 
 > **IMPORTANT**: In practice, you **never directly instantiate `EntityMeta`**. Instead, you always use `init_router()` in your router definition, which internally creates the `EntityMeta` instance for you.
 
+> **⚠️ CRITICAL INITIALIZATION ORDER**: If you use custom types in your entity fields, you MUST register them (`register_types()`) **BEFORE** importing router files. Router files call `init_router()` at import time. See [type.md - Step 1.6: Initialization Order](type.md#step-16-initialization-order-in-maints-critical) for details.
+
 **Developer-Facing API:**
+
 ```typescript
 // ✅ CORRECT - Use init_router in router files
 import { init_router } from "hola-server";
@@ -20,6 +23,7 @@ export const router = init_router({
 ```
 
 **Internal Implementation (for reference only):**
+
 ```typescript
 // ❌ DON'T DO THIS - EntityMeta is internal
 import { EntityMeta } from "hola-server";
@@ -35,6 +39,7 @@ This document explains the meta attributes and field definitions you provide to 
 When defining entity metadata, **only the following attributes are allowed**:
 
 **Entity-Level Attributes (from `META_ATTRS`):**
+
 - `collection` - Collection name in MongoDB (required)
 - `primary_keys` - Array of field names that form the primary key (required)
 - `fields` - Array of field definitions (required)
@@ -44,6 +49,7 @@ When defining entity metadata, **only the following attributes are allowed**:
 - `user_field` - Field name containing user ID for ownership
 
 **Operation Flags:**
+
 - `creatable` - Allow create operations (default: false)
 - `readable` - Allow read operations (default: false)
 - `updatable` - Allow update operations (default: false)
@@ -53,6 +59,7 @@ When defining entity metadata, **only the following attributes are allowed**:
 - `exportable` - Allow export operations (default: false)
 
 **Lifecycle Callbacks:**
+
 - `after_read` - Called after reading entity
 - `list_query` - Modify list query
 - `before_create` - Called before creating entity
@@ -77,6 +84,7 @@ When defining entity metadata, **only the following attributes are allowed**:
 Each field definition supports the following attributes:
 
 **Standard Field Attributes (from `FIELD_ATTRS`):**
+
 - `name` - Field name (required)
 - `type` - Data type (default: "string")
 - `required` - Whether field is required (default: false)
@@ -94,9 +102,10 @@ Each field definition supports the following attributes:
 - `sys` - System field (server-side only)
 - `secure` - Hidden from client entirely (e.g., password hash)
 - `group` - User group sharing control (field name containing group ID)
-- `view` - Form view identifier ("*" for all views, or specific view name)
+- `view` - Form view identifier ("\*" for all views, or specific view name)
 
 **Link Field Attributes (from `LINK_FIELD_ATTRS`):**
+
 - `name` - Field name
 - `link` - Field to link to
 - `list` - Show in list
@@ -137,13 +146,14 @@ Roles are defined in the format: `"role_name:mode"` or `"role_name:mode:view"`
   - `*` - All modes
 
 **Examples:**
+
 ```javascript
 roles: [
-  "admin:*",           // Admin has all permissions
-  "editor:crsu",       // Editor can create, read, search, update
-  "viewer:rs",         // Viewer can only read and search
-  "moderator:rsdb"     // Moderator can read, search, delete
-]
+  "admin:*", // Admin has all permissions
+  "editor:crsu", // Editor can create, read, search, update
+  "viewer:rs", // Viewer can only read and search
+  "moderator:rsdb", // Moderator can read, search, delete
+];
 ```
 
 ## EntityMeta Class (Internal Reference)
@@ -164,12 +174,12 @@ export const router = init_router({
   creatable: true,
   updatable: true,
   deleteable: true,
-  
+
   fields: [
     { name: "email", type: "email", required: true },
     { name: "name", type: "string", required: true },
-    { name: "age", type: "int" }
-  ]
+    { name: "age", type: "int" },
+  ],
 });
 ```
 
@@ -178,6 +188,7 @@ export const router = init_router({
 After construction, the `EntityMeta` instance provides these properties:
 
 **Basic Info:**
+
 - `collection` - Collection name
 - `primary_keys` - Array of primary key field names
 - `roles` - Role definitions
@@ -186,11 +197,13 @@ After construction, the `EntityMeta` instance provides these properties:
 - `ref_filter` - Reference filter object
 
 **Operation Flags:**
+
 - `creatable`, `readable`, `updatable`, `deleteable`, `cloneable`, `importable`, `exportable` - Boolean flags
 - `editable` - True if creatable or updatable
 - `mode` - String combining allowed operations (e.g., "crsu")
 
 **Field Organization:**
+
 - `fields` - All field definitions (array)
 - `fields_map` - Fields indexed by name (object)
 - `field_names` - Array of all field names
@@ -222,6 +235,7 @@ meta.validate_meta_info();
 ```
 
 **Validation checks:**
+
 - Collection name is defined
 - No unsupported attributes
 - Primary keys exist in fields
@@ -242,7 +256,7 @@ Get entity meta by collection name.
 import { get_entity_meta } from "hola-server";
 
 const user_meta = get_entity_meta("user");
-console.log(user_meta.collection);  // "user"
+console.log(user_meta.collection); // "user"
 console.log(user_meta.field_names); // ["email", "name", "age"]
 ```
 
@@ -279,41 +293,38 @@ export const router = init_router({
   collection: "user",
   primary_keys: ["email"],
   ref_label: "name",
-  
+
   readable: true,
   creatable: true,
   updatable: true,
   deleteable: true,
-  
-  roles: [
-    "admin:*",
-    "user:rs"
-  ],
-  
+
+  roles: ["admin:*", "user:rs"],
+
   fields: [
-    { 
-      name: "email", 
-      type: "email", 
-      required: true 
+    {
+      name: "email",
+      type: "email",
+      required: true,
     },
-    { 
-      name: "name", 
-      type: "string", 
-      required: true 
+    {
+      name: "name",
+      type: "string",
+      required: true,
     },
-    { 
-      name: "age", 
+    {
+      name: "age",
       type: "int",
-      required: false
+      required: false,
     },
     {
       name: "created_at",
       type: "datetime",
       sys: true,
       create: false,
-      update: false
-    }
-  ]
+      update: false,
+    },
+  ],
 });
 ```
 
@@ -326,39 +337,39 @@ export const router = init_router({
   collection: "task",
   primary_keys: ["title"],
   ref_label: "title",
-  
+
   readable: true,
   creatable: true,
   updatable: true,
   deleteable: true,
-  
+
   fields: [
-    { 
-      name: "title", 
-      type: "string", 
-      required: true 
+    {
+      name: "title",
+      type: "string",
+      required: true,
     },
-    { 
-      name: "description", 
-      type: "text" 
+    {
+      name: "description",
+      type: "text",
     },
-    { 
-      name: "assigned_to", 
-      ref: "user",         // References user collection
-      delete: "cascade"    // Delete task if user is deleted
+    {
+      name: "assigned_to",
+      ref: "user", // References user collection
+      delete: "cascade", // Delete task if user is deleted
     },
     {
       name: "assigned_name",
       link: "assigned_to", // Auto-populated from user.name
-      list: true
+      list: true,
     },
-    { 
-      name: "status", 
+    {
+      name: "status",
       type: "task_status",
       required: true,
-      default: 0
-    }
-  ]
+      default: 0,
+    },
+  ],
 });
 ```
 
@@ -376,26 +387,26 @@ import { init_router } from "hola-server";
 export const router = init_router({
   collection: "task",
   primary_keys: ["title"],
-  
+
   fields: [
-    { 
-      name: "title", 
-      type: "string", 
-      required: true 
-    },
-    { 
-      name: "owner",        // No explicit type, defaults to "string"
-      ref: "user",          // One-to-one: single user reference
+    {
+      name: "title",
+      type: "string",
       required: true,
-      delete: "cascade"
     },
-    { 
-      name: "docker", 
-      type: "string",       // Explicit string type
-      ref: "docker",        // One-to-one: single docker reference
-      required: true
-    }
-  ]
+    {
+      name: "owner", // No explicit type, defaults to "string"
+      ref: "user", // One-to-one: single user reference
+      required: true,
+      delete: "cascade",
+    },
+    {
+      name: "docker",
+      type: "string", // Explicit string type
+      ref: "docker", // One-to-one: single docker reference
+      required: true,
+    },
+  ],
 });
 ```
 
@@ -409,43 +420,43 @@ import { init_router } from "hola-server";
 export const router = init_router({
   collection: "exec",
   primary_keys: ["owner", "name", "type"],
-  
+
   fields: [
-    { 
-      name: "owner",        // No explicit type, defaults to "string"
-      ref: "user",          // One-to-one: single user
+    {
+      name: "owner", // No explicit type, defaults to "string"
+      ref: "user", // One-to-one: single user
       required: true,
-      delete: "cascade"
+      delete: "cascade",
     },
-    { 
-      name: "hosts", 
+    {
+      name: "hosts",
       type: "array",
-      ref: "host",          // One-to-many: array of hosts
+      ref: "host", // One-to-many: array of hosts
       required: true,
-      search: false
+      search: false,
     },
-    { 
-      name: "name", 
-      type: "string", 
-      required: true 
+    {
+      name: "name",
+      type: "string",
+      required: true,
     },
-    { 
-      name: "type", 
-      type: "int", 
-      required: true 
-    }
-  ]
+    {
+      name: "type",
+      type: "int",
+      required: true,
+    },
+  ],
 });
 ```
 
 **Key Differences:**
 
-| Aspect | One-to-One | One-to-Many |
-|--------|-----------|-------------|
-| **Field Type** | `"string"` (default if omitted) | `"array"` |
-| **Stores** | Single ObjectId | Array of ObjectIds |
-| **Example** | `{ owner: ObjectId("...") }` | `{ hosts: [ObjectId("..."), ObjectId("...")] }` |
-| **Use Case** | Single parent, single author | Multiple assignees, multiple tags |
+| Aspect         | One-to-One                      | One-to-Many                                     |
+| -------------- | ------------------------------- | ----------------------------------------------- |
+| **Field Type** | `"string"` (default if omitted) | `"array"`                                       |
+| **Stores**     | Single ObjectId                 | Array of ObjectIds                              |
+| **Example**    | `{ owner: ObjectId("...") }`    | `{ hosts: [ObjectId("..."), ObjectId("...")] }` |
+| **Use Case**   | Single parent, single author    | Multiple assignees, multiple tags               |
 
 ### Use Case 4: Link Fields
 
@@ -458,27 +469,27 @@ export const router = init_router({
   collection: "order",
   primary_keys: ["order_id"],
   ref_label: "order_id",
-  
+
   readable: true,
   creatable: true,
-  
+
   fields: [
-    { 
-      name: "order_id", 
-      type: "string", 
-      required: true 
+    {
+      name: "order_id",
+      type: "string",
+      required: true,
     },
-    { 
-      name: "customer", 
+    {
+      name: "customer",
       ref: "user",
-      delete: "keep"       // Keep order if user is deleted
+      delete: "keep", // Keep order if user is deleted
     },
     {
       name: "customer_email",
-      link: "customer",    // Auto-populated from customer.email
-      list: true           // Only name, link, list allowed
-    }
-  ]
+      link: "customer", // Auto-populated from customer.email
+      list: true, // Only name, link, list allowed
+    },
+  ],
 });
 ```
 
@@ -493,52 +504,52 @@ export const router = init_router({
   collection: "product",
   primary_keys: ["sku"],
   ref_label: "name",
-  
+
   creatable: true,
   readable: true,
   updatable: true,
-  
+
   fields: [
     // Basic view
-    { 
-      name: "sku", 
-      type: "string", 
+    {
+      name: "sku",
+      type: "string",
       required: true,
-      view: "basic"
+      view: "basic",
     },
-    { 
-      name: "name", 
-      type: "string", 
+    {
+      name: "name",
+      type: "string",
       required: true,
-      view: "basic"
+      view: "basic",
     },
-    
+
     // Pricing view
-    { 
-      name: "price", 
+    {
+      name: "price",
       type: "decimal",
-      view: "pricing"
+      view: "pricing",
     },
-    { 
-      name: "cost", 
+    {
+      name: "cost",
       type: "decimal",
-      view: "pricing"
+      view: "pricing",
     },
-    
+
     // Inventory view
-    { 
-      name: "stock", 
+    {
+      name: "stock",
       type: "int",
-      view: "inventory"
+      view: "inventory",
     },
-    
+
     // All views
-    { 
-      name: "category", 
+    {
+      name: "category",
       type: "product_category",
-      view: "*"
-    }
-  ]
+      view: "*",
+    },
+  ],
 });
 ```
 
@@ -552,45 +563,45 @@ import { init_router } from "hola-server";
 export const router = init_router({
   collection: "audit_log",
   primary_keys: ["_id"],
-  
+
   creatable: true,
   readable: true,
-  
+
   fields: [
     { name: "action", type: "string", required: true },
     { name: "user_id", ref: "user" },
-    { name: "timestamp", type: "datetime", sys: true }
+    { name: "timestamp", type: "datetime", sys: true },
   ],
-  
-  before_create: async function(param_obj, { user }) {
+
+  before_create: async function (param_obj, { user }) {
     // Set timestamp before creating
     param_obj.timestamp = new Date();
     return param_obj;
   },
-  
-  after_read: async function(item, { user }) {
+
+  after_read: async function (item, { user }) {
     // Mask sensitive data after reading
     if (item.sensitive_data) {
       item.sensitive_data = "***";
     }
     return item;
   },
-  
-  list_query: async function(query, { user }) {
+
+  list_query: async function (query, { user }) {
     // Filter list by user
-    if (user && user.role !== 'admin') {
+    if (user && user.role !== "admin") {
       query.user_id = user.sub;
     }
     return query;
   },
-  
-  before_delete: async function(id_array, ctx) {
+
+  before_delete: async function (id_array, ctx) {
     // Prevent deletion of critical records
     const critical = await this.find({ _id: { $in: id_array }, critical: true });
     if (critical.length > 0) {
       throw new Error("Cannot delete critical records");
     }
-  }
+  },
 });
 ```
 
@@ -605,45 +616,45 @@ export const router = init_router({
   collection: "user",
   primary_keys: ["email"],
   ref_label: "name",
-  
+
   creatable: true,
   readable: true,
   updatable: true,
-  
+
   fields: [
-    { 
-      name: "email", 
-      type: "email", 
-      required: true 
+    {
+      name: "email",
+      type: "email",
+      required: true,
     },
-    { 
-      name: "name", 
-      type: "string", 
-      required: true 
-    },
-    { 
-      name: "password_hash", 
+    {
+      name: "name",
       type: "string",
-      secure: true,        // Never sent to client
+      required: true,
+    },
+    {
+      name: "password_hash",
+      type: "string",
+      secure: true, // Never sent to client
       create: false,
       update: false,
-      list: false
+      list: false,
     },
     {
       name: "created_at",
       type: "datetime",
-      sys: true,           // Server-only, not sent unless requested
+      sys: true, // Server-only, not sent unless requested
       create: false,
-      update: false
+      update: false,
     },
     {
       name: "last_login",
       type: "datetime",
       sys: true,
       create: false,
-      update: false
-    }
-  ]
+      update: false,
+    },
+  ],
 });
 ```
 
@@ -668,15 +679,15 @@ export const taskRouter = init_router({
   collection: "task",
   primary_keys: ["title"],
   deleteable: true,
-  
+
   fields: [
     { name: "title", type: "string", required: true },
-    { 
-      name: "assigned_to", 
+    {
+      name: "assigned_to",
       ref: "user",
-      delete: "cascade"    // Tasks deleted when user is deleted
-    }
-  ]
+      delete: "cascade", // Tasks deleted when user is deleted
+    },
+  ],
 });
 
 // Comment entity with keep behavior - comment.ts
@@ -684,15 +695,15 @@ export const commentRouter = init_router({
   collection: "comment",
   primary_keys: ["_id"],
   deleteable: true,
-  
+
   fields: [
     { name: "text", type: "text", required: true },
-    { 
-      name: "author", 
+    {
+      name: "author",
       ref: "user",
-      delete: "keep"       // Comments kept when user is deleted
-    }
-  ]
+      delete: "keep", // Comments kept when user is deleted
+    },
+  ],
 });
 ```
 
@@ -705,26 +716,26 @@ import { get_entity_meta } from "hola-server";
 const meta = get_entity_meta("product");
 
 // All fields
-meta.fields              // All field definitions
-meta.field_names         // ["sku", "name", "price", ...]
+meta.fields; // All field definitions
+meta.field_names; // ["sku", "name", "price", ...]
 
 // Visibility filtering
-meta.client_fields       // Excludes sys:true fields
-meta.property_fields     // Excludes sys:true and secure:true fields
+meta.client_fields; // Excludes sys:true fields
+meta.property_fields; // Excludes sys:true and secure:true fields
 
 // Operation filtering
-meta.create_fields       // Where create !== false
-meta.update_fields       // Where create !== false and update !== false
-meta.search_fields       // Where search !== false
-meta.clone_fields        // Where clone !== false
-meta.list_fields         // Where list !== false (excludes sys and secure)
+meta.create_fields; // Where create !== false
+meta.update_fields; // Where create !== false and update !== false
+meta.search_fields; // Where search !== false
+meta.clone_fields; // Where clone !== false
+meta.list_fields; // Where list !== false (excludes sys and secure)
 
 // Special fields
-meta.primary_key_fields  // Primary key field definitions
-meta.required_field_names // Names of required fields
-meta.file_fields         // Fields with type:'file'
-meta.ref_fields          // Fields with ref attribute
-meta.link_fields         // Fields with link attribute
+meta.primary_key_fields; // Primary key field definitions
+meta.required_field_names; // Names of required fields
+meta.file_fields; // Fields with type:'file'
+meta.ref_fields; // Fields with ref attribute
+meta.link_fields; // Fields with link attribute
 ```
 
 ## Reference Tracking
@@ -751,6 +762,7 @@ console.log(user_meta.ref_by_metas);
 ### 1. Always Define Primary Keys
 
 Primary keys are required and used for:
+
 - Uniqueness validation
 - Update operations
 - Clone operations
@@ -804,6 +816,7 @@ The Hola meta-programming model provides a declarative way to define entity sche
 > **IMPORTANT**: In practice, you **never directly instantiate `EntityMeta`**. Instead, you always use `init_router()` in your router definition, which internally creates the `EntityMeta` instance for you.
 
 **Developer-Facing API:**
+
 ```javascript
 // ✅ CORRECT - Use init_router in router files
 import { init_router } from "hola-server";
@@ -817,6 +830,7 @@ module.exports = init_router({
 ```
 
 **Internal Implementation (for reference only):**
+
 ```javascript
 // ❌ DON'T DO THIS - EntityMeta is internal
 import { EntityMeta } from "hola-server";
@@ -832,6 +846,7 @@ This document explains the meta attributes and field definitions you provide to 
 When defining entity metadata, **only the following attributes are allowed**:
 
 **Entity-Level Attributes (from `META_ATTRS`):**
+
 - `collection` - Collection name in MongoDB (required)
 - `primary_keys` - Array of field names that form the primary key (required)
 - `fields` - Array of field definitions (required)
@@ -842,6 +857,7 @@ When defining entity metadata, **only the following attributes are allowed**:
 - `user_field` - Field name containing user ID for ownership
 
 **Operation Flags:**
+
 - `creatable` - Allow create operations (default: false)
 - `readable` - Allow read operations (default: false)
 - `updatable` - Allow update operations (default: false)
@@ -851,6 +867,7 @@ When defining entity metadata, **only the following attributes are allowed**:
 - `exportable` - Allow export operations (default: false)
 
 **Lifecycle Callbacks:**
+
 - `after_read` - Called after reading entity
 - `list_query` - Modify list query
 - `before_create` - Called before creating entity
@@ -875,6 +892,7 @@ When defining entity metadata, **only the following attributes are allowed**:
 Each field definition supports the following attributes:
 
 **Standard Field Attributes (from `FIELD_ATTRS`):**
+
 - `name` - Field name (required)
 - `type` - Data type (default: "string")
 - `required` - Whether field is required (default: false)
@@ -892,9 +910,10 @@ Each field definition supports the following attributes:
 - `sys` - System field (server-side only)
 - `secure` - Hidden from client entirely (e.g., password hash)
 - `group` - User group sharing control (field name containing group ID)
-- `view` - Form view identifier ("*" for all views, or specific view name)
+- `view` - Form view identifier ("\*" for all views, or specific view name)
 
 **Link Field Attributes (from `LINK_FIELD_ATTRS`):**
+
 - `name` - Field name
 - `link` - Field to link to
 - `list` - Show in list
@@ -935,13 +954,14 @@ Roles are defined in the format: `"role_name:mode"` or `"role_name:mode:view"`
   - `*` - All modes
 
 **Examples:**
+
 ```javascript
 roles: [
-  "admin:*",           // Admin has all permissions
-  "editor:crsu",       // Editor can create, read, search, update
-  "viewer:rs",         // Viewer can only read and search
-  "moderator:rsdb"     // Moderator can read, search, delete
-]
+  "admin:*", // Admin has all permissions
+  "editor:crsu", // Editor can create, read, search, update
+  "viewer:rs", // Viewer can only read and search
+  "moderator:rsdb", // Moderator can read, search, delete
+];
 ```
 
 ## EntityMeta Class (Internal Reference)
@@ -962,12 +982,12 @@ module.exports = init_router({
   creatable: true,
   updatable: true,
   deleteable: true,
-  
+
   fields: [
     { name: "email", type: "email", required: true },
     { name: "name", type: "string", required: true },
-    { name: "age", type: "int" }
-  ]
+    { name: "age", type: "int" },
+  ],
 });
 ```
 
@@ -976,6 +996,7 @@ module.exports = init_router({
 After construction, the `EntityMeta` instance provides these properties:
 
 **Basic Info:**
+
 - `collection` - Collection name
 - `primary_keys` - Array of primary key field names
 - `roles` - Role definitions
@@ -984,11 +1005,13 @@ After construction, the `EntityMeta` instance provides these properties:
 - `ref_filter` - Reference filter object
 
 **Operation Flags:**
+
 - `creatable`, `readable`, `updatable`, `deleteable`, `cloneable`, `importable`, `exportable` - Boolean flags
 - `editable` - True if creatable or updatable
 - `mode` - String combining allowed operations (e.g., "crsu")
 
 **Field Organization:**
+
 - `fields` - All field definitions (array)
 - `fields_map` - Fields indexed by name (object)
 - `field_names` - Array of all field names
@@ -1005,6 +1028,7 @@ After construction, the `EntityMeta` instance provides these properties:
 - `upload_fields` - File upload field specs
 
 **Reference Management:**
+
 - `ref_fields` - Fields that reference other entities
 - `link_fields` - Fields that link to ref fields
 - `ref_by_metas` - Array of metas that reference this entity
@@ -1022,6 +1046,7 @@ meta.validate_meta_info();
 ```
 
 **Validation checks:**
+
 - Collection name is defined
 - No unsupported attributes
 - Primary keys exist in fields
@@ -1042,7 +1067,7 @@ Get entity meta by collection name.
 import { get_entity_meta } from "hola-server";
 
 const user_meta = get_entity_meta("user");
-console.log(user_meta.collection);  // "user"
+console.log(user_meta.collection); // "user"
 console.log(user_meta.field_names); // ["email", "name", "age"]
 ```
 
@@ -1079,41 +1104,38 @@ module.exports = init_router({
   collection: "user",
   primary_keys: ["email"],
   ref_label: "name",
-  
+
   readable: true,
   creatable: true,
   updatable: true,
   deleteable: true,
-  
-  roles: [
-    "admin:*",
-    "user:rs"
-  ],
-  
+
+  roles: ["admin:*", "user:rs"],
+
   fields: [
-    { 
-      name: "email", 
-      type: "email", 
-      required: true 
+    {
+      name: "email",
+      type: "email",
+      required: true,
     },
-    { 
-      name: "name", 
-      type: "string", 
-      required: true 
+    {
+      name: "name",
+      type: "string",
+      required: true,
     },
-    { 
-      name: "age", 
+    {
+      name: "age",
       type: "int",
-      required: false
+      required: false,
     },
     {
       name: "created_at",
       type: "datetime",
       sys: true,
       create: false,
-      update: false
-    }
-  ]
+      update: false,
+    },
+  ],
 });
 ```
 
@@ -1126,39 +1148,39 @@ module.exports = init_router({
   collection: "task",
   primary_keys: ["title"],
   ref_label: "title",
-  
+
   readable: true,
   creatable: true,
   updatable: true,
   deleteable: true,
-  
+
   fields: [
-    { 
-      name: "title", 
-      type: "string", 
-      required: true 
+    {
+      name: "title",
+      type: "string",
+      required: true,
     },
-    { 
-      name: "description", 
-      type: "text" 
+    {
+      name: "description",
+      type: "text",
     },
-    { 
-      name: "assigned_to", 
-      ref: "user",         // References user collection
-      delete: "cascade"    // Delete task if user is deleted
+    {
+      name: "assigned_to",
+      ref: "user", // References user collection
+      delete: "cascade", // Delete task if user is deleted
     },
     {
       name: "assigned_name",
       link: "assigned_to", // Auto-populated from user.name
-      list: true
+      list: true,
     },
-    { 
-      name: "status", 
+    {
+      name: "status",
       type: "task_status",
       required: true,
-      default: 0
-    }
-  ]
+      default: 0,
+    },
+  ],
 });
 ```
 
@@ -1176,26 +1198,26 @@ import { init_router } from "hola-server";
 module.exports = init_router({
   collection: "task",
   primary_keys: ["title"],
-  
+
   fields: [
-    { 
-      name: "title", 
-      type: "string", 
-      required: true 
-    },
-    { 
-      name: "owner",        // No explicit type, defaults to "string"
-      ref: "user",          // One-to-one: single user reference
+    {
+      name: "title",
+      type: "string",
       required: true,
-      delete: "cascade"
     },
-    { 
-      name: "docker", 
-      type: "string",       // Explicit string type
-      ref: "docker",        // One-to-one: single docker reference
-      required: true
-    }
-  ]
+    {
+      name: "owner", // No explicit type, defaults to "string"
+      ref: "user", // One-to-one: single user reference
+      required: true,
+      delete: "cascade",
+    },
+    {
+      name: "docker",
+      type: "string", // Explicit string type
+      ref: "docker", // One-to-one: single docker reference
+      required: true,
+    },
+  ],
 });
 ```
 
@@ -1209,43 +1231,43 @@ import { init_router } from "hola-server";
 module.exports = init_router({
   collection: "exec",
   primary_keys: ["owner", "name", "type"],
-  
+
   fields: [
-    { 
-      name: "owner",        // No explicit type, defaults to "string"
-      ref: "user",          // One-to-one: single user
+    {
+      name: "owner", // No explicit type, defaults to "string"
+      ref: "user", // One-to-one: single user
       required: true,
-      delete: "cascade"
+      delete: "cascade",
     },
-    { 
-      name: "hosts", 
+    {
+      name: "hosts",
       type: "array",
-      ref: "host",          // One-to-many: array of hosts
+      ref: "host", // One-to-many: array of hosts
       required: true,
-      search: false
+      search: false,
     },
-    { 
-      name: "name", 
-      type: "string", 
-      required: true 
+    {
+      name: "name",
+      type: "string",
+      required: true,
     },
-    { 
-      name: "type", 
-      type: "int", 
-      required: true 
-    }
-  ]
+    {
+      name: "type",
+      type: "int",
+      required: true,
+    },
+  ],
 });
 ```
 
 **Key Differences:**
 
-| Aspect | One-to-One | One-to-Many |
-|--------|-----------|-------------|
-| **Field Type** | `"string"` (default if omitted) | `"array"` |
-| **Stores** | Single ObjectId | Array of ObjectIds |
-| **Example** | `{ owner: ObjectId("...") }` | `{ hosts: [ObjectId("..."), ObjectId("...")] }` |
-| **Use Case** | Single parent, single author | Multiple assignees, multiple tags |
+| Aspect         | One-to-One                      | One-to-Many                                     |
+| -------------- | ------------------------------- | ----------------------------------------------- |
+| **Field Type** | `"string"` (default if omitted) | `"array"`                                       |
+| **Stores**     | Single ObjectId                 | Array of ObjectIds                              |
+| **Example**    | `{ owner: ObjectId("...") }`    | `{ hosts: [ObjectId("..."), ObjectId("...")] }` |
+| **Use Case**   | Single parent, single author    | Multiple assignees, multiple tags               |
 
 ### Use Case 4: Link Fields
 
@@ -1258,27 +1280,27 @@ module.exports = init_router({
   collection: "order",
   primary_keys: ["order_id"],
   ref_label: "order_id",
-  
+
   readable: true,
   creatable: true,
-  
+
   fields: [
-    { 
-      name: "order_id", 
-      type: "string", 
-      required: true 
+    {
+      name: "order_id",
+      type: "string",
+      required: true,
     },
-    { 
-      name: "customer", 
+    {
+      name: "customer",
       ref: "user",
-      delete: "keep"       // Keep order if user is deleted
+      delete: "keep", // Keep order if user is deleted
     },
     {
       name: "customer_email",
-      link: "customer",    // Auto-populated from customer.email
-      list: true           // Only name, link, list allowed
-    }
-  ]
+      link: "customer", // Auto-populated from customer.email
+      list: true, // Only name, link, list allowed
+    },
+  ],
 });
 ```
 
@@ -1293,52 +1315,52 @@ module.exports = init_router({
   collection: "product",
   primary_keys: ["sku"],
   ref_label: "name",
-  
+
   creatable: true,
   readable: true,
   updatable: true,
-  
+
   fields: [
     // Basic view
-    { 
-      name: "sku", 
-      type: "string", 
+    {
+      name: "sku",
+      type: "string",
       required: true,
-      view: "basic"
+      view: "basic",
     },
-    { 
-      name: "name", 
-      type: "string", 
+    {
+      name: "name",
+      type: "string",
       required: true,
-      view: "basic"
+      view: "basic",
     },
-    
+
     // Pricing view
-    { 
-      name: "price", 
+    {
+      name: "price",
       type: "decimal",
-      view: "pricing"
+      view: "pricing",
     },
-    { 
-      name: "cost", 
+    {
+      name: "cost",
       type: "decimal",
-      view: "pricing"
+      view: "pricing",
     },
-    
+
     // Inventory view
-    { 
-      name: "stock", 
+    {
+      name: "stock",
       type: "int",
-      view: "inventory"
+      view: "inventory",
     },
-    
+
     // All views
-    { 
-      name: "category", 
+    {
+      name: "category",
       type: "product_category",
-      view: "*"
-    }
-  ]
+      view: "*",
+    },
+  ],
 });
 ```
 
@@ -1352,45 +1374,45 @@ import { init_router } from "hola-server";
 module.exports = init_router({
   collection: "audit_log",
   primary_keys: ["_id"],
-  
+
   creatable: true,
   readable: true,
-  
+
   fields: [
     { name: "action", type: "string", required: true },
     { name: "user_id", ref: "user" },
-    { name: "timestamp", type: "datetime", sys: true }
+    { name: "timestamp", type: "datetime", sys: true },
   ],
-  
-  before_create: async function(param_obj, ctx) {
+
+  before_create: async function (param_obj, ctx) {
     // Set timestamp before creating
     param_obj.timestamp = new Date();
     return param_obj;
   },
-  
-  after_read: async function(item, ctx) {
+
+  after_read: async function (item, ctx) {
     // Mask sensitive data after reading
     if (item.sensitive_data) {
       item.sensitive_data = "***";
     }
     return item;
   },
-  
-  list_query: async function(query, ctx) {
+
+  list_query: async function (query, ctx) {
     // Filter list by user
     if (ctx.user && !ctx.user.is_admin) {
       query.user_id = ctx.user._id;
     }
     return query;
   },
-  
-  before_delete: async function(id_array, ctx) {
+
+  before_delete: async function (id_array, ctx) {
     // Prevent deletion of critical records
     const critical = await this.find({ _id: { $in: id_array }, critical: true });
     if (critical.length > 0) {
       throw new Error("Cannot delete critical records");
     }
-  }
+  },
 });
 ```
 
@@ -1405,45 +1427,45 @@ module.exports = init_router({
   collection: "user",
   primary_keys: ["email"],
   ref_label: "name",
-  
+
   creatable: true,
   readable: true,
   updatable: true,
-  
+
   fields: [
-    { 
-      name: "email", 
-      type: "email", 
-      required: true 
+    {
+      name: "email",
+      type: "email",
+      required: true,
     },
-    { 
-      name: "name", 
-      type: "string", 
-      required: true 
-    },
-    { 
-      name: "password_hash", 
+    {
+      name: "name",
       type: "string",
-      secure: true,        // Never sent to client
+      required: true,
+    },
+    {
+      name: "password_hash",
+      type: "string",
+      secure: true, // Never sent to client
       create: false,
       update: false,
-      list: false
+      list: false,
     },
     {
       name: "created_at",
       type: "datetime",
-      sys: true,           // Server-only, not sent unless requested
+      sys: true, // Server-only, not sent unless requested
       create: false,
-      update: false
+      update: false,
     },
     {
       name: "last_login",
       type: "datetime",
       sys: true,
       create: false,
-      update: false
-    }
-  ]
+      update: false,
+    },
+  ],
 });
 ```
 
@@ -1468,15 +1490,15 @@ module.exports = init_router({
   collection: "task",
   primary_keys: ["title"],
   deleteable: true,
-  
+
   fields: [
     { name: "title", type: "string", required: true },
-    { 
-      name: "assigned_to", 
+    {
+      name: "assigned_to",
       ref: "user",
-      delete: "cascade"    // Tasks deleted when user is deleted
-    }
-  ]
+      delete: "cascade", // Tasks deleted when user is deleted
+    },
+  ],
 });
 
 // Comment entity with keep behavior - comment.js
@@ -1484,15 +1506,15 @@ module.exports = init_router({
   collection: "comment",
   primary_keys: ["_id"],
   deleteable: true,
-  
+
   fields: [
     { name: "text", type: "text", required: true },
-    { 
-      name: "author", 
+    {
+      name: "author",
       ref: "user",
-      delete: "keep"       // Comments kept when user is deleted
-    }
-  ]
+      delete: "keep", // Comments kept when user is deleted
+    },
+  ],
 });
 ```
 
@@ -1504,26 +1526,26 @@ The `EntityMeta` class automatically organizes fields into useful subsets:
 const meta = get_entity_meta("product");
 
 // All fields
-meta.fields              // All field definitions
-meta.field_names         // ["sku", "name", "price", ...]
+meta.fields; // All field definitions
+meta.field_names; // ["sku", "name", "price", ...]
 
 // Visibility filtering
-meta.client_fields       // Excludes sys:true fields
-meta.property_fields     // Excludes sys:true and secure:true fields
+meta.client_fields; // Excludes sys:true fields
+meta.property_fields; // Excludes sys:true and secure:true fields
 
 // Operation filtering
-meta.create_fields       // Where create !== false
-meta.update_fields       // Where create !== false and update !== false
-meta.search_fields       // Where search !== false
-meta.clone_fields        // Where clone !== false
-meta.list_fields         // Where list !== false (excludes sys and secure)
+meta.create_fields; // Where create !== false
+meta.update_fields; // Where create !== false and update !== false
+meta.search_fields; // Where search !== false
+meta.clone_fields; // Where clone !== false
+meta.list_fields; // Where list !== false (excludes sys and secure)
 
 // Special fields
-meta.primary_key_fields  // Primary key field definitions
-meta.required_field_names // Names of required fields
-meta.file_fields         // Fields with type:'file'
-meta.ref_fields          // Fields with ref attribute
-meta.link_fields         // Fields with link attribute
+meta.primary_key_fields; // Primary key field definitions
+meta.required_field_names; // Names of required fields
+meta.file_fields; // Fields with type:'file'
+meta.ref_fields; // Fields with ref attribute
+meta.link_fields; // Fields with link attribute
 ```
 
 ## Reference Tracking
@@ -1550,6 +1572,7 @@ console.log(user_meta.ref_by_metas);
 ### 1. Always Define Primary Keys
 
 Primary keys are required and used for:
+
 - Uniqueness validation
 - Update operations
 - Clone operations
@@ -1600,11 +1623,11 @@ Instead of joining in queries, use link fields for common display data:
 {
   collection: "task",
   fields: [
-    { 
+    {
       name: "assigned_to",  // No type, defaults to "string"
-      ref: "user" 
+      ref: "user"
     },
-    { 
+    {
       name: "assigned_name",  // Auto-populated
       link: "assigned_to",
       list: true              // Show in list view
@@ -1635,18 +1658,18 @@ Don't put business logic in route handlers - use lifecycle callbacks:
 ```javascript
 {
   collection: "order",
-  
+
   before_create: async function(param_obj, ctx) {
     // Auto-generate order number
     param_obj.order_number = await generate_order_number();
     return param_obj;
   },
-  
+
   after_create: async function(item, ctx) {
     // Send notification
     await send_order_confirmation(item);
   },
-  
+
   before_delete: async function(id_array, ctx) {
     // Check if can delete
     const orders = await this.find({ _id: { $in: id_array } });
@@ -1666,7 +1689,7 @@ Don't put business logic in route handlers - use lifecycle callbacks:
 module.exports = init_router({
   collection: "product",
   primary_keys: ["sku"],
-  custom_attribute: "value",  // ❌ Not in META_ATTRS
+  custom_attribute: "value", // ❌ Not in META_ATTRS
   // ...
 });
 ```
@@ -1693,10 +1716,10 @@ fields: [
   {
     name: "user_email",
     link: "user_id",
-    type: "email",        // ❌ Not allowed
-    required: true        // ❌ Not allowed
-  }
-]
+    type: "email", // ❌ Not allowed
+    required: true, // ❌ Not allowed
+  },
+];
 ```
 
 ### ✅ Do: Use Only name, link, list
@@ -1707,9 +1730,9 @@ fields: [
   {
     name: "user_email",
     link: "user_id",
-    list: true            // ✅ Only name, link, list
-  }
-]
+    list: true, // ✅ Only name, link, list
+  },
+];
 ```
 
 ### ❌ Don't: Forget to Set Operation Flags
@@ -1746,9 +1769,9 @@ module.exports = init_router({
 fields: [
   {
     name: "category_id",
-    ref: "category"       // ❌ Category meta not registered (but type:"ref" is also wrong)
-  }
-]
+    ref: "category", // ❌ Category meta not registered (but type:"ref" is also wrong)
+  },
+];
 ```
 
 ### ✅ Do: Ensure Referenced Metas Exist
@@ -1787,28 +1810,29 @@ module.exports = init_router({
   collection: "product",
   primary_keys: ["sku"],
   ref_label: "name",
-  
+
   creatable: true,
   readable: true,
   updatable: true,
   deleteable: true,
-  
+
   fields: [
     { name: "sku", type: "string", required: true },
     { name: "name", type: "string", required: true },
-    { name: "price", type: "decimal" }
+    { name: "price", type: "decimal" },
   ],
-  
-  before_create: async function(param_obj, ctx) {
+
+  before_create: async function (param_obj, ctx) {
     // Custom logic
     return param_obj;
-  }
+  },
 });
 ```
 
 ## Summary
 
 The EntityMeta class provides:
+
 - **Declarative schema definition** - Define entity structure with simple objects
 - **Automatic validation** - Validates meta and field definitions
 - **Reference management** - Tracks relationships and enforces integrity
