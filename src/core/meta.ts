@@ -122,7 +122,7 @@ const validate_field = (meta: MetaDefinition, field: FieldDefinition): void => {
 
     const editable = (field.create !== false) || (field.update !== false);
     if (field.view && !editable) throw meta_error(meta.collection, `view only for editable fields`);
-    if (!field.view && editable) field.view = "*";
+    if (!field.view && editable) field.view = "0";
 
     const invalid_attrs = Object.keys(field).filter((k) => !FIELD_ATTRS.includes(k));
     if (invalid_attrs.length) throw meta_error(meta.collection, `Unsupported attribute [${invalid_attrs.join(",")}] for field:${JSON.stringify(field)}`);
