@@ -6,6 +6,14 @@
 import { t, TSchema } from 'elysia';
 import type { EntityMeta, FieldDefinition } from '../core/meta.js';
 
+/** Custom schema type registry for project-specific types. */
+const custom_schema_types: Record<string, () => TSchema> = {};
+
+/** Register a custom schema type mapping. */
+export const register_schema_type = (name: string, schema_fn: () => TSchema): void => {
+    custom_schema_types[name] = schema_fn;
+};
+
 /** Map field type to TypeBox schema. */
 const field_to_schema = (field: FieldDefinition): TSchema => {
     const type_map: Record<string, () => TSchema> = {
@@ -21,7 +29,9 @@ const field_to_schema = (field: FieldDefinition): TSchema => {
         json: () => t.Any()
     };
 
-    const schema_fn = type_map[field.type ?? 'string'];
+    // Check custom types first, then built-in types, then default to string
+    const schema_fn = custom_schema_types[field.type ?? 'string'] 
+        ?? type_map[field.type ?? 'string'];
     const base = schema_fn?.() ?? t.String();
 
     return field.required ? base : t.Optional(base);

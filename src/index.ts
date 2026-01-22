@@ -29,7 +29,7 @@ export * as meta from './meta/index.js';
 export * as config from './config/index.js';
 
 // Commonly used items at top level for convenience
-export { EntityMeta, init_router, validate_all_metas } from './meta/index.js';
+export { EntityMeta, init_router, validate_all_metas, register_schema_type } from './meta/index.js';
 export type { MetaDefinition, FieldDefinition, CallbackFunction } from './meta/index.js';
 export { Entity } from './db/entity.js';
 export { get_db, init_db, close_db } from './db/db.js';

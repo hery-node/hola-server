@@ -11,6 +11,7 @@ The Hola framework uses a robust type system to ensure data validation, conversi
 When defining entity fields, **only the following attributes are allowed**:
 
 **Standard Field Attributes (from `FIELD_ATTRS`):**
+
 - `name` - Field name (required)
 - `type` - Data type (default: "string")
 - `required` - Whether field is required
@@ -29,6 +30,7 @@ When defining entity fields, **only the following attributes are allowed**:
 - `view` - Form view identifier
 
 **Link Field Attributes (from `LINK_FIELD_ATTRS`):**
+
 - `name` - Field name
 - `link` - Field to link to
 - `list` - Show in list
@@ -40,6 +42,7 @@ When defining entity fields, **only the following attributes are allowed**:
 The `type` attribute should **only** use types defined in the core type system:
 
 **Server-Side Types** (from `hola-server/core/type.js`):
+
 - Basic: `obj`, `string`, `lstr`, `text`, `password`, `file`, `date`, `enum`, `log_category`
 - Boolean: `boolean`
 - Numeric: `number`, `int`, `uint`, `float`, `ufloat`, `decimal`, `percentage`, `currency`
@@ -60,16 +63,18 @@ fields: [
   { name: "quantity", type: "int", default: 0 },
   { name: "active", type: "boolean", default: true },
   { name: "price", type: "float", default: 9.99 },
-  { name: "category", type: "product_category", default: 0 }  // First enum value
-]
+  { name: "category", type: "product_category", default: 0 }, // First enum value
+];
 ```
 
 **Validation Rules:**
+
 - The default value **must be valid** for the field's type
 - Validation happens during meta definition loading using `type.convert()`
 - If the default value doesn't pass type validation, an error is thrown
 
 **Client-Side Behavior:**
+
 - Default values are applied automatically in `BasicForm.vue` during create operations
 - Defaults are only applied when the field value is `undefined`, `null`, or empty string
 - User can still override default values by entering different values
@@ -83,17 +88,19 @@ The Hola framework follows the **g18n** (global internationalization) pattern fo
 - **Define enums as customized int enum types**, NOT as string enums
 
 **❌ INCORRECT - String Enum:**
+
 ```javascript
 fields: [
-  { 
-    name: "category", 
-    type: "enum", 
-    enum_values: ["Electronics", "Clothing", "Food"]  // ❌ NO enum_values attribute
-  }
-]
+  {
+    name: "category",
+    type: "enum",
+    enum_values: ["Electronics", "Clothing", "Food"], // ❌ NO enum_values attribute
+  },
+];
 ```
 
 **✅ CORRECT - Int Enum Type:**
+
 ```javascript
 // 1. Register customized type using built-in helper
 import { register_type, int_enum_type } from "hola-server";
@@ -103,14 +110,15 @@ register_type(int_enum_type("product_category", [0, 1, 2]));
 
 // 2. Use in field definition
 fields: [
-  { 
-    name: "category", 
-    type: "product_category"  // ✅ Custom type
-  }
-]
+  {
+    name: "category",
+    type: "product_category", // ✅ Custom type
+  },
+];
 ```
 
 **Client-Side Labels** (in `hola-web/src/core/type.js`):
+
 ```javascript
 register_type({
   name: "product_category",
@@ -118,16 +126,17 @@ register_type({
   items: (vue) => [
     { value: 0, text: vue.$t("product_category.electronics") },
     { value: 1, text: vue.$t("product_category.clothing") },
-    { value: 2, text: vue.$t("product_category.food") }
+    { value: 2, text: vue.$t("product_category.food") },
   ],
   format: (value, vue) => {
     const labels = ["electronics", "clothing", "food"];
     return labels[value] ? vue.$t(`product_category.${labels[value]}`) : "";
-  }
+  },
 });
 ```
 
 **Localized Labels** (in `hola-web/src/locales/en.json`):
+
 ```json
 {
   "product_category": {
@@ -142,46 +151,46 @@ register_type({
 
 ### Basic Types
 
-| Type | Server Conversion | Client Input | Use Case |
-|------|------------------|--------------|----------|
-| `string` | Trim whitespace, default "" | `v-text-field` | Short text (≤255 chars) |
-| `lstr` | Passthrough string | `v-textarea` | Long string |
-| `text` | Passthrough string | Rich editor | Long formatted text |
-| `password` | Encrypt with hash | Password input | Secure credentials |
-| `file` | Passthrough | File upload | File attachments |
-| `date` | Passthrough string | Date picker | Date only |
-| `enum` | Passthrough string | Autocomplete | String options |
+| Type       | Server Conversion           | Client Input   | Use Case                |
+| ---------- | --------------------------- | -------------- | ----------------------- |
+| `string`   | Trim whitespace, default "" | `v-text-field` | Short text (≤255 chars) |
+| `lstr`     | Passthrough string          | `v-textarea`   | Long string             |
+| `text`     | Passthrough string          | Rich editor    | Long formatted text     |
+| `password` | Encrypt with hash           | Password input | Secure credentials      |
+| `file`     | Passthrough                 | File upload    | File attachments        |
+| `date`     | Passthrough string          | Date picker    | Date only               |
+| `enum`     | Passthrough string          | Autocomplete   | String options          |
 
 ### Numeric Types
 
-| Type | Server Conversion | Validation | Client Input |
-|------|------------------|------------|--------------|
-| `number` | Parse to number | Any number | Number input |
-| `int` | Parse to integer | Integer only | Number input |
-| `uint` | Parse to unsigned int | Integer ≥ 0 | Number input |
-| `float` | Parse to 2 decimals | Float with 2 decimals | Number input |
-| `ufloat` | Parse to unsigned 2 decimals | Float ≥ 0 with 2 decimals | Number input |
-| `decimal` | Parse to decimal | Any float | Number input |
-| `percentage` | Parse to 2 decimals | Float | Number input with % |
-| `currency` | Parse to number | Number | Number input with $ |
+| Type         | Server Conversion            | Validation                | Client Input        |
+| ------------ | ---------------------------- | ------------------------- | ------------------- |
+| `number`     | Parse to number              | Any number                | Number input        |
+| `int`        | Parse to integer             | Integer only              | Number input        |
+| `uint`       | Parse to unsigned int        | Integer ≥ 0               | Number input        |
+| `float`      | Parse to 2 decimals          | Float with 2 decimals     | Number input        |
+| `ufloat`     | Parse to unsigned 2 decimals | Float ≥ 0 with 2 decimals | Number input        |
+| `decimal`    | Parse to decimal             | Any float                 | Number input        |
+| `percentage` | Parse to 2 decimals          | Float                     | Number input with % |
+| `currency`   | Parse to number              | Number                    | Number input with $ |
 
 ### Validation Types
 
-| Type | Pattern/Rule | Example |
-|------|-------------|---------|
-| `email` | Email regex pattern | `user@example.com` |
-| `url` | Valid URL structure | `https://example.com` |
-| `phone` | International format | `+1234567890` |
-| `uuid` | UUID v1-v5 | `550e8400-e29b-41d4-a716-446655440000` |
-| `color` | Hex color | `#FF5733` or `#F57` |
-| `ip_address` | IPv4 format | `192.168.1.1` |
+| Type         | Pattern/Rule         | Example                                |
+| ------------ | -------------------- | -------------------------------------- |
+| `email`      | Email regex pattern  | `user@example.com`                     |
+| `url`        | Valid URL structure  | `https://example.com`                  |
+| `phone`      | International format | `+1234567890`                          |
+| `uuid`       | UUID v1-v5           | `550e8400-e29b-41d4-a716-446655440000` |
+| `color`      | Hex color            | `#FF5733` or `#F57`                    |
+| `ip_address` | IPv4 format          | `192.168.1.1`                          |
 
 ### Domain-Specific Types
 
-| Type | Valid Values | Description |
-|------|-------------|-------------|
-| `age` | 0-200 (int) | Person age |
-| `gender` | 0=Male, 1=Female | Gender enum |
+| Type        | Valid Values                     | Description  |
+| ----------- | -------------------------------- | ------------ |
+| `age`       | 0-200 (int)                      | Person age   |
+| `gender`    | 0=Male, 1=Female                 | Gender enum  |
 | `log_level` | 0=Debug, 1=Info, 2=Warn, 3=Error | Log severity |
 
 ## Creating Customized Types
@@ -195,7 +204,7 @@ import { register_type, ok, err, is_int, int_enum_type, int_range_type, regex_ty
 
 // Example 1: Int Enum Type
 // Use the built-in helper function
-register_type(int_enum_type("order_status", [0, 1, 2, 3])); 
+register_type(int_enum_type("order_status", [0, 1, 2, 3]));
 // 0=Pending, 1=Processing, 2=Shipped, 3=Delivered
 
 // Example 2: Int Range Type
@@ -220,7 +229,7 @@ register_type({
     if (isNaN(num)) return err("discount_rate", value);
     if (num < 0 || num > 100) return err("discount_rate", value);
     return ok(parseFloat(num.toFixed(2)));
-  }
+  },
 });
 
 // Example 6: Custom Int Enum with Business Logic
@@ -232,22 +241,52 @@ register_type({
     const int_value = parseInt(value);
     const valid = [0, 1, 2]; // 0=Pending, 1=Approved, 2=Rejected
     return valid.includes(int_value) ? ok(int_value) : err("approval_status", value);
-  }
+  },
 });
 ```
 
 **Available Helper Functions:**
 
-| Helper | Purpose | Example |
-|--------|---------|---------|
-| `ok(value)` | Return success result | `ok(42)` → `{value: 42}` |
-| `err(type, value)` | Return error result | `err("int", "abc")` → `{err: "invalid int:abc"}` |
-| `is_int(value)` | Check if value is integer | `is_int(42)` → `true` |
-| `int_enum_type(name, values)` | Create int enum type | `int_enum_type("status", [0,1,2])` |
-| `int_range_type(name, min, max)` | Create int range type | `int_range_type("age", 0, 200)` |
-| `regex_type(name, pattern)` | Create regex validation type | `regex_type("email", /.../)` |
-| `string_type(name)` | Create passthrough string type | `string_type("code")` |
+| Helper                           | Purpose                                        | Example                                                                       |
+| -------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| `ok(value)`                      | Return success result                          | `ok(42)` → `{value: 42}`                                                      |
+| `err(type, value)`               | Return error result                            | `err("int", "abc")` → `{err: "invalid int:abc"}`                              |
+| `is_int(value)`                  | Check if value is integer                      | `is_int(42)` → `true`                                                         |
+| `int_enum_type(name, values)`    | Create int enum type                           | `int_enum_type("status", [0,1,2])`                                            |
+| `int_range_type(name, min, max)` | Create int range type                          | `int_range_type("age", 0, 200)`                                               |
+| `regex_type(name, pattern)`      | Create regex validation type                   | `regex_type("email", /.../)`                                                  |
+| `string_type(name)`              | Create passthrough string type                 | `string_type("code")`                                                         |
+| `register_schema_type(name, fn)` | Register TypeBox schema for request validation | `register_schema_type("status", () => t.Union([t.Literal(0), t.Literal(1)]))` |
 
+### Step 1.5: Register Schema Type for Request Validation
+
+When you create custom types, you also need to register the corresponding **TypeBox schema** so that `init_router` can properly validate incoming request bodies. Without this, custom types will default to `t.String()` schema validation.
+
+```javascript
+import { register_type, int_enum_type, register_schema_type } from "hola-server";
+import { t } from "elysia";
+
+// 1. Register the validation type (for data conversion)
+register_type(int_enum_type("order_status", [0, 1, 2, 3]));
+
+// 2. Register the schema type (for request body validation)
+// Use t.Union with t.Literal to restrict to valid enum values
+register_schema_type("order_status", () => t.Union([t.Literal(0), t.Literal(1), t.Literal(2), t.Literal(3)]));
+```
+
+**Why both registrations are needed:**
+
+- `register_type()` - Defines how to validate and convert values after they pass schema validation
+- `register_schema_type()` - Defines the TypeBox schema used by Elysia to validate incoming request bodies
+
+**Common Schema Mappings:**
+
+| Custom Type Pattern | Schema Function                                    |
+| ------------------- | -------------------------------------------------- |
+| Int enum types      | `() => t.Union([t.Literal(0), t.Literal(1), ...])` |
+| Int range types     | `() => t.Number({ minimum: min, maximum: max })`   |
+| String patterns     | `() => t.String()`                                 |
+| Boolean flags       | `() => t.Boolean()`                                |
 
 ### Step 2: Client-Side Type Registration
 
@@ -265,12 +304,12 @@ register_type({
     { value: 0, text: vue.$t("order_status.pending") },
     { value: 1, text: vue.$t("order_status.processing") },
     { value: 2, text: vue.$t("order_status.shipped") },
-    { value: 3, text: vue.$t("order_status.delivered") }
+    { value: 3, text: vue.$t("order_status.delivered") },
   ],
   format: (value, vue) => {
     const statuses = ["pending", "processing", "shipped", "delivered"];
     return statuses[value] ? vue.$t(`order_status.${statuses[value]}`) : "";
-  }
+  },
 });
 
 // Example 2: Range Input
@@ -287,7 +326,7 @@ register_type({
       return (num >= 1 && num <= 5) || err;
     };
   },
-  format: (value) => `Priority ${value}`
+  format: (value) => `Priority ${value}`,
 });
 
 // Example 3: Min/Max Value with Suffix (like age type)
@@ -296,7 +335,7 @@ register_type({
   name: "employee_age",
   input_type: "number",
   search_input_type: "text",
-  suffix: (vue) => vue.$t("type.age_unit"),  // e.g., "years old"
+  suffix: (vue) => vue.$t("type.age_unit"), // e.g., "years old"
   rule: (vue, field_name) => {
     const err = vue.$t("type.employee_age", { field: field_name });
     return (value) => {
@@ -305,7 +344,7 @@ register_type({
       return (num >= 18 && num <= 65) || err;
     };
   },
-  format: (value, vue) => value ? `${value} ${vue.$t("type.age_unit")}` : ""
+  format: (value, vue) => (value ? `${value} ${vue.$t("type.age_unit")}` : ""),
 });
 
 // Example 4: Custom Validation
@@ -316,7 +355,7 @@ register_type({
     const err = vue.$t("type.sku_code", { field: field_name });
     const pattern = /^[A-Z]{3}-\d{6}$/;
     return (value) => !value || pattern.test(value) || err;
-  }
+  },
 });
 
 // Example 4: Formatted Number
@@ -332,7 +371,7 @@ register_type({
       return (!isNaN(num) && num >= 0 && num <= 100) || err;
     };
   },
-  format: (value) => value ? `${value.toFixed(2)}%` : ""
+  format: (value) => (value ? `${value.toFixed(2)}%` : ""),
 });
 ```
 
@@ -380,8 +419,8 @@ module.exports = init_router({
     { name: "status", type: "order_status", required: true },
     { name: "priority", type: "priority" },
     { name: "age", type: "employee_age" },
-    { name: "discount", type: "discount_rate" }
-  ]
+    { name: "discount", type: "discount_rate" },
+  ],
 });
 ```
 
@@ -390,13 +429,18 @@ module.exports = init_router({
 Here's a complete example showing all steps:
 
 **1. Server Type (`hola-server/router/product.js`):**
+
 ```javascript
-import { init_router } from "hola-server";
-import { register_type, int_enum_type } from "hola-server";
+import { init_router, register_type, int_enum_type, register_schema_type } from "hola-server";
+import { t } from "elysia";
 
 // Define custom type using built-in helper
 register_type(int_enum_type("product_category", [0, 1, 2]));
 // 0=Electronics, 1=Clothing, 2=Food
+
+// Register schema type for request validation
+// Use t.Union with t.Literal to restrict to valid enum values
+register_schema_type("product_category", () => t.Union([t.Literal(0), t.Literal(1), t.Literal(2)]));
 
 // Use in entity
 module.exports = init_router({
@@ -405,19 +449,20 @@ module.exports = init_router({
   readable: true,
   updatable: true,
   deleteable: true,
-  
+
   primary_keys: ["name"],
   ref_label: "name",
-  
+
   fields: [
     { name: "name", type: "string", required: true },
     { name: "price", type: "decimal", required: true },
-    { name: "category", type: "product_category", required: true }
-  ]
+    { name: "category", type: "product_category", required: true },
+  ],
 });
 ```
 
 **2. Client Type (`hola-web/src/types/product.js`):**
+
 ```javascript
 import { register_type } from "@/core/type";
 
@@ -427,16 +472,17 @@ register_type({
   items: (vue) => [
     { value: 0, text: vue.$t("product_category.electronics") },
     { value: 1, text: vue.$t("product_category.clothing") },
-    { value: 2, text: vue.$t("product_category.food") }
+    { value: 2, text: vue.$t("product_category.food") },
   ],
   format: (value, vue) => {
     const categories = ["electronics", "clothing", "food"];
     return categories[value] ? vue.$t(`product_category.${categories[value]}`) : "";
-  }
+  },
 });
 ```
 
 **3. Translations (`hola-web/src/locales/en.json`):**
+
 ```json
 {
   "product_category": {
@@ -450,30 +496,36 @@ register_type({
 ## Best Practices
 
 ### 1. Use Int Enums for All Enumerations
+
 - Store integers in the database for efficiency and language-independence
 - Use i18n labels on the client side for display
 - Never use string enums with hardcoded values
 
 ### 2. Keep Types DRY
+
 - Use the built-in helper functions exported from `hola-server/core/type` (`int_enum_type`, `int_range_type`, `regex_type`, etc.)
 - Share type definitions across multiple entities if appropriate
 - Only define custom helpers when you need specialized business logic not covered by built-ins
 
 ### 3. Validation Consistency
+
 - Ensure server-side and client-side validation rules match
 - Server validation is authoritative; client validation improves UX
 
 ### 4. Type Naming Conventions
+
 - Use descriptive names: `order_status`, `product_category`, `priority_level`
 - Avoid generic names: `status`, `type`, `category` (too vague)
 - Use snake_case for consistency with other Hola conventions
 
 ### 5. Error Messages
+
 - Provide clear, actionable error messages
 - Use i18n for all user-facing messages
 - Include field context in validation errors
 
 ### 6. Register Before Use
+
 - Always register custom types before defining entities that use them
 - Register in entity file or in a shared types initialization module
 - Verify type exists using `get_type(name)` if needed
@@ -481,19 +533,21 @@ register_type({
 ## Common Mistakes to Avoid
 
 ### ❌ Don't: Add Custom Attributes to Fields
+
 ```javascript
 // ❌ WRONG
 fields: [
-  { 
-    name: "category", 
+  {
+    name: "category",
     type: "enum",
-    enum_values: ["A", "B"],  // ❌ Not a valid field attribute
-    max_length: 100           // ❌ Not a valid field attribute
-  }
-]
+    enum_values: ["A", "B"], // ❌ Not a valid field attribute
+    max_length: 100, // ❌ Not a valid field attribute
+  },
+];
 ```
 
 ### ✅ Do: Use Customized Types
+
 ```javascript
 // ✅ CORRECT
 register_type({
@@ -502,15 +556,16 @@ register_type({
     const valid = [0, 1];
     const int_val = parseInt(value);
     return valid.includes(int_val) ? { value: int_val } : { err: "invalid" };
-  }
+  },
 });
 
 fields: [
-  { name: "category", type: "my_category", required: true, default: 0 }  // ✅ Valid with default
-]
+  { name: "category", type: "my_category", required: true, default: 0 }, // ✅ Valid with default
+];
 ```
 
 ### ❌ Don't: Use String Enums
+
 ```javascript
 // ❌ WRONG - String values
 register_type({
@@ -518,11 +573,12 @@ register_type({
   convert: (value) => {
     const valid = ["active", "inactive"];
     return valid.includes(value) ? { value } : { err: "invalid" };
-  }
+  },
 });
 ```
 
 ### ✅ Do: Use Int Enums
+
 ```javascript
 // ✅ CORRECT - Int values
 register_type({
@@ -531,13 +587,14 @@ register_type({
     const int_val = parseInt(value);
     const valid = [0, 1]; // 0=inactive, 1=active
     return valid.includes(int_val) ? { value: int_val } : { err: "invalid" };
-  }
+  },
 });
 ```
 
 ## Summary
 
 The Hola type system provides:
+
 - **Strict field attribute validation** - only predefined attributes allowed
 - **Comprehensive built-in types** - covering common data validation needs
 - **Customized type support** - extend with your own business logic

@@ -22,4 +22,4 @@ export type {
 export { init_router } from './router.js';
 
 // Schema generation
-export { meta_to_schema, meta_to_openapi } from './schema.js';
+export { meta_to_schema, meta_to_openapi, register_schema_type } from './schema.js';
