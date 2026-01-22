@@ -54,7 +54,7 @@ export const holaAuth = (config: AuthConfig) =>
             secret: config.secret,
             exp: config.refreshExpiry ?? '7d'
         }))
-        .derive(async (ctx) => {
+        .derive({ as: 'global' }, async (ctx) => {
             const { headers, cookie, accessJwt } = ctx as any;
             // Hybrid: check Authorization header first, then cookie
             const auth_header = headers.authorization;
@@ -79,7 +79,7 @@ export const holaAuth = (config: AuthConfig) =>
                 getUser: () => user
             };
         })
-        .onBeforeHandle((ctx) => {
+        .onBeforeHandle({ as: 'global' }, (ctx) => {
             const { user, path, set } = ctx as any;
             // Skip auth for excluded URLs
             if (is_excluded(path, config.excludeUrls)) return;
