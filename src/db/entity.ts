@@ -226,7 +226,6 @@ export class Entity {
     }
 
     async list_entity(query_params: Record<string, unknown>, query: Record<string, unknown>, param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
-        console.log('list_entity', { query_params, query, param_obj, view });
         const missing = validate_required_fields(query_params, ['attr_names', 'sort_by', 'desc']);
         if (missing.length > 0) {
             log_err('missing required fields', { fields: missing });

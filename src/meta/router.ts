@@ -233,12 +233,14 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
 
     // POST /:id/clone - Clone entity
     if (meta.cloneable) {
-        router.post('/:id/clone', async ({ user, params }: RouterContext) => {
+        router.post('/:id/clone', async ({ user, params, body }: RouterContext) => {
             check_clone_rights(user, meta);
-            const result = await entity.clone_entity(params.id, {}, '*');
+            const data = body as Record<string, unknown>;
+            const result = await entity.clone_entity(params.id, data, '*');
             return result;
         }, {
-            params: schema.id_param
+            params: schema.id_param,
+            body: schema.create
         });
     }
 
