@@ -28,12 +28,13 @@ export interface EntityResult {
 }
 
 // Numeric types where "0" should be treated as "no search value" (default empty state)
+// Note: int_enum types are NOT included here because 0 is often a valid enum value (e.g., ACTIVE, ADMIN)
 const NUMERIC_TYPES = ['number', 'int', 'uint', 'float', 'ufloat', 'decimal', 'percentage', 'currency'];
 
 /** Check if a search value should be included in the query */
 const has_search_value = (value: unknown, type_name: string): boolean => {
     if (!has_value(value)) return false;
-    // For numeric types, "0" or 0 without comparison operators means no search value
+    // For numeric types (but not enums), "0" or 0 without comparison operators means no search value
     if (NUMERIC_TYPES.includes(type_name)) {
         const raw = `${value}`.trim();
         // Include if it has comparison operators or is not just "0"

@@ -60,7 +60,7 @@ const build_update_schema = (meta: EntityMeta): TSchema => {
 
 /** Generate TypeBox schemas from EntityMeta (lazy evaluation for custom types). */
 export const meta_to_schema = (meta: EntityMeta) => {
-    // Query schema for list operations (static, no custom types)
+    // Query schema for list operations - allows additional properties for entity-specific search fields
     const query_schema = t.Object({
         page: t.Optional(t.Number({ minimum: 1 })),
         limit: t.Optional(t.Number({ minimum: 1, maximum: 1000 })),
@@ -70,7 +70,7 @@ export const meta_to_schema = (meta: EntityMeta) => {
         sort: t.Optional(t.String()),
         order: t.Optional(t.Union([t.Literal('asc'), t.Literal('desc')])),
         search: t.Optional(t.String())
-    });
+    }, { additionalProperties: true });
 
     // Ref query schema for reference labels lookup
     const ref_query_schema = t.Object({
