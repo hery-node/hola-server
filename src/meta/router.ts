@@ -110,9 +110,19 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
             const body_data = body as Record<string, unknown>;
             const filter: Record<string, unknown> = {};
 
-            // Apply user field filter if defined
-            if (meta.user_field && user?.sub) {
-                filter[meta.user_field] = user.sub;
+            // Apply user field filter if defined (skip for admin users)
+            const is_admin = user?.role === 'admin';
+            if (meta.user_field && user?.sub && !is_admin) {
+                // If entity has is_public field, show own + public items
+                const has_public_field = meta.fields_map['is_public'];
+                if (has_public_field) {
+                    filter.$or = [
+                        { [meta.user_field]: user.sub },
+                        { is_public: true }
+                    ];
+                } else {
+                    filter[meta.user_field] = user.sub;
+                }
             }
 
             const result = await entity.list_entity(body_data, filter, body_data, '*');
@@ -199,6 +209,9 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
                 data[meta.user_field] = user.sub;
             }
 
+            // Pass user context for hooks to access
+            data._user = user;
+
             const result = await entity.create_entity(data, '*');
             return result;
         }, {
@@ -236,6 +249,15 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         router.post('/:id/clone', async ({ user, params, body }: RouterContext) => {
             check_clone_rights(user, meta);
             const data = body as Record<string, unknown>;
+
+            // Set user field if defined (cloned entity belongs to the cloning user)
+            if (meta.user_field && user?.sub) {
+                data[meta.user_field] = user.sub;
+            }
+
+            // Pass user context for hooks to access
+            data._user = user;
+
             const result = await entity.clone_entity(params.id, data, '*');
             return result;
         }, {

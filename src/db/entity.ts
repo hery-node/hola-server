@@ -278,6 +278,16 @@ export class Entity {
             return { code: INVALID_PARAMS, err: error_field_names };
         }
 
+        // Preserve _user context for hooks to access (e.g., for setting ownership fields)
+        if (param_obj._user) {
+            obj._user = param_obj._user;
+            // Auto-set user_field from session user (works even if field has create: false)
+            const user_field = (this.meta as any).user_field;
+            if (user_field && (param_obj._user as { sub?: string }).sub) {
+                obj[user_field] = (param_obj._user as { sub: string }).sub;
+            }
+        }
+
         const before_args = id_for_hook ? [id_for_hook, this, obj] : [this, obj];
         const before_err = await run_hook((this.meta as unknown as Record<string, unknown>)[before_hook] as any, before_hook, ...before_args);
         if (before_err) return before_err;
@@ -300,6 +310,8 @@ export class Entity {
             const main_err = await run_hook((this.meta as unknown as Record<string, unknown>)[main_hook] as any, main_hook, ...main_args);
             if (main_err) return main_err;
         } else {
+            // Clean up _user context before saving to DB
+            delete obj._user;
             const db_obj = await this.create(obj);
             if (!db_obj._id) {
                 log_err('create failed');
