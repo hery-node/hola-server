@@ -19,6 +19,7 @@ export interface TypeDefinition {
 export interface Field {
     name: string;
     type?: string;
+    default?: unknown;
 }
 
 const type_manager: Record<string, TypeDefinition> = {};
@@ -297,6 +298,9 @@ const convert_fields = (obj: Record<string, unknown>, fields: Field[], preserve_
             const { value, err } = convert_field(field_value, field.type);
             if (err) error_field_names.push(field.name);
             else result[field.name] = value;
+        } else if (!preserve_empty && field.default !== undefined) {
+            // Apply default only for create operations, not for update
+            result[field.name] = field.default;
         } else if (preserve_empty && !is_undefined(field_value)) {
             result[field.name] = "";
         }
