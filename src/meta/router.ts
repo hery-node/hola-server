@@ -113,16 +113,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
             // Apply user field filter if defined (skip for admin users)
             const is_admin = user?.role === 'admin';
             if (meta.user_field && user?.sub && !is_admin) {
-                // If entity has is_public field, show own + public items
-                const has_public_field = meta.fields_map['is_public'];
-                if (has_public_field) {
-                    filter.$or = [
-                        { [meta.user_field]: user.sub },
-                        { is_public: true }
-                    ];
-                } else {
-                    filter[meta.user_field] = user.sub;
-                }
+                filter[meta.user_field] = user.sub;
             }
 
             const result = await entity.list_entity(body_data, filter, body_data, '*');
@@ -140,6 +131,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
                 code: SUCCESS,
                 data: {
                     ...build_permissions(meta),
+                    user_field: meta.user_field,
                     fields: filter_fields_by_view(meta, '*')
                 }
             };
