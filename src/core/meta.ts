@@ -181,6 +181,34 @@ const validate_field = (meta: MetaDefinition, field: FieldDefinition): void => {
 
   if (meta.primary_keys.includes(field.name)) field.required = true;
 
+  // user_field is system-managed - users cannot create, update, or clone it
+  if (meta.user_field === field.name) {
+    if (field.create === true) throw meta_error(meta.collection, `user_field cannot have create:true`, field);
+    if (field.update === true) throw meta_error(meta.collection, `user_field cannot have update:true`, field);
+    if (field.clone === true) throw meta_error(meta.collection, `user_field cannot have clone:true`, field);
+    // default to false if not specified
+    if (field.create === undefined) field.create = false;
+    if (field.update === undefined) field.update = false;
+    if (field.clone === undefined) field.clone = false;
+    // search and list default to false, but can be explicitly enabled
+    if (field.search === undefined) field.search = false;
+    if (field.list === undefined) field.list = false;
+  }
+
+  // sys fields are system-managed - users cannot create, update, or clone them
+  if (field.sys === true) {
+    if (field.create === true) throw meta_error(meta.collection, `sys field cannot have create:true`, field);
+    if (field.update === true) throw meta_error(meta.collection, `sys field cannot have update:true`, field);
+    if (field.clone === true) throw meta_error(meta.collection, `sys field cannot have clone:true`, field);
+    // default to false if not specified
+    if (field.create === undefined) field.create = false;
+    if (field.update === undefined) field.update = false;
+    if (field.clone === undefined) field.clone = false;
+    // search and list default to false, but can be explicitly enabled
+    if (field.search === undefined) field.search = false;
+    if (field.list === undefined) field.list = false;
+  }
+
   if (field.default !== undefined && field.type) {
     const type = get_type(field.type);
     const result = type.convert(field.default);
@@ -337,12 +365,15 @@ export class EntityMeta {
     const not_secure = (f: FieldDefinition): boolean => f.secure !== true;
 
     this.client_fields = this.fields.filter(not_sys);
-    this.property_fields = this.fields.filter((f) => not_sys(f) && not_secure(f));
-    this.create_fields = this.fields.filter((f) => f.create !== false && not_sys(f));
-    this.update_fields = this.fields.filter((f) => f.create !== false && f.update !== false && not_sys(f));
-    this.search_fields = this.fields.filter((f) => f.search !== false && not_sys(f));
-    this.clone_fields = this.fields.filter((f) => f.clone !== false && not_sys(f));
-    this.list_fields = this.fields.filter((f) => f.list !== false && not_sys(f) && not_secure(f));
+    this.property_fields = this.fields.filter((f) => not_secure(f));
+    // Note: create_fields, update_fields, clone_fields do NOT filter by sys
+    // Sys fields have create/update/clone: false which prevents client input,
+    // but server-side hooks can still set these values
+    this.create_fields = this.fields.filter((f) => f.create !== false);
+    this.update_fields = this.fields.filter((f) => f.create !== false && f.update !== false);
+    this.search_fields = this.fields.filter((f) => f.search !== false);
+    this.clone_fields = this.fields.filter((f) => f.clone !== false);
+    this.list_fields = this.fields.filter((f) => f.list !== false && not_secure(f));
     this.primary_key_fields = this.fields.filter((f) => meta.primary_keys.includes(f.name));
     this.required_field_names = this.fields.filter((f) => f.required === true || this.primary_keys.includes(f.name)).map((f) => f.name);
     this.file_fields = this.fields.filter((f) => f.type === "file");

@@ -276,11 +276,11 @@ export class Entity {
     return { code: SUCCESS, total, data };
   }
 
-  private async _save_entity(param_obj: Record<string, unknown>, view: string, options: { fields_key: string; before_hook: string; main_hook: string; after_hook: string; id_for_hook?: string; apply_defaults?: boolean }): Promise<EntityResult> {
-    const { fields_key, before_hook, main_hook, after_hook, id_for_hook, apply_defaults = true } = options;
+  private async _save_entity(param_obj: Record<string, unknown>, view: string, options: { fields_key: string; before_hook: string; main_hook: string; after_hook: string; id_for_hook?: string }): Promise<EntityResult> {
+    const { fields_key, before_hook, main_hook, after_hook, id_for_hook } = options;
 
     const fields = this.filter_fields_by_view((this.meta as unknown as Record<string, FieldDefinition[]>)[fields_key], view);
-    const { obj, error_field_names } = apply_defaults ? convert_type(param_obj, fields) : convert_update_type(param_obj, fields);
+    const { obj, error_field_names } = convert_update_type(param_obj, fields);
     if (error_field_names.length > 0) {
       log_err("invalid fields", { fields: error_field_names });
       return { code: INVALID_PARAMS, err: error_field_names };
@@ -338,7 +338,7 @@ export class Entity {
   }
 
   async clone_entity(_id: string, param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
-    return this._save_entity(param_obj, view, { fields_key: "clone_fields", before_hook: "before_clone", main_hook: "clone", after_hook: "after_clone", id_for_hook: _id, apply_defaults: false });
+    return this._save_entity(param_obj, view, { fields_key: "clone_fields", before_hook: "before_clone", main_hook: "clone", after_hook: "after_clone", id_for_hook: _id });
   }
 
   async update_entity(_id: string | null, param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
