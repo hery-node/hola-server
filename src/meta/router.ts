@@ -117,7 +117,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
     router.get("/meta", async ({ user }: RouterContext) => {
       check_read_rights(user, meta);
       // Filter to fields visible in at least one UI context
-      const visible_fields = filter_fields_by_view(meta, "*").filter((f) => f.create === true || f.update === true || f.search === true || f.list === true);
+      const visible_fields = filter_fields_by_view(meta, "*").filter((f) => f.create !== false || f.update !== false || f.search !== false || f.list !== false);
       return { code: SUCCESS, data: { mode: meta.mode, fields: visible_fields } };
     });
   }

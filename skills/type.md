@@ -54,6 +54,41 @@ The `type` attribute should **only** use types defined in the core type system:
 
 Any type name not in this list is considered a **customized type** and must be registered before use.
 
+### 4. Security Protections
+
+The type system includes built-in security protections:
+
+#### HTML Escaping (XSS Prevention)
+
+The `string` type automatically escapes HTML characters to prevent XSS attacks:
+
+```javascript
+// Input: "<script>alert(1)</script>"
+// Output: "&lt;script&gt;alert(1)&lt;/script&gt;"
+```
+
+Characters escaped: `&`, `<`, `>`, `"`, `'`
+
+#### MongoDB Operator Injection Protection
+
+The type conversion system rejects any object values containing MongoDB operators (keys starting with `$`):
+
+```javascript
+// ❌ Rejected - injection attempt
+{
+  name: {
+    $ne: "";
+  }
+} // Error: field rejected
+
+// ✅ Accepted - normal value
+{
+  name: "John";
+} // OK
+```
+
+This prevents NoSQL injection attacks where malicious clients try to inject query operators.
+
 ### 3. Default Values
 
 The `default` attribute allows you to specify default values that will be automatically populated in create forms when the field is empty:
@@ -138,28 +173,22 @@ register_type({
 **Localized Labels** (in `hola-web/src/locales/en.json`):
 
 ```json
-{
-  "product_category": {
-    "electronics": "Electronics",
-    "clothing": "Clothing",
-    "food": "Food"
-  }
-}
+{ "product_category": { "electronics": "Electronics", "clothing": "Clothing", "food": "Food" } }
 ```
 
 ## Built-in Types Reference
 
 ### Basic Types
 
-| Type       | Server Conversion           | Client Input   | Use Case                |
-| ---------- | --------------------------- | -------------- | ----------------------- |
-| `string`   | Trim whitespace, default "" | `v-text-field` | Short text (≤255 chars) |
-| `lstr`     | Passthrough string          | `v-textarea`   | Long string             |
-| `text`     | Passthrough string          | Rich editor    | Long formatted text     |
-| `password` | Encrypt with hash           | Password input | Secure credentials      |
-| `file`     | Passthrough                 | File upload    | File attachments        |
-| `date`     | Passthrough string          | Date picker    | Date only               |
-| `enum`     | Passthrough string          | Autocomplete   | String options          |
+| Type       | Server Conversion                   | Client Input   | Use Case                |
+| ---------- | ----------------------------------- | -------------- | ----------------------- |
+| `string`   | Trim + escape HTML (XSS protection) | `v-text-field` | Short text (≤255 chars) |
+| `lstr`     | Passthrough string                  | `v-textarea`   | Long string             |
+| `text`     | Passthrough string                  | Rich editor    | Long formatted text     |
+| `password` | Encrypt with hash                   | Password input | Secure credentials      |
+| `file`     | Passthrough                         | File upload    | File attachments        |
+| `date`     | Passthrough string                  | Date picker    | Date only               |
+| `enum`     | Passthrough string                  | Autocomplete   | String options          |
 
 ### Numeric Types
 
@@ -433,21 +462,7 @@ Add translations for your custom types:
 
 ```json
 // hola-web/src/locales/en.json
-{
-  "order_status": {
-    "pending": "Pending",
-    "processing": "Processing",
-    "shipped": "Shipped",
-    "delivered": "Delivered"
-  },
-  "type": {
-    "priority": "Priority must be between 1 and 5",
-    "employee_age": "Age must be between 18 and 65",
-    "age_unit": "years old",
-    "sku_code": "SKU code must be in format XXX-123456",
-    "discount_rate": "Discount rate must be between 0 and 100"
-  }
-}
+{ "order_status": { "pending": "Pending", "processing": "Processing", "shipped": "Shipped", "delivered": "Delivered" }, "type": { "priority": "Priority must be between 1 and 5", "employee_age": "Age must be between 18 and 65", "age_unit": "years old", "sku_code": "SKU code must be in format XXX-123456", "discount_rate": "Discount rate must be between 0 and 100" } }
 ```
 
 ### Step 4: Use in Entity Definition
@@ -536,13 +551,7 @@ register_type({
 **3. Translations (`hola-web/src/locales/en.json`):**
 
 ```json
-{
-  "product_category": {
-    "electronics": "Electronics",
-    "clothing": "Clothing",
-    "food": "Food"
-  }
-}
+{ "product_category": { "electronics": "Electronics", "clothing": "Clothing", "food": "Food" } }
 ```
 
 ## Best Practices

@@ -209,6 +209,15 @@ const validate_field = (meta: MetaDefinition, field: FieldDefinition): void => {
     if (field.list === undefined) field.list = false;
   }
 
+  // secure fields (e.g., passwords) cannot be listed or searched
+  if (field.secure === true) {
+    if (field.list === true) throw meta_error(meta.collection, `secure field cannot have list:true`, field);
+    if (field.search === true) throw meta_error(meta.collection, `secure field cannot have search:true`, field);
+    // default to false if not specified
+    if (field.list === undefined) field.list = false;
+    if (field.search === undefined) field.search = false;
+  }
+
   if (field.default !== undefined && field.type) {
     const type = get_type(field.type);
     const result = type.convert(field.default);
