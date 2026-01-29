@@ -414,6 +414,22 @@ export class EntityMeta {
     }
   }
 
+  /** Get mode for a specific user role. Returns entity mode if no roles defined, or role-specific mode. */
+  get_role_mode(user_role: string | null | undefined): string {
+    // No role control defined - return full entity mode
+    if (!this.roles) return this.mode;
+    // User not authenticated - return empty mode
+    if (!user_role) return "";
+
+    for (const role of this.roles) {
+      const [role_name, role_mode] = role.split(":");
+      if (role_name === user_role) {
+        return role_mode === "*" ? this.mode : role_mode;
+      }
+    }
+    return "";
+  }
+
   private _validate_field_exists(attr_name: string, value?: string): void {
     if (value && !this.field_names.includes(value)) {
       throw meta_error(this.collection, `${attr_name} [${value}] not found in fields`);

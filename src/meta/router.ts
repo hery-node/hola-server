@@ -116,9 +116,11 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
   if (meta.readable) {
     router.get("/meta", async ({ user }: RouterContext) => {
       check_read_rights(user, meta);
+      // Get mode based on user's role
+      const role_mode = meta.get_role_mode(user?.role);
       // Filter to fields visible in at least one UI context
       const visible_fields = filter_fields_by_view(meta, "*").filter((f) => f.create !== false || f.update !== false || f.search !== false || f.list !== false);
-      return { code: SUCCESS, data: { mode: meta.mode, fields: visible_fields } };
+      return { code: SUCCESS, data: { mode: role_mode, fields: visible_fields } };
     });
   }
 
