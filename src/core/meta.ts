@@ -370,10 +370,11 @@ export class EntityMeta {
   }
 
   private _init_field_subsets(meta: MetaDefinition): void {
-    const not_sys = (f: FieldDefinition): boolean => f.sys !== true;
+    // Sys fields are visible to client only if they explicitly opt-in with list: true or search: true
+    const client_visible = (f: FieldDefinition): boolean => f.sys !== true || f.list === true || f.search === true;
     const not_secure = (f: FieldDefinition): boolean => f.secure !== true;
 
-    this.client_fields = this.fields.filter(not_sys);
+    this.client_fields = this.fields.filter(client_visible);
     // Property fields filter by list !== false to prevent client from reading hidden fields
     this.property_fields = this.fields.filter((f) => f.list !== false && not_secure(f));
     // Note: create_fields, update_fields, clone_fields do NOT filter by sys
