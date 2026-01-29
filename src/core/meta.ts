@@ -374,7 +374,8 @@ export class EntityMeta {
     const not_secure = (f: FieldDefinition): boolean => f.secure !== true;
 
     this.client_fields = this.fields.filter(not_sys);
-    this.property_fields = this.fields.filter((f) => not_secure(f));
+    // Property fields filter by list !== false to prevent client from reading hidden fields
+    this.property_fields = this.fields.filter((f) => f.list !== false && not_secure(f));
     // Note: create_fields, update_fields, clone_fields do NOT filter by sys
     // Sys fields have create/update/clone: false which prevents client input,
     // but server-side hooks can still set these values
@@ -403,7 +404,10 @@ export class EntityMeta {
       throw meta_error(this.collection, `ref_filter should be object`);
     }
 
-    return validate_fields(this.meta, this.fields);
+    const result = validate_fields(this.meta, this.fields);
+    // Re-init field subsets after validation sets defaults for sys/secure fields
+    this._init_field_subsets(this.meta);
+    return result;
   }
 
   private _validate_primary_keys(): void {
