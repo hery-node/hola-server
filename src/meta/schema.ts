@@ -16,7 +16,7 @@ export const register_schema_type = (name: string, schema_fn: () => TSchema): vo
 
 /** Get schema for a field type (checks custom types first, then built-in, then defaults to string). */
 const get_schema_for_type = (type_name: string): TSchema => {
-  const type_map: Record<string, () => TSchema> = { string: () => t.String(), text: () => t.String(), number: () => t.Number(), int: () => t.Number(), float: () => t.Number(), boolean: () => t.Boolean(), date: () => t.String({ format: "date-time" }), array: () => t.Array(t.Unknown()), object: () => t.Object({}), file: () => t.Any(), json: () => t.Any() };
+  const type_map: Record<string, () => TSchema> = { string: () => t.String(), text: () => t.String(), number: () => t.Numeric(), int: () => t.Numeric(), float: () => t.Numeric(), boolean: () => t.Boolean(), date: () => t.String({ format: "date-time" }), datetime: () => t.String({ format: "date-time" }), array: () => t.Array(t.Unknown()), object: () => t.Object({}), file: () => t.Any(), json: () => t.Any() };
 
   // Check custom types first, then built-in types, then default to string
   const schema_fn = custom_schema_types[type_name] ?? type_map[type_name];
