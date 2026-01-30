@@ -48,9 +48,9 @@ role_mix_meta.validate_meta_info();
 user_keep_meta.validate_meta_info();
 audit_cascade_meta.validate_meta_info();
 
-const role_mix_entity = new Entity(role_mix_meta);
-const user_keep_entity = new Entity(user_keep_meta);
-const audit_cascade_entity = new Entity(audit_cascade_meta);
+const role_mix_entity = new Entity(role_mix_meta.collection);
+const user_keep_entity = new Entity(user_keep_meta.collection);
+const audit_cascade_entity = new Entity(audit_cascade_meta.collection);
 
 // Parent with array ref cascade chain
 const role_array_meta = new EntityMeta({
@@ -97,9 +97,9 @@ role_array_meta.validate_meta_info();
 user_array_meta.validate_meta_info();
 audit_array_meta.validate_meta_info();
 
-const role_array_entity = new Entity(role_array_meta);
-const user_array_entity = new Entity(user_array_meta);
-const audit_array_entity = new Entity(audit_array_meta);
+const role_array_entity = new Entity(role_array_meta.collection);
+const user_array_entity = new Entity(user_array_meta.collection);
+const audit_array_entity = new Entity(audit_array_meta.collection);
 
 describe("Entity delete cascade/keep edges", function () {
     beforeEach(async () => {

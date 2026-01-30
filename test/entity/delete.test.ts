@@ -22,7 +22,7 @@ describe('Entity Delete', function () {
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should delete user successfully', async function () {
             await user_entity.delete({});
@@ -87,7 +87,7 @@ describe('Entity Delete', function () {
                     { name: "age", type: "uint" },
                     { name: "status", type: "boolean", required: true }
                 ],
-                before_delete: async function (entity, ids) {
+                before_delete: async function ({ ids }) {
                     if (ids.length == 1) {
                         return { code: SUCCESS };
                     } else {
@@ -97,7 +97,7 @@ describe('Entity Delete', function () {
             });
             user_meta.validate_meta_info();
 
-            const user_entity = new Entity(user_meta);
+            const user_entity = new Entity(user_meta.collection);
 
             it('should delete user with before delete', async function () {
                 await user_entity.delete({});
@@ -137,13 +137,13 @@ describe('Entity Delete', function () {
                     { name: "age", type: "uint" },
                     { name: "status", type: "boolean" }
                 ],
-                delete: async function (entity, obj) {
+                delete: async function () {
                     return { code: ERROR };
                 },
             });
             user_meta.validate_meta_info();
 
-            const user_entity = new Entity(user_meta);
+            const user_entity = new Entity(user_meta.collection);
 
             it('should return error code', async function () {
                 await user_entity.delete({});
@@ -181,7 +181,7 @@ describe('Entity Delete', function () {
             });
             user_meta.validate_meta_info();
 
-            const user_entity = new Entity(user_meta);
+            const user_entity = new Entity(user_meta.collection);
 
             it('should delete user fail with after create callback', async function () {
                 await user_entity.delete({});
@@ -231,8 +231,8 @@ describe('Entity Delete', function () {
             user_meta.validate_meta_info();
             role_meta.validate_meta_info();
 
-            const user_entity = new Entity(user_meta);
-            const role_entity = new Entity(role_meta);
+            const user_entity = new Entity(user_meta.collection);
+            const role_entity = new Entity(role_meta.collection);
 
             it('should delete user successfully with role', async function () {
                 await user_entity.delete({});
@@ -320,9 +320,9 @@ describe('Entity Delete', function () {
             role_meta.validate_meta_info();
             log_meta.validate_meta_info();
 
-            const user_entity = new Entity(user_meta);
-            const role_entity = new Entity(role_meta);
-            const log_entity = new Entity(log_meta);
+            const user_entity = new Entity(user_meta.collection);
+            const role_entity = new Entity(role_meta.collection);
+            const log_entity = new Entity(log_meta.collection);
 
             it('should delete user successfully with role', async function () {
                 await user_entity.delete({});
@@ -427,9 +427,9 @@ describe('Entity Delete', function () {
             role_meta.validate_meta_info();
             log_meta.validate_meta_info();
 
-            const user_entity = new Entity(user_meta);
-            const role_entity = new Entity(role_meta);
-            const log_entity = new Entity(log_meta);
+            const user_entity = new Entity(user_meta.collection);
+            const role_entity = new Entity(role_meta.collection);
+            const log_entity = new Entity(log_meta.collection);
 
             it('should delete user successfully with role', async function () {
                 await user_entity.delete({});

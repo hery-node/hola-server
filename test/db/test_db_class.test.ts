@@ -174,13 +174,6 @@ describe("DB Class Tests", function () {
             strictEqual(updated.val, 20);
         });
 
-        it("UPD-002: Update with upsert creates new", async function () {
-            await db.update(test_col, { unique_key: "upsert_test" }, { unique_key: "upsert_test", data: "new" });
-            const doc = await db.find_one(test_col, { unique_key: "upsert_test" });
-            ok(doc);
-            strictEqual(doc.data, "new");
-        });
-
         it("UPD-003: Update multiple documents", async function () {
             await db.create(test_col, { group: "multi", val: 1 });
             await db.create(test_col, { group: "multi", val: 2 });

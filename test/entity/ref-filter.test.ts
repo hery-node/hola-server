@@ -16,7 +16,7 @@ const role_meta = new EntityMeta({
     ref_filter: { status: true }
 });
 role_meta.validate_meta_info();
-const role_entity = new Entity(role_meta);
+const role_entity = new Entity(role_meta.collection);
 
 const user_meta = new EntityMeta({
     collection: "user_filter",
@@ -27,7 +27,7 @@ const user_meta = new EntityMeta({
     ]
 });
 user_meta.validate_meta_info();
-const user_entity = new Entity(user_meta);
+const user_entity = new Entity(user_meta.collection);
 
 describe("Entity ref_filter", function () {
     beforeAll(async () => {

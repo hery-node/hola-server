@@ -61,9 +61,9 @@ user_meta.validate_meta_info();
 role_meta.validate_meta_info();
 department_meta.validate_meta_info();
 
-const user_entity = new Entity(user_meta);
-const role_entity = new Entity(role_meta);
-const department_entity = new Entity(department_meta);
+const user_entity = new Entity(user_meta.collection);
+const role_entity = new Entity(role_meta.collection);
+const department_entity = new Entity(department_meta.collection);
 
 const init_db = async () => {
     await user_entity.delete({});

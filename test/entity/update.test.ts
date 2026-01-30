@@ -22,7 +22,7 @@ describe('Entity Update', function () {
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should update user with id successfully', async function () {
             await user_entity.delete({});
@@ -83,14 +83,14 @@ describe('Entity Update', function () {
                 { name: "email", type: "string" },
                 { name: "age", type: "uint" }
             ],
-            before_update: async function (_id, entity, obj) {
-                obj.age = 100;
+            before_update: async function ({ data }) {
+                data.age = 100;
                 return { code: SUCCESS };
             },
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should update user successfully', async function () {
             await user_entity.delete({});
@@ -123,13 +123,13 @@ describe('Entity Update', function () {
                 { name: "age", type: "uint" },
                 { name: "status", type: "boolean" }
             ],
-            update: async function (entity, obj) {
+            update: async function () {
                 return { code: ERROR };
             },
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should return error code', async function () {
             await user_entity.delete({});
@@ -159,15 +159,15 @@ describe('Entity Update', function () {
                 { name: "age", type: "uint" },
                 { name: "status", type: "boolean" }
             ],
-            after_update: async function (_id, entity, obj) {
-                const query = entity.primary_key_query(obj);
+            after_update: async function ({ entity, data }) {
+                const query = entity.primary_key_query(data);
                 await entity.update(query, { "status": true });
                 return { code: SUCCESS };
             },
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should update user successfully with after update callback', async function () {
             await user_entity.delete({});
@@ -216,8 +216,8 @@ describe('Entity Update', function () {
         user_meta.validate_meta_info();
         role_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
-        const role_entity = new Entity(role_meta);
+        const user_entity = new Entity(user_meta.collection);
+        const role_entity = new Entity(role_meta.collection);
 
         it('should create user successfully with role', async function () {
             await user_entity.delete({});

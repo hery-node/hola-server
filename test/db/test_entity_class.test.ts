@@ -1,103 +1,45 @@
 import { describe, it, beforeEach, beforeAll, afterAll } from 'bun:test';
 import { strictEqual, deepStrictEqual, ok } from 'assert';
 import { Entity } from '../../src/db/entity.js';
-import { get_db, oid } from '../../src/db/db.js';
-import { SUCCESS, ERROR, NOT_FOUND, NO_PARAMS, INVALID_PARAMS, DUPLICATE_KEY, REF_NOT_FOUND, HAS_REF } from '../../src/http/code.js';
+import { EntityMeta } from '../../src/core/meta.js';
+import { get_db, init_db, oid } from '../../src/db/db.js';
+import { SUCCESS, ERROR, NOT_FOUND, NO_PARAMS, INVALID_PARAMS, DUPLICATE_UNIQUE, REF_NOT_FOUND, HAS_REF } from '../../src/http/code.js';
 
 const test_col = "test_entity_col";
 const ref_col = "test_entity_ref_col";
 let db;
 
-// Complete meta objects matching what get_entity_meta produces
-const ref_meta = {
-    name: ref_col,
+// Create proper EntityMeta instances that register themselves
+const ref_meta = new EntityMeta({
     collection: ref_col,
     primary_keys: ["label"],
     ref_label: "label",
-    ref_fields: [],
-    ref_by_metas: [],
-    ref_filter: {},
-    fields_map: {
-        label: { name: "label", type: "string" },
-        value: { name: "value", type: "number" }
-    },
     fields: [
-        { name: "label", type: "string" },
+        { name: "label", type: "string", required: true },
         { name: "value", type: "number" }
-    ],
-    create_fields: [
-        { name: "label", type: "string" },
-        { name: "value", type: "number" }
-    ],
-    update_fields: [
-        { name: "label", type: "string" },
-        { name: "value", type: "number" }
-    ],
-    list_fields: [{ name: "label" }, { name: "value" }],
-    property_fields: [{ name: "label" }, { name: "value" }],
-    primary_key_fields: [{ name: "label", type: "string" }],
-    required_field_names: ["label"],
-    search_fields: [{ name: "label", type: "string" }]
-};
+    ]
+});
 
-const entity_meta = {
-    name: test_col,
+const entity_meta = new EntityMeta({
     collection: test_col,
     primary_keys: ["code"],
     ref_label: "code",
-    ref_fields: [{ name: "ref_id", ref: ref_col }],
-    ref_by_metas: [],
-    ref_filter: {},
-    fields_map: {
-        code: { name: "code", type: "string" },
-        name: { name: "name", type: "string" },
-        age: { name: "age", type: "number" },
-        active: { name: "active", type: "boolean" },
-        ref_id: { name: "ref_id", type: "string", ref: ref_col }
-    },
     fields: [
-        { name: "code", type: "string" },
-        { name: "name", type: "string" },
-        { name: "age", type: "number" },
-        { name: "active", type: "boolean" },
+        { name: "code", type: "string", required: true },
+        { name: "name", type: "string", search: true },
+        { name: "age", type: "number", search: true },
+        { name: "active", type: "boolean", search: true },
         { name: "ref_id", type: "string", ref: ref_col }
-    ],
-    create_fields: [
-        { name: "code", type: "string" },
-        { name: "name", type: "string" },
-        { name: "age", type: "number" },
-        { name: "active", type: "boolean" },
-        { name: "ref_id", type: "string" }
-    ],
-    update_fields: [
-        { name: "code", type: "string" },
-        { name: "name", type: "string" },
-        { name: "age", type: "number" },
-        { name: "active", type: "boolean" },
-        { name: "ref_id", type: "string" }
-    ],
-    list_fields: [
-        { name: "code" }, { name: "name" }, { name: "age" }, { name: "active" }, { name: "ref_id" }
-    ],
-    property_fields: [
-        { name: "code" }, { name: "name" }, { name: "age" }, { name: "active" }, { name: "ref_id" }
-    ],
-    primary_key_fields: [{ name: "code", type: "string" }],
-    required_field_names: ["code"],
-    search_fields: [
-        { name: "name", type: "string" },
-        { name: "age", type: "number" },
-        { name: "active", type: "boolean" }
     ]
-};
+});
 
 describe("Entity Class Tests", function () {
     let entity, ref_entity;
 
     beforeAll(async () => {
-        db = get_db();
-        entity = new Entity(entity_meta);
-        ref_entity = new Entity(ref_meta);
+        db = await init_db();
+        entity = new Entity(entity_meta.collection);
+        ref_entity = new Entity(ref_meta.collection);
         await db.delete(test_col, {});
         await db.delete(ref_col, {});
     });
@@ -117,7 +59,7 @@ describe("Entity Class Tests", function () {
     // ==========================================================================
     describe("2.1 Constructor", function () {
         it("ENT-001: Initialize with meta object", function () {
-            const e = new Entity(entity_meta);
+            const e = new Entity(entity_meta.collection);
             ok(e);
             strictEqual(e.meta.collection, test_col);
         });
@@ -159,7 +101,7 @@ describe("Entity Class Tests", function () {
         it("CRE-003: Create with duplicate primary key", async function () {
             await entity.create_entity({ code: "dup" });
             const res = await entity.create_entity({ code: "dup" });
-            strictEqual(res.code, DUPLICATE_KEY);
+            strictEqual(res.code, DUPLICATE_UNIQUE);
         });
 
         // Direct DB operations for simpler testing
@@ -470,54 +412,25 @@ describe("Entity Class Tests", function () {
     // ==========================================================================
     describe("2.4.1 Numeric Types Search", function () {
         // Test entity with all numeric types
-        const numeric_meta = {
-            name: "test_numeric",
+        const numeric_meta = new EntityMeta({
             collection: "test_numeric",
             primary_keys: ["code"],
             ref_label: "code",
-            ref_fields: [],
-            ref_by_metas: [],
-            ref_filter: {},
-            fields_map: {
-                code: { name: "code", type: "string" },
-                int_field: { name: "int_field", type: "int" },
-                uint_field: { name: "uint_field", type: "uint" },
-                float_field: { name: "float_field", type: "float" },
-                ufloat_field: { name: "ufloat_field", type: "ufloat" },
-                decimal_field: { name: "decimal_field", type: "decimal" },
-                percentage_field: { name: "percentage_field", type: "percentage" },
-                currency_field: { name: "currency_field", type: "currency" }
-            },
             fields: [
-                { name: "code", type: "string" },
-                { name: "int_field", type: "int" },
-                { name: "uint_field", type: "uint" },
-                { name: "float_field", type: "float" },
-                { name: "ufloat_field", type: "ufloat" },
-                { name: "decimal_field", type: "decimal" },
-                { name: "percentage_field", type: "percentage" },
-                { name: "currency_field", type: "currency" }
-            ],
-            create_fields: [],
-            update_fields: [],
-            list_fields: [],
-            property_fields: [],
-            primary_key_fields: [{ name: "code", type: "string" }],
-            required_field_names: ["code"],
-            search_fields: [
-                { name: "int_field", type: "int" },
-                { name: "uint_field", type: "uint" },
-                { name: "float_field", type: "float" },
-                { name: "ufloat_field", type: "ufloat" },
-                { name: "decimal_field", type: "decimal" },
-                { name: "percentage_field", type: "percentage" },
-                { name: "currency_field", type: "currency" }
+                { name: "code", type: "string", required: true },
+                { name: "int_field", type: "int", search: true },
+                { name: "uint_field", type: "uint", search: true },
+                { name: "float_field", type: "float", search: true },
+                { name: "ufloat_field", type: "ufloat", search: true },
+                { name: "decimal_field", type: "decimal", search: true },
+                { name: "percentage_field", type: "percentage", search: true },
+                { name: "currency_field", type: "currency", search: true }
             ]
-        };
+        });
 
         let numeric_entity;
         beforeAll(() => {
-            numeric_entity = new Entity(numeric_meta);
+            numeric_entity = new Entity(numeric_meta.collection);
         });
 
         it("NTS-001: int type - skip '0' value", async function () {

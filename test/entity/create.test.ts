@@ -22,7 +22,7 @@ describe('Entity Create', function () {
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should create user successfully', async function () {
             await user_entity.delete({});
@@ -93,7 +93,7 @@ describe('Entity Create', function () {
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should create user successfully', async function () {
             await user_entity.delete({});
@@ -151,14 +151,14 @@ describe('Entity Create', function () {
                 { name: "age", type: "uint" },
                 { name: "status", type: "boolean", required: true }
             ],
-            before_create: async function (entity, obj) {
-                obj.status = true;
+            before_create: async function ({ data }) {
+                data.status = true;
                 return { code: SUCCESS };
             },
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should create user successfully', async function () {
             await user_entity.delete({});
@@ -187,13 +187,13 @@ describe('Entity Create', function () {
                 { name: "age", type: "uint" },
                 { name: "status", type: "boolean" }
             ],
-            create: async function (entity, obj) {
+            create: async function () {
                 return { code: ERROR };
             },
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should return error code', async function () {
             await user_entity.delete({});
@@ -222,15 +222,15 @@ describe('Entity Create', function () {
                 { name: "age", type: "uint" },
                 { name: "status", type: "boolean" }
             ],
-            after_create: async function (entity, obj) {
-                const query = entity.primary_key_query(obj);
+            after_create: async function ({ entity, data }) {
+                const query = entity.primary_key_query(data);
                 await entity.update(query, { "status": true });
                 return { code: SUCCESS };
             },
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should create user successfully with after create callback', async function () {
             await user_entity.delete({});
@@ -261,15 +261,15 @@ describe('Entity Create', function () {
                 { name: "age", type: "uint" },
                 { name: "status", type: "boolean" }
             ],
-            create: async function (entity, obj) {
-                obj.email = "create@test.com";
-                await entity.create(obj);
+            create: async function ({ entity, data }) {
+                data.email = "create@test.com";
+                await entity.create(data);
                 return { code: SUCCESS };
             },
         });
         user_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
+        const user_entity = new Entity(user_meta.collection);
 
         it('should create user successfully with create callback', async function () {
             await user_entity.delete({});
@@ -316,8 +316,8 @@ describe('Entity Create', function () {
         user_meta.validate_meta_info();
         role_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
-        const role_entity = new Entity(role_meta);
+        const user_entity = new Entity(user_meta.collection);
+        const role_entity = new Entity(role_meta.collection);
 
         it('should create user successfully with role', async function () {
             await user_entity.delete({});
@@ -399,9 +399,9 @@ describe('Entity Create', function () {
         role_meta.validate_meta_info();
         area_meta.validate_meta_info();
 
-        const user_entity = new Entity(user_meta);
-        const role_entity = new Entity(role_meta);
-        const area_entity = new Entity(area_meta);
+        const user_entity = new Entity(user_meta.collection);
+        const role_entity = new Entity(role_meta.collection);
+        const area_entity = new Entity(area_meta.collection);
 
         it('should create user successfully with role and area', async function () {
             await user_entity.delete({});

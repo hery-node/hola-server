@@ -146,8 +146,8 @@ export class Entity {
   meta: EntityMeta;
   private _db: DB | null = null;
 
-  constructor(meta: EntityMeta | string) {
-    this.meta = typeof meta === "string" ? get_entity_meta(meta)! : meta;
+  constructor(meta: string) {
+    this.meta = get_entity_meta(meta)!;
   }
 
   /** Get db instance lazily - ensures connection is established */
@@ -172,7 +172,7 @@ export class Entity {
 
     for (const field of ref_fields) {
       const value = param_obj[field.name];
-      const ref_entity = new Entity(get_entity_meta(field.ref!)!);
+      const ref_entity = new Entity(field.ref!);
 
       const resolve_ref = async (v: unknown): Promise<{ code?: number; err?: string[]; id?: string }> => {
         const refs = await ref_entity.find_by_ref_value(v, { _id: 1 }, this.meta.collection);
@@ -211,7 +211,7 @@ export class Entity {
       if (!has_search_value(value, type_name)) continue;
 
       if (ref_names.includes(field.name)) {
-        const ref_entity = new Entity(get_entity_meta(field.ref!)!);
+        const ref_entity = new Entity(field.ref!);
         const oids = await ref_entity.find_by_ref_value(value, { _id: 1 }, this.meta.collection);
         if (oids.length > 0) {
           const ids = oids.map((o) => `${o._id}`);
@@ -443,7 +443,7 @@ export class Entity {
         const ref_fields = ref_by_meta.ref_fields.filter((f) => f.ref === this.meta.collection);
         for (const field of ref_fields) {
           if (field.delete === DELETE_MODE.cascade) {
-            const ref_entity = new Entity(ref_by_meta);
+            const ref_entity = new Entity(ref_by_meta.collection);
             await ref_entity.delete_refer_entity(field.name, id_array);
           }
         }
@@ -596,7 +596,7 @@ export class Entity {
   async check_refer_entity(id_array: string[]): Promise<string[]> {
     const refs: string[] = [];
     for (const ref_by_meta of this.meta.ref_by_metas) {
-      const ref_entity = new Entity(ref_by_meta);
+      const ref_entity = new Entity(ref_by_meta.collection);
       const ref_fields = ref_by_meta.ref_fields.filter((f) => f.ref === this.meta.collection);
       for (const field of ref_fields) {
         if (field.delete === DELETE_MODE.keep) continue;
@@ -637,7 +637,7 @@ export class Entity {
       ids = unique(ids);
 
       const ref_meta = get_entity_meta(field.ref!)!;
-      const ref_entity = new Entity(ref_meta);
+      const ref_entity = new Entity(ref_meta.collection);
       const labels = await ref_entity.get_ref_labels(ids);
       const label_map = map_array_to_obj(labels as Record<string, unknown>[], "_id", ref_meta.ref_label!);
 
@@ -666,7 +666,7 @@ export class Entity {
 
     for (const [entity_name, { attrs, filters }] of Object.entries(entity_info)) {
       const meta = get_entity_meta(entity_name)!;
-      const entity = new Entity(meta);
+      const entity = new Entity(meta.collection);
       const ids = unique(elements.flatMap((o) => filters.map((f) => o[f])).filter(Boolean)) as string[];
       const query = oid_queries(ids);
       if (!query) continue;
@@ -736,7 +736,7 @@ export class Entity {
     }
 
     const ref_meta = get_entity_meta(field.ref)!;
-    const ref_entity = new Entity(ref_meta);
+    const ref_entity = new Entity(ref_meta.collection);
     const query = oid_query(value as string) || { [ref_meta.ref_label!]: value };
     return ref_entity.find_one(query, attr);
   }

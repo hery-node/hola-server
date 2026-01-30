@@ -85,7 +85,7 @@ const filter_fields_by_view = (meta: EntityMeta, view: string | null): FieldDefi
  */
 export const init_router = (definition: MetaDefinition): Elysia<any> => {
   const meta = new EntityMeta(definition);
-  const entity = new Entity(meta);
+  const entity = new Entity(meta.collection);
   const schema = meta_to_schema(meta);
 
   const router = new Elysia({ prefix: `/${meta.collection}` });
