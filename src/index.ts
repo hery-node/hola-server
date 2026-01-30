@@ -71,3 +71,5 @@ export { oid_query, oid_queries } from "./db/db.js";
 
 // Tools
 export { gen_i18n } from "./tool/gen_i18n.js";
+export { VectorStore, getVectorStore, initVectorStore } from "./tool/vector_store.js";
+export type { VectorStoreConfig, VectorRecord, SearchResult } from "./tool/vector_store.js";

@@ -170,34 +170,32 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
   }
 
   // POST / - Create entity
+  // Note: No Elysia schema validation here - Entity layer handles validation after before_hook
+  // This allows hooks to set default values for required fields
   if (meta.creatable) {
-    router.post(
-      "/",
-      async ({ user, body }: RouterContext) => {
-        check_create_rights(user, meta);
+    router.post("/", async ({ user, body }: RouterContext) => {
+      check_create_rights(user, meta);
 
-        const data = body as Record<string, unknown>;
+      const data = body as Record<string, unknown>;
 
-        // Apply default values for create operation
-        for (const field of meta.create_fields) {
-          if (!has_value(data[field.name]) && field.default !== undefined) {
-            data[field.name] = field.default;
-          }
+      // Apply default values for create operation
+      for (const field of meta.create_fields) {
+        if (!has_value(data[field.name]) && field.default !== undefined) {
+          data[field.name] = field.default;
         }
+      }
 
-        // Set user field if defined
-        if (meta.user_field && user?.sub) {
-          data[meta.user_field] = user.sub;
-        }
+      // Set user field if defined
+      if (meta.user_field && user?.sub) {
+        data[meta.user_field] = user.sub;
+      }
 
-        // Pass user context for hooks to access
-        data._user = user;
+      // Pass user context for hooks to access
+      data._user = user;
 
-        const result = await entity.create_entity(data, "*");
-        return result;
-      },
-      { body: schema.create },
-    );
+      const result = await entity.create_entity(data, "*");
+      return result;
+    });
   }
 
   // PUT /:id - Update entity
@@ -229,6 +227,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
   }
 
   // POST /:id/clone - Clone entity
+  // Note: No Elysia body schema validation here - Entity layer handles validation after before_hook
   if (meta.cloneable) {
     router.post(
       "/:id/clone",
@@ -247,7 +246,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         const result = await entity.clone_entity(params.id, data, "*");
         return result;
       },
-      { params: schema.id_param, body: schema.create },
+      { params: schema.id_param },
     );
   }
 
