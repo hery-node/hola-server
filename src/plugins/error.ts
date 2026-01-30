@@ -27,6 +27,12 @@ export const holaError = () =>
         .onError(({ code, error, set }) => {
             const err = error as ErrorWithCode;
 
+            // Log error with stack trace for debugging
+            console.error(`[${code}] ${err.message}`);
+            if (err.stack) {
+                console.error(err.stack);
+            }
+
             // Map error types to HTTP status
             const status_map: Record<string, number> = {
                 AUTH: 401,
