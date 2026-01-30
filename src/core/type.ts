@@ -95,6 +95,7 @@ export const get_type = (name: string): TypeDefinition => {
 register_type({ name: "obj", convert: ok });
 register_type({ name: "string", convert: (value) => ok(value ? escape_html((value + "").trim()) : "") });
 register_type({ name: "password", convert: (value) => ok(encrypt_pwd(String(value))) });
+register_type({ name: "secure", convert: (value) => ok(value + "") });
 register_type({ name: "file", convert: ok });
 
 // Passthrough string types
