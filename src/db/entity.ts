@@ -32,6 +32,16 @@ export interface EntityResult {
 // Note: int_enum types are NOT included here because 0 is often a valid enum value (e.g., ACTIVE, ADMIN)
 const NUMERIC_TYPES = ["number", "int", "uint", "float", "ufloat", "decimal", "percentage", "currency"];
 
+/** Parameters for list_entity query */
+export interface ListQueryParams {
+  attr_names: string;
+  sort_by: string;
+  desc: boolean | string;
+  page?: number | string | null;
+  limit?: number | string | null;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
 /** Check if a search value should be included in the query */
 const has_search_value = (value: unknown, type_name: string): boolean => {
   if (!has_value(value)) return false;
@@ -51,7 +61,7 @@ const convert_search_value = (type_name: string, search_value: unknown): unknown
 };
 
 /** Create search object based on field type and value. */
-const parse_search_value = (name: string, type_name: string, search_value: unknown): Record<string, unknown> => {
+const parse_search_value = (name: string, type_name: string, search_value: QueryValue): Record<string, unknown> => {
   const raw = `${search_value}`;
 
   if (raw.includes(",")) {
@@ -101,7 +111,7 @@ const run_hook = async <T extends Record<string, unknown>>(hook: ((ctx: T) => Pr
 };
 
 /** Validate reference and return error result if failed. */
-const validate_refs = async (entity: Entity, obj: Record<string, unknown>): Promise<EntityResult | null> => {
+const validate_refs = async (entity: Entity, obj: Record<string, FieldValue>): Promise<EntityResult | null> => {
   if (!entity.meta.ref_fields) return null;
   const { code, err } = await entity.validate_ref(obj);
   if (err || code !== SUCCESS) {
@@ -168,7 +178,7 @@ export class Entity {
     await bulk_update(this.col(), items, attrs);
   }
 
-  async validate_ref(param_obj: Record<string, unknown>): Promise<EntityResult> {
+  async validate_ref(param_obj: Record<string, FieldValue>): Promise<EntityResult> {
     const ref_fields = this.meta.ref_fields;
     if (!ref_fields) return { code: SUCCESS };
 
@@ -176,7 +186,7 @@ export class Entity {
       const value = param_obj[field.name];
       const ref_entity = new Entity(field.ref!);
 
-      const resolve_ref = async (v: unknown): Promise<{ code?: number; err?: string[]; id?: string }> => {
+      const resolve_ref = async (v: string): Promise<{ code?: number; err?: string[]; id?: string }> => {
         const refs = await ref_entity.find_by_ref_value(v, { _id: 1 }, this.meta.collection);
         if (refs.length === 0) return { code: REF_NOT_FOUND, err: [field.name] };
         if (refs.length > 1) return { code: REF_NOT_UNIQUE, err: [field.name] };
@@ -186,13 +196,13 @@ export class Entity {
       if (Array.isArray(value)) {
         const ids: string[] = [];
         for (const v of value) {
-          const result = await resolve_ref(v);
+          const result = await resolve_ref(v as string);
           if (result.code) return result as EntityResult;
           ids.push(result.id!);
         }
         param_obj[field.name] = ids;
       } else if (has_value(value)) {
-        const result = await resolve_ref(value);
+        const result = await resolve_ref(value as string);
         if (result.code) return result as EntityResult;
         param_obj[field.name] = result.id;
       }
@@ -214,14 +224,14 @@ export class Entity {
 
       if (ref_names.includes(field.name)) {
         const ref_entity = new Entity(field.ref!);
-        const oids = await ref_entity.find_by_ref_value(value, { _id: 1 }, this.meta.collection);
+        const oids = await ref_entity.find_by_ref_value(value as string | string[], { _id: 1 }, this.meta.collection);
         if (oids.length > 0) {
           const ids = oids.map((o) => `${o._id}`);
           const op = oids.length === 1 ? null : `${value}`.includes(",") ? "$all" : "$in";
           and_array.push(op ? { [field.name]: { [op]: ids } } : { [field.name]: ids[0] });
         }
       } else {
-        and_array.push(parse_search_value(field.name, field.type || "string", value));
+        and_array.push(parse_search_value(field.name, field.type || "string", value as QueryValue));
       }
     }
 
@@ -239,14 +249,14 @@ export class Entity {
     return {};
   }
 
-  async list_entity(query_params: Record<string, unknown>, query: Record<string, unknown>, param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
+  async list_entity(query_params: ListQueryParams, query: Record<string, QueryValue>, param_obj: Record<string, QueryValue>, view: string): Promise<EntityResult> {
     const missing = validate_required_fields(query_params, ["attr_names", "sort_by", "desc"]);
     if (missing.length > 0) {
       log_err("missing required fields", { fields: missing });
       return { code: NO_PARAMS, err: missing };
     }
 
-    const { attr_names, page, limit, sort_by, desc } = query_params as { attr_names: string; page: unknown; limit: unknown; sort_by: string; desc: boolean | string };
+    const { attr_names, page, limit, sort_by, desc } = query_params;
     const sorts = sort_by.split(",");
     // Handle desc as boolean or comma-separated string
     const descs = typeof desc === "boolean" ? [desc] : String(desc).split(",");
@@ -278,7 +288,7 @@ export class Entity {
     return { code: SUCCESS, total, data };
   }
 
-  private async _save_entity(param_obj: Record<string, unknown>, view: string, options: { fields_key: string; before_hook: string; main_hook: string; after_hook: string; id_for_hook?: string }): Promise<EntityResult> {
+  private async _save_entity(param_obj: Record<string, FieldValue>, view: string, options: { fields_key: string; before_hook: string; main_hook: string; after_hook: string; id_for_hook?: string }): Promise<EntityResult> {
     const { fields_key, before_hook, main_hook, after_hook, id_for_hook } = options;
 
     const fields = this.filter_fields_by_view((this.meta as unknown as Record<string, FieldDefinition[]>)[fields_key], view);
@@ -335,15 +345,15 @@ export class Entity {
     return { code: SUCCESS };
   }
 
-  async create_entity(param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
+  async create_entity(param_obj: Record<string, FieldValue>, view: string): Promise<EntityResult> {
     return this._save_entity(param_obj, view, { fields_key: "create_fields", before_hook: "before_create", main_hook: "create", after_hook: "after_create" });
   }
 
-  async clone_entity(_id: string, param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
+  async clone_entity(_id: string, param_obj: Record<string, FieldValue>, view: string): Promise<EntityResult> {
     return this._save_entity(param_obj, view, { fields_key: "clone_fields", before_hook: "before_clone", main_hook: "clone", after_hook: "after_clone", id_for_hook: _id });
   }
 
-  async update_entity(_id: string | null, param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
+  async update_entity(_id: string | null, param_obj: Record<string, FieldValue>, view: string): Promise<EntityResult> {
     const fields = this.filter_fields_by_view(this.meta.update_fields, view);
     const { obj, error_field_names } = convert_update_type(param_obj, fields);
     if (error_field_names.length > 0) {
@@ -382,7 +392,7 @@ export class Entity {
     return { code: SUCCESS };
   }
 
-  async batch_update_entity(_ids: string[], param_obj: Record<string, unknown>, view: string): Promise<EntityResult> {
+  async batch_update_entity(_ids: string[], param_obj: Record<string, FieldValue>, view: string): Promise<EntityResult> {
     const fields = this.filter_fields_by_view(this.meta.update_fields, view);
     const { obj, error_field_names } = convert_update_type(param_obj, fields);
     if (error_field_names.length > 0) {
@@ -580,7 +590,7 @@ export class Entity {
     return this.db.delete(this.meta.collection, query as Filter<Document>);
   }
 
-  find_by_ref_value(value: unknown, attr: Record<string, unknown>, ref_by_entity: string): Promise<Document[]> {
+  find_by_ref_value(value: string | string[], attr: Record<string, unknown>, ref_by_entity: string): Promise<Document[]> {
     let query: Record<string, unknown> | null = Array.isArray(value) ? oid_queries(value as string[]) : oid_query(value as string);
     if (!query) {
       const ref_label = this.meta.ref_label!;

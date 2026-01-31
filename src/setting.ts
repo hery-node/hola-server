@@ -43,6 +43,7 @@ export interface SessionSettings {
 export interface ThresholdSettings {
     max_download_size: number;
     body_limit: string;
+    default_list_limit: number;
 }
 
 export interface ServerSettings {
@@ -81,7 +82,7 @@ let settings: Settings = {
         check_user: true,
         exclude_urls: ["/"],
         session: { cookie_max_age: 1000 * 60 * 60 * 24 * 256 * 10, secret: 'BGTDYWJ*)#*$&*%(%#' },
-        threshold: { max_download_size: 5000, body_limit: '10mb' },
+        threshold: { max_download_size: 5000, body_limit: '10mb', default_list_limit: 1000 },
         routes: ['router']
     }
 };

@@ -4,9 +4,9 @@
  */
 
 import { Elysia } from "elysia";
-import { EntityMeta, MetaDefinition, FieldDefinition } from "../core/meta.js";
+import { EntityMeta, MetaDefinition, FieldDefinition, QueryValue, FieldValue } from "../core/meta.js";
 import { meta_to_schema } from "./schema.js";
-import { Entity } from "../db/entity.js";
+import { Entity, ListQueryParams } from "../db/entity.js";
 import { NotFoundError, NoRightsError } from "../errors/index.js";
 import { SUCCESS } from "../http/code.js";
 import type { JwtPayload } from "../plugins/auth.js";
@@ -16,44 +16,43 @@ import { has_value } from "../core/validate.js";
 /** Router context extended with auth user from derive plugin. */
 interface RouterContext {
   user?: JwtPayload | null;
-  query: Record<string, unknown>;
+  query: Record<string, string>;
   body: unknown;
   params: Record<string, string>;
 }
-
 /** Check if user has read rights for meta. */
 const check_read_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
+  if (!meta.readable) throw new NoRightsError("entity not readable");
   const settings = get_settings();
   if (settings.server.check_user && !user) throw new NoRightsError("no read rights");
-  // Additional role checking can be added here
 };
 
 /** Check if user has create rights for meta. */
 const check_create_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
+  if (!meta.creatable) throw new NoRightsError("entity not creatable");
   const settings = get_settings();
   if (settings.server.check_user && !user) throw new NoRightsError("no create rights");
-  if (!meta.creatable) throw new NoRightsError("entity not creatable");
 };
 
 /** Check if user has update rights for meta. */
 const check_update_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
+  if (!meta.updatable) throw new NoRightsError("entity not updatable");
   const settings = get_settings();
   if (settings.server.check_user && !user) throw new NoRightsError("no update rights");
-  if (!meta.updatable) throw new NoRightsError("entity not updatable");
 };
 
 /** Check if user has delete rights for meta. */
 const check_delete_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
+  if (!meta.deleteable) throw new NoRightsError("entity not deleteable");
   const settings = get_settings();
   if (settings.server.check_user && !user) throw new NoRightsError("no delete rights");
-  if (!meta.deleteable) throw new NoRightsError("entity not deleteable");
 };
 
 /** Check if user has clone rights for meta. */
 const check_clone_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
+  if (!meta.cloneable) throw new NoRightsError("entity not cloneable");
   const settings = get_settings();
   if (settings.server.check_user && !user) throw new NoRightsError("no clone rights");
-  if (!meta.cloneable) throw new NoRightsError("entity not cloneable");
 };
 
 /** Filter fields by view permission. */
@@ -72,7 +71,8 @@ const filter_fields_by_view = (meta: EntityMeta, view: string | null): FieldDefi
  * Create RESTful router for an entity.
  *
  * Routes:
- * - POST /list      List entities
+ * - GET /           Simple list with optional params (attr_names, sort_by, desc, page, limit)
+ * - POST /list      List entities with full query options
  * - GET /:id        Get single entity
  * - POST /          Create entity
  * - PUT /:id        Update entity
@@ -97,18 +97,53 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
       async ({ user, body }: RouterContext) => {
         check_read_rights(user, meta);
 
-        const body_data = body as Record<string, unknown>;
-        const filter: Record<string, unknown> = {};
+        const body_data = body as ListQueryParams;
+        const filter: Record<string, QueryValue> = {};
 
         // Apply user field filter if defined
         if (meta.user_field && user?.sub) {
           filter[meta.user_field] = user.sub;
         }
 
-        const result = await entity.list_entity(body_data, filter, body_data, "*");
+        const result = await entity.list_entity(body_data, filter, body_data as Record<string, QueryValue>, "*");
         return { ...result };
       },
       { body: schema.query },
+    );
+  }
+
+  // GET / - Simple list with optional parameters and sensible defaults
+  if (meta.readable) {
+    router.get(
+      "/",
+      async ({ user, query }: RouterContext) => {
+        check_read_rights(user, meta);
+
+        const settings = get_settings();
+        const query_data = query as Record<string, QueryValue>;
+        const filter: Record<string, QueryValue> = {};
+
+        // Apply user field filter if defined
+        if (meta.user_field && user?.sub) {
+          filter[meta.user_field] = user.sub;
+        }
+
+        // Provide sensible defaults for optional parameters
+        const list_field_names = meta.list_fields.map((f) => f.name).join(",");
+        const primary_key = meta.primary_keys?.[0] || "_id";
+        const default_limit = settings.server.threshold.default_list_limit || 1000;
+
+        const params: ListQueryParams = {
+          attr_names: (query_data.attr_names as string) || list_field_names,
+          sort_by: (query_data.sort_by as string) || primary_key,
+          desc: has_value(query_data.desc) ? (query_data.desc as boolean | string) : true,
+          page: (query_data.page as number | string) || 1,
+          limit: (query_data.limit as number | string) || default_limit,
+        };
+
+        const result = await entity.list_entity(params, filter, query_data, "*");
+        return { ...result };
+      },
     );
   }
 
@@ -193,7 +228,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
       // Pass user context for hooks to access
       data._user = user;
 
-      const result = await entity.create_entity(data, "*");
+      const result = await entity.create_entity(data as Record<string, FieldValue>, "*");
       return result;
     });
   }
@@ -205,7 +240,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
       async ({ user, params, body }: RouterContext) => {
         check_update_rights(user, meta);
 
-        const data = body as Record<string, unknown>;
+        const data = body as Record<string, FieldValue>;
         const result = await entity.update_entity(params.id, data, "*");
         return result;
       },
@@ -243,7 +278,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         // Pass user context for hooks to access
         data._user = user;
 
-        const result = await entity.clone_entity(params.id, data, "*");
+        const result = await entity.clone_entity(params.id, data as Record<string, FieldValue>, "*");
         return result;
       },
       { params: schema.id_param },
