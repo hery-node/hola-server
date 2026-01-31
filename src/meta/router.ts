@@ -131,7 +131,7 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         // Provide sensible defaults for optional parameters
         const list_field_names = meta.list_fields.map((f) => f.name).join(",");
         const primary_key = meta.primary_keys?.[0] || "_id";
-        const default_limit = settings.server.threshold.default_list_limit || 1000;
+        const default_limit = settings.server.threshold.default_list_limit || 100;
 
         const params: ListQueryParams = {
           attr_names: (query_data.attr_names as string) || list_field_names,
@@ -180,7 +180,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
       async ({ user, params }: RouterContext) => {
         check_read_rights(user, meta);
 
-        const result = await entity.read_entity(params.id, "*", "*");
+        const list_field_names = meta.list_fields.map((f) => f.name).join(",");
+        const result = await entity.read_entity(params.id, list_field_names, "*");
         if (!result.data) throw new NotFoundError();
         return { code: SUCCESS, data: result.data };
       },
