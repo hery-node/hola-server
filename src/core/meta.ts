@@ -5,12 +5,13 @@
 
 import { get_type } from "./type.js";
 import { validate_meta_role } from "./role.js";
+import { ObjectId } from "mongodb";
 
 /** Field value types for entity data. */
 export type FieldValue = string | number | boolean | null | undefined | Date | FieldValue[] | { [key: string]: FieldValue };
 
-/** Query/filter value types. */
-export type QueryValue = string | number | boolean | null | undefined | Date | RegExp | QueryValue[] | { [key: string]: QueryValue };
+/** Query/filter value types (includes ObjectId for MongoDB queries). */
+export type QueryValue = string | number | boolean | null | undefined | Date | RegExp | ObjectId | QueryValue[] | { [key: string]: QueryValue };
 
 export interface FieldDefinition {
   name: string;

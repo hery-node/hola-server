@@ -3,7 +3,7 @@
  * @module db/entity
  */
 
-import { Document, Filter, Sort, ObjectId } from "mongodb";
+import { Document, Filter, Sort } from "mongodb";
 import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_UNIQUE, NOT_FOUND, REF_NOT_FOUND, REF_NOT_UNIQUE, HAS_REF } from "../http/code.js";
 import { validate_required_fields, has_value } from "../core/validate.js";
 
@@ -11,7 +11,7 @@ import { convert_type, convert_update_type, get_type } from "../core/type.js";
 import { get_entity_meta, EntityMeta, DELETE_MODE, FieldDefinition, FieldValue, QueryValue } from "../core/meta.js";
 import { unique, map_array_to_obj } from "../core/array.js";
 import { LOG_ENTITY, get_db, oid_query, oid_queries, log_debug, log_error, bulk_update, DB } from "./db.js";
-import type { LogValue } from "../core/bash.js";
+
 
 // Comparison operator mapping for search queries
 const COMPARISON_OPERATORS = [
@@ -55,13 +55,13 @@ const has_search_value = (value: unknown, type_name: string): boolean => {
 };
 
 /** Convert search value type, keeping original on error. */
-const convert_search_value = (type_name: string, search_value: unknown): unknown => {
+const convert_search_value = (type_name: string, search_value: QueryValue): QueryValue => {
   const { value, err } = get_type(type_name).convert(search_value);
-  return err ? search_value : value;
+  return err ? search_value : value as QueryValue;
 };
 
 /** Create search object based on field type and value. */
-const parse_search_value = (name: string, type_name: string, search_value: QueryValue): Record<string, unknown> => {
+const parse_search_value = (name: string, type_name: string, search_value: QueryValue): Record<string, QueryValue> => {
   const raw = `${search_value}`;
 
   if (raw.includes(",")) {
@@ -78,16 +78,16 @@ const parse_search_value = (name: string, type_name: string, search_value: Query
 
   if (type_name === "array") return { [name]: { $in: [raw] } };
 
-  let value = convert_search_value(type_name, raw);
+  let value: QueryValue = convert_search_value(type_name, raw);
   if (typeof value === "string") value = new RegExp(value, "i");
   return { [name]: value };
 };
 
 /** Apply ref_filter to query based on entity context. */
-const apply_ref_filter = (query: Record<string, unknown>, ref_filter: Record<string, unknown> | undefined, ref_by_entity: string): Record<string, unknown> => {
+const apply_ref_filter = (query: Record<string, QueryValue>, ref_filter: Record<string, QueryValue> | undefined, ref_by_entity: string): Record<string, QueryValue> => {
   if (!ref_filter) return query;
   const filter = (ref_by_entity && ref_filter[ref_by_entity]) || ref_filter["*"] || (typeof ref_filter === "object" ? ref_filter : null);
-  return filter ? { ...query, ...(filter as Record<string, unknown>) } : query;
+  return filter ? { ...query, ...(filter as Record<string, QueryValue>) } : query;
 };
 
 /** Log error with formatted message. */
@@ -99,8 +99,12 @@ const log_err = (msg: string, data: Record<string, any> = {}): void => {
   log_error(LOG_ENTITY, parts.length ? `${msg} - ${parts.join(", ")}` : msg);
 };
 
+/** Hook context type - can contain Entity and other non-field types */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type HookContext = Record<string, any>;
+
 /** Execute a lifecycle hook and return error result if failed. */
-const run_hook = async <T extends Record<string, unknown>>(hook: ((ctx: T) => Promise<EntityResult> | EntityResult) | undefined, hook_name: string, ctx: T): Promise<EntityResult | null> => {
+const run_hook = async <T extends HookContext>(hook: ((ctx: T) => Promise<EntityResult> | EntityResult) | undefined, hook_name: string, ctx: T): Promise<EntityResult | null> => {
   if (!hook) return null;
   const { code, err } = await hook(ctx);
   if (err || code !== SUCCESS) {
@@ -210,12 +214,12 @@ export class Entity {
     return { code: SUCCESS };
   }
 
-  async get_search_query(param_obj: Record<string, unknown>): Promise<Record<string, unknown> | null> {
+  async get_search_query(param_obj: Record<string, QueryValue>): Promise<Record<string, QueryValue> | null> {
     const { search_fields } = this.meta;
     if (!search_fields?.length) return null;
 
     const ref_names = this.meta.ref_fields.map((f) => f.name);
-    const and_array: Record<string, unknown>[] = [];
+    const and_array: Record<string, QueryValue>[] = [];
 
     for (const field of search_fields) {
       const value = param_obj[field.name];
@@ -278,7 +282,7 @@ export class Entity {
       return { code: INVALID_PARAMS, err: "no search query is set" };
     }
 
-    const merged = { ...(query || {}), ...search_query };
+    const merged: Record<string, QueryValue> = { ...(query || {}), ...search_query } as Record<string, QueryValue>;
     const total = await this.count(merged);
     const list = await this.find_page(merged, sort, page_int, page_limit, attrs);
     const with_links = await this.read_link_attrs(list, link_fields);
@@ -536,52 +540,52 @@ export class Entity {
     return { code: NOT_FOUND, err: ["_id"] };
   }
 
-  primary_key_query(param_obj: Record<string, unknown>): Record<string, unknown> | null {
+  primary_key_query(param_obj: Record<string, FieldValue>): Record<string, QueryValue> | null {
     if (!this.meta.primary_keys.every((key) => has_value(param_obj[key]))) return null;
     const { obj, error_field_names } = convert_type(param_obj, this.meta.primary_key_fields);
     if (error_field_names.length > 0) return null;
     return this.meta.primary_keys.reduce((q, key) => ({ ...q, [key]: obj[key] }), {});
   }
 
-  count_by_primary_keys(obj: Record<string, unknown>): Promise<number> {
+  count_by_primary_keys(obj: Record<string, FieldValue>): Promise<number> {
     return this.count(this.primary_key_query(obj)!);
   }
 
   // Database operations
-  create(obj: Record<string, unknown>) {
+  create(obj: Record<string, FieldValue>) {
     return this.db.create(this.meta.collection, obj as Document);
   }
-  update(query: Record<string, unknown>, obj: Record<string, unknown>) {
+  update(query: Record<string, QueryValue>, obj: Record<string, FieldValue>) {
     return this.db.update(this.meta.collection, query as Filter<Document>, obj);
   }
-  delete(query: Record<string, unknown>) {
+  delete(query: Record<string, QueryValue>) {
     return this.db.delete(this.meta.collection, query as Filter<Document>);
   }
-  find(query: Record<string, unknown>, attr?: Record<string, unknown>) {
+  find(query: Record<string, QueryValue>, attr?: Record<string, number>) {
     return this.db.find(this.meta.collection, query as Filter<Document>, attr as Document);
   }
-  find_one(query: Record<string, unknown>, attr?: Record<string, unknown>) {
+  find_one(query: Record<string, QueryValue>, attr?: Record<string, number>) {
     return this.db.find_one(this.meta.collection, query as Filter<Document>, attr as Document);
   }
-  find_sort(query: Record<string, unknown>, sort: Sort, attr?: Record<string, unknown>) {
+  find_sort(query: Record<string, QueryValue>, sort: Sort, attr?: Record<string, number>) {
     return this.db.find_sort(this.meta.collection, query as Filter<Document>, sort, attr as Document);
   }
-  find_page(query: Record<string, unknown>, sort: Sort, page: number, limit: number, attr?: Record<string, unknown>) {
+  find_page(query: Record<string, QueryValue>, sort: Sort, page: number, limit: number, attr?: Record<string, number>) {
     return this.db.find_page(this.meta.collection, query as Filter<Document>, sort, page, limit, attr as Document);
   }
-  count(query: Record<string, unknown>) {
+  count(query: Record<string, QueryValue>) {
     return this.db.count(this.meta.collection, query as Filter<Document>);
   }
-  sum(query: Record<string, unknown>, field: string) {
+  sum(query: Record<string, QueryValue>, field: string) {
     return this.db.sum(this.meta.collection, query as Filter<Document>, field);
   }
-  pull(query: Record<string, unknown>, ele: Record<string, unknown>) {
+  pull(query: Record<string, QueryValue>, ele: Record<string, FieldValue>) {
     return this.db.pull(this.meta.collection, query as Filter<Document>, ele as Document);
   }
-  push(query: Record<string, unknown>, ele: Record<string, unknown>) {
+  push(query: Record<string, QueryValue>, ele: Record<string, FieldValue>) {
     return this.db.push(this.meta.collection, query as Filter<Document>, ele as Document);
   }
-  add_to_set(query: Record<string, unknown>, ele: Record<string, unknown>) {
+  add_to_set(query: Record<string, QueryValue>, ele: Record<string, FieldValue>) {
     return this.db.add_to_set(this.meta.collection, query as Filter<Document>, ele as Document);
   }
 
@@ -590,8 +594,8 @@ export class Entity {
     return this.db.delete(this.meta.collection, query as Filter<Document>);
   }
 
-  find_by_ref_value(value: string | string[], attr: Record<string, unknown>, ref_by_entity: string): Promise<Document[]> {
-    let query: Record<string, unknown> | null = Array.isArray(value) ? oid_queries(value as string[]) : oid_query(value as string);
+  find_by_ref_value(value: string | string[], attr: Record<string, number>, ref_by_entity: string): Promise<Document[]> {
+    let query: Record<string, QueryValue> | null = Array.isArray(value) ? oid_queries(value as string[]) : oid_query(value as string);
     if (!query) {
       const ref_label = this.meta.ref_label!;
       if (Array.isArray(value)) {
@@ -602,7 +606,7 @@ export class Entity {
         query = { [ref_label]: value };
       }
     }
-    return this.find(apply_ref_filter(query, this.meta.ref_filter, ref_by_entity), attr);
+    return this.find(apply_ref_filter(query, this.meta.ref_filter as Record<string, QueryValue>, ref_by_entity), attr);
   }
 
   async check_refer_entity(id_array: string[]): Promise<string[]> {
@@ -627,7 +631,7 @@ export class Entity {
     return refs;
   }
 
-  async get_refer_entities(field_name: string, id_array: string[], attr: Record<string, unknown>): Promise<Document[]> {
+  async get_refer_entities(field_name: string, id_array: string[], attr: Record<string, number>): Promise<Document[]> {
     return this.find({ [field_name]: { $in: id_array } }, attr);
   }
 
@@ -648,10 +652,9 @@ export class Entity {
       }
       ids = unique(ids);
 
-      const ref_meta = get_entity_meta(field.ref!)!;
-      const ref_entity = new Entity(ref_meta.collection);
+      const ref_entity = new Entity(field.ref!);
       const labels = await ref_entity.get_ref_labels(ids);
-      const label_map = map_array_to_obj(labels as Record<string, unknown>[], "_id", ref_meta.ref_label!);
+      const label_map = map_array_to_obj(labels as Record<string, FieldValue>[], "_id", ref_entity.meta.ref_label!);
 
       for (const obj of elements) {
         const value = obj[field.name];
@@ -677,8 +680,7 @@ export class Entity {
     }
 
     for (const [entity_name, { attrs, filters }] of Object.entries(entity_info)) {
-      const meta = get_entity_meta(entity_name)!;
-      const entity = new Entity(meta.collection);
+      const entity = new Entity(entity_name);
       const ids = unique(elements.flatMap((o) => filters.map((f) => o[f])).filter(Boolean)) as string[];
       const query = oid_queries(ids);
       if (!query) continue;
@@ -687,7 +689,7 @@ export class Entity {
       const ref_fields: FieldDefinition[] = [];
       for (const attr of attrs) {
         attr_obj[attr] = 1;
-        const field = meta.fields_map[attr];
+        const field = entity.meta.fields_map[attr];
         if (!field.link && field.ref) ref_fields.push(field);
       }
 
@@ -710,10 +712,10 @@ export class Entity {
   }
 
   get_filtered_ref_labels(ref_by_entity: string, client_query?: string, user_id?: string): Promise<Document[]> {
-    let query: Record<string, unknown> = {};
+    let query: Record<string, QueryValue> = {};
     if (this.meta.user_field && user_id) query[this.meta.user_field] = user_id;
 
-    let search_query: Record<string, unknown> = {};
+    let search_query: Record<string, QueryValue> = {};
     if (client_query?.trim() && this.meta.search_fields?.length) {
       for (const part of client_query.split(",")) {
         const [field_name, value] = part.split(":");
@@ -726,19 +728,19 @@ export class Entity {
 
     query = apply_ref_filter(query, this.meta.ref_filter, ref_by_entity);
     const ref_label = this.meta.ref_label!;
-    return this.find_sort({ ...search_query, ...query }, { [ref_label]: 1 }, { [ref_label]: 1 });
+    return this.find_sort({ ...search_query, ...query } as Record<string, QueryValue>, { [ref_label]: 1 }, { [ref_label]: 1 });
   }
 
   get_ref_labels(id_array: string[]): Promise<Document[]> {
     return this.find(oid_queries(id_array)!, { [this.meta.ref_label!]: 1 });
   }
 
-  find_by_oid(id: string, attr?: Record<string, unknown>): Promise<Document | null> {
+  find_by_oid(id: string, attr?: Record<string, number>): Promise<Document | null> {
     const query = oid_query(id);
     return query ? this.find_one(query, attr) : Promise.resolve(null);
   }
 
-  find_one_ref_entity(field_name: string, value: unknown, attr?: Record<string, unknown>): Promise<Document | null> {
+  find_one_ref_entity(field_name: string, value: string, attr?: Record<string, number>): Promise<Document | null> {
     const field = this.meta.fields.find((f) => f.name === field_name);
     if (!field) {
       throw new Error(`field not found: ${field_name} in ${this.meta.collection}`);
@@ -747,10 +749,9 @@ export class Entity {
       throw new Error(`field is not ref: ${field_name} in ${this.meta.collection}`);
     }
 
-    const ref_meta = get_entity_meta(field.ref)!;
-    const ref_entity = new Entity(ref_meta.collection);
-    const query = oid_query(value as string) || { [ref_meta.ref_label!]: value };
-    return ref_entity.find_one(query, attr);
+    const ref_entity = new Entity(field.ref!);
+    const query = oid_query(value) || { [ref_entity.meta.ref_label!]: value };
+    return ref_entity.find_one(query as Record<string, QueryValue>, attr);
   }
 
   oid_query(_id: string) {
