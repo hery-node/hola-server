@@ -14,7 +14,7 @@ export const shuffle = <T>(arr: T[]): void => {
 };
 
 /** Remove elements from array by matching field value. */
-export const remove_element = <T extends Record<string, unknown>>(array: T[], field: keyof T, value: unknown): void => {
+export const remove_element = <T, K extends keyof T>(array: T[], field: K, value: T[K]): void => {
     for (let i = array.length - 1; i >= 0; --i) {
         if (array[i][field] == value) array.splice(i, 1);
     }
@@ -41,8 +41,8 @@ export const sum = (arr: number[]): number => round_to_fixed2(arr.reduce((pre, c
 export const avg = (arr: number[]): number => arr.length === 0 ? 0 : round_to_fixed2(sum(arr) / arr.length);
 
 /** Convert array of objects to key-value object. */
-export const map_array_to_obj = <T extends Record<string, unknown>>(arr: T[], key_attr: keyof T, value_attr: keyof T): Record<string, unknown> => {
-    return arr.reduce((obj, el) => ({ ...obj, [String(el[key_attr])]: el[value_attr] }), {} as Record<string, unknown>);
+export const map_array_to_obj = <T, K extends keyof T, V extends keyof T>(arr: T[], key_attr: K, value_attr: V): Record<string, T[V]> => {
+    return arr.reduce((obj, el) => ({ ...obj, [String(el[key_attr])]: el[value_attr] }), {} as Record<string, T[V]>);
 };
 
 /** Sort array of objects by attribute. */
@@ -55,7 +55,7 @@ export const sort_desc = <T extends Record<string, number>>(arr: T[], attr: keyo
 export const sort_asc = <T extends Record<string, number>>(arr: T[], attr: keyof T): T[] => sort_by_attr(arr, attr, false);
 
 /** Sort array by predefined key sequence. */
-export const sort_by_key_seq = <T extends Record<string, unknown>>(arr: T[], attr: keyof T, keys: unknown[]): T[] => {
+export const sort_by_key_seq = <T, K extends keyof T>(arr: T[], attr: K, keys: T[K][]): T[] => {
     arr.sort((a, b) => keys.indexOf(a[attr]) - keys.indexOf(b[attr]));
     return arr;
 };

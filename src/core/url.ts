@@ -9,13 +9,13 @@ export interface UrlRequestConfig {
     signal?: AbortSignal;
 }
 
-export interface UrlResponse {
+export interface UrlResponse<T = unknown> {
     status: number;
     ok: boolean;
     headers: Headers;
-    data: unknown;
+    data: T | null;
     text: () => Promise<string>;
-    json: () => Promise<unknown>;
+    json: <R = T>() => Promise<R>;
 }
 
 /** Create HTTP request function with preset URL and method using native fetch. */
@@ -34,7 +34,7 @@ export const url = (target_url: string, method: string): (config?: UrlRequestCon
             headers: response.headers,
             data: null,
             text: () => response.text(),
-            json: () => response.json(),
+            json: <R>() => response.json() as Promise<R>,
         };
     };
 };

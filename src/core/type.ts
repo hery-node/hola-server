@@ -5,6 +5,7 @@
 
 import { has_value, is_undefined } from "./validate.js";
 import { encrypt_pwd } from "./encrypt.js";
+import type { FieldValue } from "./meta.js";
 
 export interface TypeResult<T = unknown> {
   value?: T;
@@ -19,7 +20,7 @@ export interface TypeDefinition {
 export interface Field {
   name: string;
   type?: string;
-  default?: unknown;
+  default?: FieldValue;
 }
 
 const type_manager: Record<string, TypeDefinition> = {};
@@ -300,13 +301,13 @@ const convert_field = (field_value: unknown, type_name?: string): TypeResult => 
 };
 
 interface ConvertResult {
-  obj: Record<string, unknown>;
+  obj: Record<string, FieldValue>;
   error_field_names: string[];
 }
 
 /** Convert object fields to their defined types. */
 const convert_fields = (obj: Record<string, unknown>, fields: Field[], preserve_empty: boolean = false): ConvertResult => {
-  const result: Record<string, unknown> = {};
+  const result: Record<string, FieldValue> = {};
   const error_field_names: string[] = [];
 
   for (const field of fields) {
@@ -321,7 +322,7 @@ const convert_fields = (obj: Record<string, unknown>, fields: Field[], preserve_
     if (has_value(field_value)) {
       const { value, err } = convert_field(field_value, field.type);
       if (err) error_field_names.push(field.name);
-      else result[field.name] = value;
+      else result[field.name] = value as FieldValue;
     } else if (!preserve_empty && field.default !== undefined) {
       // Apply default only for create operations, not for update
       result[field.name] = field.default;

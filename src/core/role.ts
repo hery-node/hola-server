@@ -5,14 +5,17 @@
 
 import { get_settings, Role } from '../setting.js';
 
+/** Session user data value types. */
+type SessionValue = string | number | boolean | null | undefined | SessionValue[] | { [key: string]: SessionValue };
+
 interface SessionUser {
     role: string;
-    [key: string]: unknown;
+    [key: string]: SessionValue;
 }
 
 interface SessionCookie {
     session_id?: { value: string };
-    [key: string]: unknown;
+    [key: string]: SessionValue | { value: string } | undefined;
 }
 
 interface MetaWithRoles {
@@ -24,8 +27,8 @@ interface MetaWithRoles {
 let session_store: Map<string, { user?: SessionUser }> | null = null;
 
 /** Set the session store reference for role checking. */
-export const set_session_store = (store: Map<string, unknown>): void => {
-    session_store = store as Map<string, { user?: SessionUser }>;
+export const set_session_store = (store: Map<string, { user?: SessionUser }>): void => {
+    session_store = store;
 };
 
 /** Find a role by name from settings. */

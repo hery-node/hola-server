@@ -14,6 +14,6 @@ export const has_value = (value: unknown): boolean => {
 };
 
 /** Validate that required fields have values in an object. Returns array of missing field names. */
-export const validate_required_fields = (obj: Record<string, unknown>, field_names: string[]): string[] => {
+export const validate_required_fields = <T extends Record<string, unknown>>(obj: T, field_names: (keyof T)[]): (keyof T)[] => {
     return field_names.filter((field_name) => !has_value(obj[field_name]));
 };

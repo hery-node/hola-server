@@ -6,7 +6,7 @@
 import fs from 'fs';
 import { GridFSBucket, Db, MongoClient } from 'mongodb';
 import { get_settings } from '../setting.js';
-import { EntityMeta } from '../core/meta.js';
+import { EntityMeta, FieldValue } from '../core/meta.js';
 import { Readable } from 'stream';
 
 const CHUNK_SIZE = 1024 * 1024; // 1MB
@@ -92,7 +92,7 @@ interface FileRequest {
 }
 
 /** Set file field values on entity object based on uploaded files. */
-export const set_file_fields = (meta: EntityMeta, req: FileRequest, obj: Record<string, unknown>): void => {
+export const set_file_fields = (meta: EntityMeta, req: FileRequest, obj: Record<string, FieldValue>): void => {
     const { file_fields, primary_keys } = meta;
     if (!file_fields?.length || !req.files) return;
 
@@ -109,7 +109,7 @@ export const set_file_fields = (meta: EntityMeta, req: FileRequest, obj: Record<
 };
 
 /** Save uploaded file fields to GridFS. */
-export const save_file_fields_to_db = async (collection: string, file_fields: { name: string }[], req: FileRequest, obj: Record<string, unknown>): Promise<void> => {
+export const save_file_fields_to_db = async (collection: string, file_fields: { name: string }[], req: FileRequest, obj: Record<string, FieldValue>): Promise<void> => {
     if (!file_fields?.length || !req.files) return;
 
     const instance = await get_gridfs_instance();

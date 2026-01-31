@@ -47,15 +47,18 @@ export const space = (min: number, max: number): Space => {
 /** Check if value is a space object (has min and max properties). */
 export const is_space = (value: unknown): value is Space => {
     if (!is_object(value)) return false;
-    const obj = value as Record<string, unknown>;
+    const obj = value as { min?: number; max?: number };
     return has_value(obj.min) && has_value(obj.max);
 };
 
 /** Check if value is an integer. */
 export const is_integer = (value: unknown): boolean => /^-?[0-9]+$/.test(String(value));
 
+/** Sample configuration value types. */
+export type SampleValue = string | number | boolean | Space | SampleValue[];
+
 /** Check if object contains any space objects as property values. */
-export const contains_space = (obj: Record<string, unknown>): boolean => {
+export const contains_space = (obj: Record<string, SampleValue>): boolean => {
     for (const key in obj) {
         if (is_space(obj[key])) return true;
     }
@@ -89,16 +92,16 @@ export const lhs_samples = (min: number, max: number, n: number): Space[] => {
 };
 
 /** Create random sample object from configuration with arrays or space objects. */
-export const random_sample = (obj: Record<string, unknown>): Record<string, unknown> => {
-    const sample_obj: Record<string, unknown> = {};
+export const random_sample = (obj: Record<string, SampleValue>): Record<string, string | number | boolean> => {
+    const sample_obj: Record<string, string | number | boolean> = {};
     for (const key in obj) {
         const value = obj[key];
         if (Array.isArray(value)) {
-            sample_obj[key] = value[Math.floor(random_number(0, value.length))];
+            sample_obj[key] = value[Math.floor(random_number(0, value.length))] as string | number | boolean;
         } else if (is_space(value)) {
             sample_obj[key] = random_number(value.min, value.max);
         } else {
-            sample_obj[key] = value;
+            sample_obj[key] = value as string | number | boolean;
         }
     }
     return sample_obj;

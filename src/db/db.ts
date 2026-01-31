@@ -3,9 +3,10 @@
  * @module db/db
  */
 
-import { MongoClient, Db, Collection, ObjectId, Document, Sort } from "mongodb";
+import { MongoClient, Db, Collection, ObjectId, Document, Sort, UpdateResult, DeleteResult, BulkWriteResult } from "mongodb";
 import { get_settings } from "../setting.js";
 import { format_date_time } from "../core/date.js";
+import type { LogValue } from "../core/bash.js";
 
 // Log level constants
 export const LOG_LEVEL_DEBUG = 0;
@@ -30,17 +31,17 @@ export const is_log_warn = (): boolean => is_log_enabled(LOG_LEVEL_WARN);
 export const is_log_error = (): boolean => is_log_enabled(LOG_LEVEL_ERROR);
 
 /** Write a log entry to the database. */
-const log_message = (category: string, level: number, message: string, extra: Record<string, unknown> = {}): void => {
+const log_message = (category: string, level: number, message: string, extra: Record<string, LogValue> = {}): void => {
   const entry = { time: format_date_time(new Date()), category, level, msg: message, ...extra };
 
   get_db()
     .create(get_settings().log.col_log, entry)
-    .catch(() => {});
+    .catch(() => { });
 };
 
 /** Create a log function for a specific level. */
 const create_log_fn = (level: number, check_fn: () => boolean) => {
-  return (category: string, msg: string, extra?: Record<string, unknown>): void => {
+  return (category: string, msg: string, extra?: Record<string, LogValue>): void => {
     if (check_fn()) log_message(category, level, msg, extra);
   };
 };
@@ -72,9 +73,9 @@ export const oid_queries = (ids: string[]): { _id: { $in: ObjectId[] } } | null 
 };
 
 /** Execute bulk update using the items. */
-export const bulk_update = async (col: Collection, items: Document[], attrs: string[]): Promise<unknown> => {
+export const bulk_update = async (col: Collection, items: Document[], attrs: string[]): Promise<BulkWriteResult | null> => {
   if (!items || items.length === 0) {
-    return { ok: 1 };
+    return null;
   }
   const operations = items.map((item) => {
     const query = attrs.reduce((acc, attr) => ({ ...acc, [attr]: item[attr] }), {} as Document);
@@ -85,7 +86,8 @@ export const bulk_update = async (col: Collection, items: Document[], attrs: str
 };
 
 /** Log debug message for DB operations. */
-const debug_log = (operation: string, code: string, params: Record<string, unknown> = {}): void => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const debug_log = (operation: string, code: string, params: Record<string, any> = {}): void => {
   if (!is_log_debug()) return;
   const parts = Object.entries(params)
     .filter(([, v]) => v !== undefined)
@@ -100,9 +102,9 @@ export class DB {
   private pending_callbacks: (() => void)[] = [];
   public closed: boolean = false;
 
-  constructor(url: string, options?: Record<string, unknown>) {
+  constructor(url: string, options?: { maxPoolSize?: number }) {
     if (!url) throw new Error("Mongo url is required to initialize DB");
-    this.client = new MongoClient(url, options as any);
+    this.client = new MongoClient(url, options);
   }
 
   async connect(callback?: () => void): Promise<void> {
@@ -145,13 +147,13 @@ export class DB {
     return { ...without_id, _id: result.insertedId };
   }
 
-  async update(code: string, query: Document, obj: Document): Promise<unknown> {
+  async update(code: string, query: Document, obj: Document): Promise<UpdateResult> {
     debug_log("updating", code, { query, obj });
     const { _id, ...without_id } = obj;
     return this.col(code).updateMany(query, { $set: without_id });
   }
 
-  async delete(code: string, query: Document): Promise<unknown> {
+  async delete(code: string, query: Document): Promise<DeleteResult> {
     debug_log("deleting", code, { query });
     return this.col(code).deleteMany(query);
   }
@@ -190,17 +192,17 @@ export class DB {
     return result[0]?.total ?? 0;
   }
 
-  async pull(code: string, query: Document, ele: Document): Promise<unknown> {
+  async pull(code: string, query: Document, ele: Document): Promise<UpdateResult> {
     debug_log("pull", code, { query, ele });
     return this.col(code).updateMany(query, { $pull: ele } as any);
   }
 
-  async push(code: string, query: Document, ele: Document): Promise<unknown> {
+  async push(code: string, query: Document, ele: Document): Promise<UpdateResult> {
     debug_log("push", code, { query, ele });
     return this.col(code).updateOne(query, { $push: ele } as any);
   }
 
-  async add_to_set(code: string, query: Document, ele: Document): Promise<unknown> {
+  async add_to_set(code: string, query: Document, ele: Document): Promise<UpdateResult> {
     return this.col(code).updateOne(query, { $addToSet: ele } as any, { upsert: true });
   }
 

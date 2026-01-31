@@ -7,7 +7,9 @@ import { $ } from 'bun';
 import { random_code } from './random.js';
 import { is_log_debug, is_log_error, log_debug, log_error } from '../db/db.js';
 
-export type LogExtra = Record<string, unknown>;
+/** Serializable log value types. */
+export type LogValue = string | number | boolean | null | undefined | LogValue[] | { [key: string]: LogValue };
+export type LogExtra = Record<string, LogValue>;
 
 const LOG_BASH = "bash";
 const SSH_OPTIONS = "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no";

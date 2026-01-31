@@ -3,10 +3,16 @@
  * @module setting
  */
 
+export interface ProxyConfig {
+    host: string;
+    port: number;
+    auth?: { username: string; password: string };
+}
+
 export interface AxiosSettings {
     retry: number;
     retry_delay: number;
-    proxy: unknown | null;
+    proxy: ProxyConfig | null;
 }
 
 export interface EncryptSettings {

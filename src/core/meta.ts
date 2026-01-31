@@ -3,15 +3,20 @@
  * @module core/meta
  */
 
-import type { Elysia } from "elysia";
 import { get_type } from "./type.js";
 import { validate_meta_role } from "./role.js";
+
+/** Field value types for entity data. */
+export type FieldValue = string | number | boolean | null | undefined | Date | FieldValue[] | { [key: string]: FieldValue };
+
+/** Query/filter value types. */
+export type QueryValue = string | number | boolean | null | undefined | Date | RegExp | QueryValue[] | { [key: string]: QueryValue };
 
 export interface FieldDefinition {
   name: string;
   type?: string;
   required?: boolean;
-  default?: unknown;
+  default?: FieldValue;
   ref?: string;
   link?: string;
   delete?: "keep" | "cascade";
@@ -39,7 +44,7 @@ export interface MetaDefinition {
   importable?: boolean;
   exportable?: boolean;
   ref_label?: string;
-  ref_filter?: Record<string, unknown>;
+  ref_filter?: Record<string, QueryValue>;
 
   user_field?: string;
   after_read?: AfterReadCallback;
@@ -58,7 +63,7 @@ export interface MetaDefinition {
   batch_update?: BatchUpdateCallback;
   after_batch_update?: AfterBatchUpdateCallback;
   delete?: DeleteCallback;
-  route?: (router: unknown, meta: EntityMeta) => void;
+  route?: <Router>(router: Router, meta: EntityMeta) => void;
 }
 
 // Forward reference - Entity is defined in db/entity.ts
@@ -74,28 +79,28 @@ export interface HookResult {
 /** Context for create/after_create hooks */
 export interface CreateHookContext {
   entity: EntityRef;
-  data: Record<string, unknown>;
+  data: Record<string, FieldValue>;
 }
 
 /** Context for clone/before_clone/after_clone hooks */
 export interface CloneHookContext {
   id: string;
   entity: EntityRef;
-  data: Record<string, unknown>;
+  data: Record<string, FieldValue>;
 }
 
 /** Context for update/before_update/after_update hooks */
 export interface UpdateHookContext {
   id: string | null;
   entity: EntityRef;
-  data: Record<string, unknown>;
+  data: Record<string, FieldValue>;
 }
 
 /** Context for batch_update/after_batch_update hooks */
 export interface BatchUpdateHookContext {
   ids: string[];
   entity: EntityRef;
-  data: Record<string, unknown>;
+  data: Record<string, FieldValue>;
 }
 
 /** Context for delete/before_delete/after_delete hooks */
@@ -109,13 +114,13 @@ export interface AfterReadHookContext {
   id: string;
   entity: EntityRef;
   attrNames: string;
-  result: Record<string, unknown>;
+  result: Record<string, FieldValue>;
 }
 
 /** Context for list_query hook */
 export interface ListQueryHookContext {
   entity: EntityRef;
-  query: Record<string, unknown>;
+  query: Record<string, QueryValue>;
 }
 
 // Typed callback functions
@@ -141,8 +146,14 @@ export type DeleteCallback = (ctx: DeleteHookContext) => Promise<HookResult> | H
 export type AfterReadCallback = (ctx: AfterReadHookContext) => Promise<HookResult> | HookResult;
 export type ListQueryCallback = (ctx: ListQueryHookContext) => Promise<HookResult> | HookResult;
 
-/** @deprecated Use specific callback types instead */
-export type CallbackFunction = (...args: unknown[]) => unknown;
+/** Union of all callback types for dynamic callback handling. */
+export type AnyCallback =
+  | BeforeCreateCallback | AfterCreateCallback | CreateCallback
+  | BeforeCloneCallback | AfterCloneCallback | CloneCallback
+  | BeforeUpdateCallback | AfterUpdateCallback | UpdateCallback
+  | BatchUpdateCallback | AfterBatchUpdateCallback
+  | BeforeDeleteCallback | AfterDeleteCallback | DeleteCallback
+  | AfterReadCallback | ListQueryCallback;
 
 const meta_manager: Record<string, EntityMeta> = {};
 
@@ -285,10 +296,10 @@ export const validate_all_metas = (): void => {
 };
 
 /** Set callback function on entity meta. */
-const set_callback = (entity_meta: EntityMeta, cb_name: string, cb?: CallbackFunction): void => {
+const set_callback = (entity_meta: EntityMeta, cb_name: string, cb?: AnyCallback): void => {
   if (!cb) return;
   if (!(cb instanceof Function)) throw new Error(`callback [${cb_name}] for meta:${entity_meta.collection} isn't function`);
-  (entity_meta as unknown as Record<string, unknown>)[cb_name] = cb;
+  (entity_meta as unknown as Record<string, AnyCallback>)[cb_name] = cb;
 };
 
 /** Get entity meta by collection name. */
@@ -305,7 +316,7 @@ export class EntityMeta {
   primary_keys: string[];
   user_field?: string;
   ref_label?: string;
-  ref_filter?: Record<string, unknown>;
+  ref_filter?: Record<string, QueryValue>;
   creatable: boolean;
   readable: boolean;
   updatable: boolean;
@@ -364,7 +375,7 @@ export class EntityMeta {
     this.link_fields = this.fields.filter((f) => f.link);
     this.ref_by_metas = [];
 
-    CALLBACK_NAMES.forEach((cb) => set_callback(this, cb, (meta as unknown as Record<string, CallbackFunction>)[cb]));
+    CALLBACK_NAMES.forEach((cb) => set_callback(this, cb, (meta as unknown as Record<string, AnyCallback>)[cb]));
     if (meta_manager[meta.collection]) throw new Error(`Duplicate meta info:${this.collection}`);
     meta_manager[meta.collection] = this;
   }

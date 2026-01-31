@@ -8,9 +8,10 @@ import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_UNIQUE, NOT_FOUND,
 import { validate_required_fields, has_value } from "../core/validate.js";
 
 import { convert_type, convert_update_type, get_type } from "../core/type.js";
-import { get_entity_meta, EntityMeta, DELETE_MODE, FieldDefinition } from "../core/meta.js";
+import { get_entity_meta, EntityMeta, DELETE_MODE, FieldDefinition, FieldValue, QueryValue } from "../core/meta.js";
 import { unique, map_array_to_obj } from "../core/array.js";
 import { LOG_ENTITY, get_db, oid_query, oid_queries, log_debug, log_error, bulk_update, DB } from "./db.js";
+import type { LogValue } from "../core/bash.js";
 
 // Comparison operator mapping for search queries
 const COMPARISON_OPERATORS = [
@@ -24,7 +25,7 @@ export interface EntityResult {
   code: number;
   err?: string | string[];
   total?: number;
-  data?: unknown;
+  data?: Document | Document[];
 }
 
 // Numeric types where "0" should be treated as "no search value" (default empty state)
@@ -80,7 +81,8 @@ const apply_ref_filter = (query: Record<string, unknown>, ref_filter: Record<str
 };
 
 /** Log error with formatted message. */
-const log_err = (msg: string, data: Record<string, unknown> = {}): void => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const log_err = (msg: string, data: Record<string, any> = {}): void => {
   const parts = Object.entries(data)
     .filter(([, v]) => v !== undefined)
     .map(([k, v]) => `${k}:${JSON.stringify(v)}`);
@@ -288,7 +290,7 @@ export class Entity {
 
     // Preserve _user context for hooks to access (e.g., for setting ownership fields)
     if (param_obj._user) {
-      obj._user = param_obj._user;
+      obj._user = param_obj._user as FieldValue;
       // Auto-set user_field from session user (works even if field has create: false)
       const user_field = (this.meta as any).user_field;
       if (user_field && (param_obj._user as { sub?: string }).sub) {

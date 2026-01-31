@@ -30,7 +30,7 @@ export * as config from "./config/index.js";
 
 // Commonly used items at top level for convenience
 export { EntityMeta, init_router, validate_all_metas, register_schema_type } from "./meta/index.js";
-export type { MetaDefinition, FieldDefinition, CallbackFunction } from "./meta/index.js";
+export type { MetaDefinition, FieldDefinition, AnyCallback, FieldValue, QueryValue } from "./meta/index.js";
 // Hook context types for typed callbacks
 export type { HookResult, CreateHookContext, CloneHookContext, UpdateHookContext, BatchUpdateHookContext, DeleteHookContext, AfterReadHookContext, ListQueryHookContext, BeforeCreateCallback, AfterCreateCallback, CreateCallback, BeforeCloneCallback, AfterCloneCallback, CloneCallback, BeforeUpdateCallback, AfterUpdateCallback, UpdateCallback, BatchUpdateCallback, AfterBatchUpdateCallback, BeforeDeleteCallback, AfterDeleteCallback, DeleteCallback, AfterReadCallback, ListQueryCallback } from "./core/meta.js";
 export { Entity } from "./db/entity.js";

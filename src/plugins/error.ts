@@ -50,7 +50,7 @@ export const holaError = () =>
             set.status = status_map[code] ?? 500;
 
             // Return consistent error format
-            const response: Record<string, unknown> = {
+            const response: { code: string | number; err: string; fields?: string[] } = {
                 code: err.code ?? code,
                 err: err.message
             };
