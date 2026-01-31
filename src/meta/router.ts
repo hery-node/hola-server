@@ -136,9 +136,9 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         const params: ListQueryParams = {
           attr_names: (query_data.attr_names as string) || list_field_names,
           sort_by: (query_data.sort_by as string) || primary_key,
-          desc: has_value(query_data.desc) ? (query_data.desc as boolean | string) : true,
-          page: (query_data.page as number | string) || 1,
-          limit: (query_data.limit as number | string) || default_limit,
+          desc: (query_data.desc as string) || "true",
+          page: Number(query_data.page) || 1,
+          limit: Number(query_data.limit) || default_limit,
         };
 
         const result = await entity.list_entity(params, filter, query_data, "*");

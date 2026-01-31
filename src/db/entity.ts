@@ -36,9 +36,9 @@ const NUMERIC_TYPES = ["number", "int", "uint", "float", "ufloat", "decimal", "p
 export interface ListQueryParams {
   attr_names: string;
   sort_by: string;
-  desc: boolean | string;
-  page?: number | string | null;
-  limit?: number | string | null;
+  desc: string;
+  page: number;
+  limit: number;
   [key: string]: string | number | boolean | null | undefined;
 }
 
@@ -254,27 +254,13 @@ export class Entity {
   }
 
   async list_entity(query_params: ListQueryParams, query: Record<string, QueryValue>, param_obj: Record<string, QueryValue>, view: string): Promise<EntityResult> {
-    const missing = validate_required_fields(query_params, ["attr_names", "sort_by", "desc"]);
-    if (missing.length > 0) {
-      log_err("missing required fields", { fields: missing });
-      return { code: NO_PARAMS, err: missing };
-    }
-
     const { attr_names, page, limit, sort_by, desc } = query_params;
     const sorts = sort_by.split(",");
-    // Handle desc as boolean or comma-separated string
-    const descs = typeof desc === "boolean" ? [desc] : String(desc).split(",");
-    const sort: Sort = sorts.reduce((s, field, i) => ({ ...s, [field]: descs[i] === "false" || descs[i] === false ? 1 : -1 }), {});
+    const descs = desc.split(",");
+    const sort: Sort = sorts.reduce((s, field, i) => ({ ...s, [field]: descs[i] === "false" ? 1 : -1 }), {});
 
     const list_fields = this.filter_fields_by_view(this.meta.list_fields, view);
-    const { attrs, ref_fields, link_fields } = extract_field_info(
-      this.meta.fields_map,
-      attr_names,
-      list_fields.map((f) => f.name),
-    );
-
-    const page_int = parse_int(page, 1);
-    const page_limit = parse_int(limit, 10);
+    const { attrs, ref_fields, link_fields } = extract_field_info(this.meta.fields_map, attr_names, list_fields.map((f) => f.name));
 
     const search_query = await this.get_search_query(param_obj);
     if (search_query === null) {
@@ -284,7 +270,7 @@ export class Entity {
 
     const merged: Record<string, QueryValue> = { ...(query || {}), ...search_query } as Record<string, QueryValue>;
     const total = await this.count(merged);
-    const list = await this.find_page(merged, sort, page_int, page_limit, attrs);
+    const list = await this.find_page(merged, sort, page, limit, attrs);
     const with_links = await this.read_link_attrs(list, link_fields);
     const data = await this.convert_ref_attrs(with_links, ref_fields);
 

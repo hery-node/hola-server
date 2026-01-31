@@ -6,12 +6,26 @@
 import { get_type } from "./type.js";
 import { validate_meta_role } from "./role.js";
 import { ObjectId } from "mongodb";
+import type { Elysia } from "elysia";
+import type { JwtPayload } from "../plugins/auth.js";
 
 /** Field value types for entity data. */
 export type FieldValue = string | number | boolean | null | undefined | Date | FieldValue[] | { [key: string]: FieldValue };
 
 /** Query/filter value types (includes ObjectId for MongoDB queries). */
 export type QueryValue = string | number | boolean | null | undefined | Date | RegExp | ObjectId | QueryValue[] | { [key: string]: QueryValue };
+
+/** Auth context type for route handlers (user from derive plugin) */
+export interface AuthContext {
+  user: JwtPayload | null;
+  params: Record<string, string>;
+  query: Record<string, string>;
+  body: unknown;
+}
+
+/** Router type alias - use AuthContext for handler typing */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AuthRouter = Elysia<any>;
 
 export interface FieldDefinition {
   name: string;
@@ -64,7 +78,7 @@ export interface MetaDefinition {
   batch_update?: BatchUpdateCallback;
   after_batch_update?: AfterBatchUpdateCallback;
   delete?: DeleteCallback;
-  route?: <Router>(router: Router, meta: EntityMeta) => void;
+  route?: (router: AuthRouter, meta: EntityMeta) => void;
 }
 
 // Forward reference - Entity is defined in db/entity.ts
