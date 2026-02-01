@@ -57,7 +57,7 @@ export * as obj from "./core/obj.js";
 export * as random from "./core/random.js";
 export * as thread from "./core/thread.js";
 export * as validate from "./core/validate.js";
-export { encrypt_pwd, md5 } from "./core/encrypt.js";
+export { encrypt_pwd, md5, encrypt_secret, decrypt_secret } from "./core/encrypt.js";
 
 // HTTP utilities
 export * as code from "./http/code.js";

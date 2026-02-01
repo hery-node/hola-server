@@ -185,10 +185,64 @@ register_type({
 | `string`   | Trim + escape HTML (XSS protection) | `v-text-field` | Short text (≤255 chars) |
 | `lstr`     | Passthrough string                  | `v-textarea`   | Long string             |
 | `text`     | Passthrough string                  | Rich editor    | Long formatted text     |
-| `password` | Encrypt with hash                   | Password input | Secure credentials      |
+| `password` | One-way MD5 hash (irreversible)     | Password input | User login passwords    |
+| `secret`   | AES-256-CBC encryption (reversible) | Password input | API tokens, credentials |
+| `secure`   | Alias for `secret`                  | Password input | API tokens, credentials |
 | `file`     | Passthrough                         | File upload    | File attachments        |
 | `date`     | Passthrough string                  | Date picker    | Date only               |
 | `enum`     | Passthrough string                  | Autocomplete   | String options          |
+
+### Security Types (Encryption)
+
+The framework provides two types for handling sensitive data with different encryption approaches:
+
+#### `password` - One-Way Hash
+
+Use for data that should **never be retrieved in plain text** (e.g., user login passwords).
+
+- **Algorithm**: MD5 with salt (one-way hash)
+- **Cannot be decrypted** - only compared via re-hashing
+- **Use case**: User authentication passwords
+
+```typescript
+// Entity definition
+{ name: "password", type: "password", required: true }
+
+// Verification (compare hash)
+import { encrypt_pwd } from "hola-server";
+const inputHash = encrypt_pwd(userInput);
+const isValid = inputHash === storedHash;
+```
+
+#### `secret` / `secure` - Reversible Encryption
+
+Use for data that **needs to be retrieved later** (e.g., API tokens, third-party credentials).
+
+- **Algorithm**: AES-256-CBC with IV
+- **Can be decrypted** using `decrypt_secret()`
+- **Use case**: API keys, OAuth tokens, integration credentials
+
+```typescript
+// Entity definition
+{ name: "github_token", type: "secret", list: false }
+
+// Automatic encryption on save (handled by type system)
+// The token is encrypted before storing in the database
+
+// Decryption when needed (e.g., making API calls)
+import { decrypt_secret } from "hola-server";
+
+const project = await entity.read(id);
+const plainToken = decrypt_secret(project.github_token);
+// Use plainToken for API authentication
+```
+
+**Security Best Practices:**
+
+- Always use `list: false` for secret fields (never show in table lists)
+- The `secure` attribute on field metadata hides the field from client entirely
+- Encrypted values include the IV, so each encryption produces different output
+- Encryption key is derived from `settings.encrypt.key` using SHA-256
 
 ### Numeric Types
 

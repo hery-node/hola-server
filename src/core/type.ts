@@ -4,7 +4,7 @@
  */
 
 import { has_value, is_undefined } from "./validate.js";
-import { encrypt_pwd } from "./encrypt.js";
+import { encrypt_pwd, encrypt_secret } from "./encrypt.js";
 import type { FieldValue } from "./meta.js";
 
 export interface TypeResult<T = unknown> {
@@ -96,7 +96,9 @@ export const get_type = (name: string): TypeDefinition => {
 register_type({ name: "obj", convert: ok });
 register_type({ name: "string", convert: (value) => ok(value ? escape_html((value + "").trim()) : "") });
 register_type({ name: "password", convert: (value) => ok(encrypt_pwd(String(value))) });
-register_type({ name: "secure", convert: (value) => ok(value + "") });
+// Secret type: AES-256 encrypted, can be decrypted later with decrypt_secret()
+register_type({ name: "secret", convert: (value) => ok(encrypt_secret(String(value))) });
+register_type({ name: "secure", convert: (value) => ok(encrypt_secret(String(value))) }); // alias for secret
 register_type({ name: "file", convert: ok });
 
 // Passthrough string types
