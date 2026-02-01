@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, beforeAll, afterAll } from 'bun:test';
 import { strictEqual, deepStrictEqual, ok } from 'assert';
 import { Entity } from '../../src/db/entity.js';
-import { EntityMeta } from '../../src/core/meta.js';
+import { EntityMeta, filter_fields_by_role } from '../../src/core/meta.js';
 import { get_db, init_db, oid } from '../../src/db/db.js';
 import { SUCCESS, ERROR, NOT_FOUND, NO_PARAMS, INVALID_PARAMS, DUPLICATE_UNIQUE, REF_NOT_FOUND, HAS_REF } from '../../src/http/code.js';
 
@@ -553,15 +553,15 @@ describe("Entity Class Tests", function () {
     // 2.6 Utility Methods
     // ==========================================================================
     describe("2.6 Utilities", function () {
-        it("FFV-001: filter_fields_by_view with wildcard", function () {
-            const fields = [{ name: "a", view: "*" }, { name: "b", view: ["v1"] }];
-            const filtered = entity.filter_fields_by_view(fields, "*");
+        it("FFR-001: filter_fields_by_role with wildcard", function () {
+            const fields = [{ name: "a", role: "*" }, { name: "b", role: ["admin"] }];
+            const filtered = filter_fields_by_role(fields, "*");
             strictEqual(filtered.length, 2);
         });
 
-        it("FFV-002: filter_fields_by_view with specific view", function () {
-            const fields = [{ name: "a", view: "*" }, { name: "b", view: ["v1"] }, { name: "c", view: ["v2"] }];
-            const filtered = entity.filter_fields_by_view(fields, "v1");
+        it("FFR-002: filter_fields_by_role with specific role", function () {
+            const fields = [{ name: "a", role: "*" }, { name: "b", role: ["admin"] }, { name: "c", role: ["user"] }];
+            const filtered = filter_fields_by_role(fields, "admin");
             strictEqual(filtered.length, 2);
         });
 
