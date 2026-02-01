@@ -101,8 +101,8 @@ Each field definition supports the following attributes:
 - `clone` - Include in clone (default: true)
 - `sys` - System field (server-side only)
 - `secure` - Hidden from client entirely (e.g., password hash)
-- `group` - User group sharing control (field name containing group ID)
-- `view` - Form view identifier ("\*" for all views, or specific view name)
+- `view` - Form view/tab identifier for UI organization
+- `role` - Role-based field visibility (role name, array of roles, or "*" for all roles)
 
 **Link Field Attributes (from `LINK_FIELD_ATTRS`):**
 
@@ -493,9 +493,78 @@ export const router = init_router({
 });
 ```
 
-### Use Case 5: Multiple Form Views
+### Use Case 5: Role-Based Field Visibility
 
-Organize complex entities into different form views.
+Control which fields are visible based on user's role.
+
+```typescript
+import { init_router } from "hola-server";
+
+export const router = init_router({
+  collection: "employee",
+  primary_keys: ["email"],
+  ref_label: "name",
+
+  creatable: true,
+  readable: true,
+  updatable: true,
+
+  fields: [
+    // Visible to all roles (no role restriction)
+    {
+      name: "name",
+      type: "string",
+      required: true,
+    },
+    {
+      name: "email",
+      type: "email",
+      required: true,
+    },
+
+    // Visible only to admin role
+    {
+      name: "salary",
+      type: "currency",
+      role: "admin",
+    },
+    {
+      name: "ssn",
+      type: "string",
+      role: "admin",
+    },
+
+    // Visible to multiple roles
+    {
+      name: "performance_rating",
+      type: "int",
+      role: ["admin", "manager"],
+    },
+
+    // Explicitly visible to all (same as no role set)
+    {
+      name: "department",
+      type: "string",
+      role: "*",
+    },
+  ],
+});
+```
+
+**How it works:**
+
+| Field Definition | Visibility |
+|------------------|------------|
+| No `role` set | Visible to **all** roles |
+| `role: "admin"` | Visible only to `admin` role |
+| `role: ["admin", "manager"]` | Visible to `admin` or `manager` |
+| `role: "*"` | Explicitly visible to all roles |
+
+> **Note**: The user's role comes from `user.role` in the JWT token. The router passes this to `filter_fields_by_role()` which filters fields accordingly.
+
+### Use Case 5b: Form View Organization
+
+Organize fields into different form tabs/views for UI purposes.
 
 ```typescript
 import { init_router } from "hola-server";
@@ -510,48 +579,17 @@ export const router = init_router({
   updatable: true,
 
   fields: [
-    // Basic view
-    {
-      name: "sku",
-      type: "string",
-      required: true,
-      view: "basic",
-    },
-    {
-      name: "name",
-      type: "string",
-      required: true,
-      view: "basic",
-    },
-
-    // Pricing view
-    {
-      name: "price",
-      type: "decimal",
-      view: "pricing",
-    },
-    {
-      name: "cost",
-      type: "decimal",
-      view: "pricing",
-    },
-
-    // Inventory view
-    {
-      name: "stock",
-      type: "int",
-      view: "inventory",
-    },
-
-    // All views
-    {
-      name: "category",
-      type: "product_category",
-      view: "*",
-    },
+    { name: "sku", type: "string", required: true, view: "basic" },
+    { name: "name", type: "string", required: true, view: "basic" },
+    { name: "price", type: "decimal", view: "pricing" },
+    { name: "cost", type: "decimal", view: "pricing" },
+    { name: "stock", type: "int", view: "inventory" },
+    { name: "category", type: "product_category", view: "*" }, // all views
   ],
 });
 ```
+
+> **Note**: The `view` attribute is for client-side UI organization. The `role` attribute is for server-side permission filtering.
 
 ### Use Case 6: Lifecycle Callbacks
 
@@ -909,8 +947,8 @@ Each field definition supports the following attributes:
 - `clone` - Include in clone (default: true)
 - `sys` - System field (server-side only)
 - `secure` - Hidden from client entirely (e.g., password hash)
-- `group` - User group sharing control (field name containing group ID)
-- `view` - Form view identifier ("\*" for all views, or specific view name)
+- `view` - Form view/tab identifier for UI organization
+- `role` - Role-based field visibility (role name, array of roles, or "*" for all roles)
 
 **Link Field Attributes (from `LINK_FIELD_ATTRS`):**
 
@@ -1304,16 +1342,16 @@ module.exports = init_router({
 });
 ```
 
-### Use Case 5: Multiple Form Views
+### Use Case 5: Role-Based Field Visibility
 
-Organize complex entities into different form views.
+Control which fields are visible based on user's role.
 
 ```javascript
 import { init_router } from "hola-server";
 
 module.exports = init_router({
-  collection: "product",
-  primary_keys: ["sku"],
+  collection: "employee",
+  primary_keys: ["email"],
   ref_label: "name",
 
   creatable: true,
@@ -1321,48 +1359,51 @@ module.exports = init_router({
   updatable: true,
 
   fields: [
-    // Basic view
-    {
-      name: "sku",
-      type: "string",
-      required: true,
-      view: "basic",
-    },
-    {
-      name: "name",
-      type: "string",
-      required: true,
-      view: "basic",
-    },
+    // Visible to all roles (no role restriction)
+    { name: "name", type: "string", required: true },
+    { name: "email", type: "email", required: true },
 
-    // Pricing view
-    {
-      name: "price",
-      type: "decimal",
-      view: "pricing",
-    },
-    {
-      name: "cost",
-      type: "decimal",
-      view: "pricing",
-    },
+    // Visible only to admin role
+    { name: "salary", type: "currency", role: "admin" },
+    { name: "ssn", type: "string", role: "admin" },
 
-    // Inventory view
-    {
-      name: "stock",
-      type: "int",
-      view: "inventory",
-    },
+    // Visible to multiple roles  
+    { name: "performance_rating", type: "int", role: ["admin", "manager"] },
 
-    // All views
-    {
-      name: "category",
-      type: "product_category",
-      view: "*",
-    },
+    // Explicitly visible to all (same as no role set)
+    { name: "department", type: "string", role: "*" },
   ],
 });
 ```
+
+**How it works:**
+
+| Field Definition | Visibility |
+|------------------|------------|
+| No `role` set | Visible to **all** roles |
+| `role: "admin"` | Visible only to `admin` role |
+| `role: ["admin", "manager"]` | Visible to `admin` or `manager` |
+| `role: "*"` | Explicitly visible to all roles |
+
+> **Note**: The user's role comes from `user.role` in the JWT token. The router passes this to `filter_fields_by_role()` which filters fields accordingly.
+
+### Use Case 5b: Form View Organization
+
+Organize fields into different form tabs/views for UI purposes.
+
+```javascript
+module.exports = init_router({
+  collection: "product",
+  fields: [
+    { name: "sku", type: "string", view: "basic" },
+    { name: "name", type: "string", view: "basic" },
+    { name: "price", type: "decimal", view: "pricing" },
+    { name: "stock", type: "int", view: "inventory" },
+  ],
+});
+```
+
+> **Note**: The `view` attribute is for client-side UI organization. The `role` attribute is for server-side permission filtering.
 
 ### Use Case 6: Lifecycle Callbacks
 

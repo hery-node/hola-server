@@ -4,7 +4,7 @@
  */
 
 import { Elysia } from "elysia";
-import { EntityMeta, MetaDefinition, FieldDefinition, QueryValue, FieldValue } from "../core/meta.js";
+import { EntityMeta, MetaDefinition, QueryValue, FieldValue, filter_fields_by_role } from "../core/meta.js";
 import { meta_to_schema } from "./schema.js";
 import { Entity, ListQueryParams } from "../db/entity.js";
 import { NotFoundError, NoRightsError } from "../errors/index.js";
@@ -24,48 +24,63 @@ interface RouterContext {
 const check_read_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
   if (!meta.readable) throw new NoRightsError("entity not readable");
   const settings = get_settings();
-  if (settings.server.check_user && !user) throw new NoRightsError("no read rights");
+  if (settings.server.check_user && !user) throw new NoRightsError("no user found");
+  // Check role-based permission if roles are defined
+  if (meta.roles && user) {
+    const mode = meta.get_role_mode(user.role);
+    if (!mode.includes("r")) throw new NoRightsError("role has no read rights");
+  }
 };
 
 /** Check if user has create rights for meta. */
 const check_create_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
   if (!meta.creatable) throw new NoRightsError("entity not creatable");
   const settings = get_settings();
-  if (settings.server.check_user && !user) throw new NoRightsError("no create rights");
+  if (settings.server.check_user && !user) throw new NoRightsError("no user found");
+  // Check role-based permission if roles are defined
+  if (meta.roles && user) {
+    const mode = meta.get_role_mode(user.role);
+    if (!mode.includes("c")) throw new NoRightsError("role has no create rights");
+  }
 };
 
 /** Check if user has update rights for meta. */
 const check_update_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
   if (!meta.updatable) throw new NoRightsError("entity not updatable");
   const settings = get_settings();
-  if (settings.server.check_user && !user) throw new NoRightsError("no update rights");
+  if (settings.server.check_user && !user) throw new NoRightsError("no user found");
+  // Check role-based permission if roles are defined
+  if (meta.roles && user) {
+    const mode = meta.get_role_mode(user.role);
+    if (!mode.includes("u")) throw new NoRightsError("role has no update rights");
+  }
 };
 
 /** Check if user has delete rights for meta. */
 const check_delete_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
   if (!meta.deleteable) throw new NoRightsError("entity not deleteable");
   const settings = get_settings();
-  if (settings.server.check_user && !user) throw new NoRightsError("no delete rights");
+  if (settings.server.check_user && !user) throw new NoRightsError("no user found");
+  // Check role-based permission if roles are defined
+  if (meta.roles && user) {
+    const mode = meta.get_role_mode(user.role);
+    if (!mode.includes("d")) throw new NoRightsError("role has no delete rights");
+  }
 };
 
 /** Check if user has clone rights for meta. */
 const check_clone_rights = (user: JwtPayload | null | undefined, meta: EntityMeta): void => {
   if (!meta.cloneable) throw new NoRightsError("entity not cloneable");
   const settings = get_settings();
-  if (settings.server.check_user && !user) throw new NoRightsError("no clone rights");
+  if (settings.server.check_user && !user) throw new NoRightsError("no user found");
+  // Check role-based permission if roles are defined (clone requires create permission)
+  if (meta.roles && user) {
+    const mode = meta.get_role_mode(user.role);
+    if (!mode.includes("o")) throw new NoRightsError("role has no clone rights");
+  }
 };
 
-/** Filter fields by view permission. */
-const filter_fields_by_view = (meta: EntityMeta, view: string | null): FieldDefinition[] => {
-  if (!view || view === "*") return meta.client_fields;
-  return meta.client_fields.filter((field) => {
-    const field_view = field.view;
-    if (Array.isArray(field_view)) {
-      return field_view.includes(view) || field_view.includes("*");
-    }
-    return view.includes(field_view || "") || field_view === "*";
-  });
-};
+
 
 /**
  * Create RESTful router for an entity.
@@ -105,7 +120,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
           filter[meta.user_field] = user.sub;
         }
 
-        const result = await entity.list_entity(body_data, filter, body_data as Record<string, QueryValue>, "*");
+        const user_role = user?.role || "*";
+        const result = await entity.list_entity(body_data, filter, body_data as Record<string, QueryValue>, user_role);
         return { ...result };
       },
       { body: schema.query },
@@ -141,7 +157,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
           limit: Number(query_data.limit) || default_limit,
         };
 
-        const result = await entity.list_entity(params, filter, query_data, "*");
+        const user_role = user?.role || "*";
+        const result = await entity.list_entity(params, filter, query_data, user_role);
         return { ...result };
       },
     );
@@ -154,7 +171,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
       // Get mode based on user's role
       const role_mode = meta.get_role_mode(user?.role);
       // Filter to fields visible in at least one UI context
-      const visible_fields = filter_fields_by_view(meta, "*").filter((f) => f.create !== false || f.update !== false || f.search !== false || f.list !== false);
+      const user_role = user?.role || "*";
+      const visible_fields = filter_fields_by_role(meta.client_fields, user_role).filter((f) => f.create !== false || f.update !== false || f.search !== false || f.list !== false);
       return { code: SUCCESS, data: { mode: role_mode, fields: visible_fields } };
     });
   }
@@ -180,8 +198,9 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
       async ({ user, params }: RouterContext) => {
         check_read_rights(user, meta);
 
+        const user_role = user?.role || "*";
         const list_field_names = meta.list_fields.map((f) => f.name).join(",");
-        const result = await entity.read_entity(params.id, list_field_names, "*");
+        const result = await entity.read_entity(params.id, list_field_names, user_role);
         if (!result.data) throw new NotFoundError();
         return { code: SUCCESS, data: result.data };
       },
@@ -196,8 +215,9 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
       async ({ user, params, query }: RouterContext) => {
         check_read_rights(user, meta);
 
+        const user_role = user?.role || "*";
         const attr_names = (query.fields as string) || "*";
-        const result = await entity.read_property(params.id, attr_names, "*");
+        const result = await entity.read_property(params.id, attr_names, user_role);
         if (!result.data) throw new NotFoundError();
         return { code: SUCCESS, data: result.data };
       },
@@ -229,7 +249,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
       // Pass user context for hooks to access
       data._user = user;
 
-      const result = await entity.create_entity(data as Record<string, FieldValue>, "*");
+      const user_role = user?.role || "*";
+      const result = await entity.create_entity(data as Record<string, FieldValue>, user_role);
       return result;
     });
   }
@@ -242,7 +263,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         check_update_rights(user, meta);
 
         const data = body as Record<string, FieldValue>;
-        const result = await entity.update_entity(params.id, data, "*");
+        const user_role = user?.role || "*";
+        const result = await entity.update_entity(params.id, data, user_role);
         return result;
       },
       { params: schema.id_param, body: schema.update },
@@ -279,7 +301,8 @@ export const init_router = (definition: MetaDefinition): Elysia<any> => {
         // Pass user context for hooks to access
         data._user = user;
 
-        const result = await entity.clone_entity(params.id, data as Record<string, FieldValue>, "*");
+        const user_role = user?.role || "*";
+        const result = await entity.clone_entity(params.id, data as Record<string, FieldValue>, user_role);
         return result;
       },
       { params: schema.id_param },

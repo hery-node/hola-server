@@ -42,8 +42,8 @@ export interface FieldDefinition {
   clone?: boolean;
   sys?: boolean;
   secure?: boolean;
-  group?: string;
   view?: string;
+  role?: string | string[];
 }
 
 export interface MetaDefinition {
@@ -172,7 +172,7 @@ export type AnyCallback =
 
 const meta_manager: Record<string, EntityMeta> = {};
 
-const FIELD_ATTRS = ["name", "type", "required", "default", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "group", "view"];
+const FIELD_ATTRS = ["name", "type", "required", "default", "ref", "link", "delete", "create", "list", "search", "update", "clone", "sys", "secure", "view", "role"];
 const LINK_FIELD_ATTRS = ["name", "link", "list"];
 const CALLBACK_NAMES = ["after_read", "list_query", "before_create", "before_clone", "before_update", "before_delete", "after_create", "after_clone", "after_update", "after_delete", "create", "clone", "update", "batch_update", "after_batch_update", "delete"];
 const OPERATION_FLAGS = ["creatable", "readable", "updatable", "deleteable", "cloneable", "importable", "exportable"] as const;
@@ -180,6 +180,17 @@ const MODE_MAP: Record<string, string> = { creatable: "c", readable: "rs", updat
 
 const META_ATTRS = ["collection", "roles", "primary_keys", "fields", ...OPERATION_FLAGS, ...CALLBACK_NAMES, "ref_label", "ref_filter", "user_field", "route"];
 export const DELETE_MODE = Object.freeze({ all: ["keep", "cascade"] as const, keep: "keep" as const, cascade: "cascade" as const });
+
+/** Filter fields by user role permission. */
+export const filter_fields_by_role = (fields: FieldDefinition[], user_role: string | null): FieldDefinition[] => {
+  if (!user_role || user_role === "*") return fields;
+  return fields.filter((field) => {
+    const fr = field.role;
+    if (Array.isArray(fr)) return fr.includes("*") || fr.some((r) => user_role.includes(r));
+    if (typeof fr === "string") return fr === "*" || user_role.includes(fr);
+    return true; // No role restriction = visible to all
+  });
+};
 
 /** Convert fields array to name-keyed map. */
 const to_fields_map = (fields: FieldDefinition[]): Record<string, FieldDefinition> => {
@@ -269,9 +280,6 @@ const validate_field = (meta: MetaDefinition, field: FieldDefinition): void => {
     if (invalid_keys.length) throw meta_error(meta.collection, `Link field only supports ${LINK_FIELD_ATTRS.join(",")}. Unsupported:${invalid_keys.join(",")}`);
   }
 
-  const editable = field.create !== false || field.update !== false;
-  if (field.view && !editable) throw meta_error(meta.collection, `view only for editable fields`);
-  if (!field.view && editable) field.view = "0";
 
   const invalid_attrs = Object.keys(field).filter((k) => !FIELD_ATTRS.includes(k));
   if (invalid_attrs.length) throw meta_error(meta.collection, `Unsupported attribute [${invalid_attrs.join(",")}] for field:${JSON.stringify(field)}`);

@@ -8,7 +8,7 @@ import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_UNIQUE, NOT_FOUND,
 import { validate_required_fields, has_value } from "../core/validate.js";
 
 import { convert_type, convert_update_type, get_type } from "../core/type.js";
-import { get_entity_meta, EntityMeta, MetaDefinition, DELETE_MODE, FieldDefinition, FieldValue, QueryValue } from "../core/meta.js";
+import { get_entity_meta, EntityMeta, MetaDefinition, DELETE_MODE, FieldDefinition, FieldValue, QueryValue, filter_fields_by_role } from "../core/meta.js";
 import { unique, map_array_to_obj } from "../core/array.js";
 import { LOG_ENTITY, get_db, oid_query, oid_queries, log_debug, log_error, bulk_update, DB } from "./db.js";
 
@@ -253,13 +253,13 @@ export class Entity {
     return {};
   }
 
-  async list_entity(query_params: ListQueryParams, query: Record<string, QueryValue>, param_obj: Record<string, QueryValue>, view: string): Promise<EntityResult> {
+  async list_entity(query_params: ListQueryParams, query: Record<string, QueryValue>, param_obj: Record<string, QueryValue>, role: string): Promise<EntityResult> {
     const { attr_names, page, limit, sort_by, desc } = query_params;
     const sorts = sort_by.split(",");
     const descs = desc.split(",");
     const sort: Sort = sorts.reduce((s, field, i) => ({ ...s, [field]: descs[i] === "false" ? 1 : -1 }), {});
 
-    const list_fields = this.filter_fields_by_view(this.meta.list_fields, view);
+    const list_fields = filter_fields_by_role(this.meta.list_fields, role);
     const { attrs, ref_fields, link_fields } = extract_field_info(this.meta.fields_map, attr_names, list_fields.map((f) => f.name));
 
     const search_query = await this.get_search_query(param_obj);
@@ -278,11 +278,11 @@ export class Entity {
     return { code: SUCCESS, total, data };
   }
 
-  private async _save_entity(param_obj: Record<string, FieldValue>, view: string, options: { fields_key: keyof EntityMeta; before_hook: keyof MetaDefinition; main_hook: keyof MetaDefinition; after_hook: keyof MetaDefinition; id_for_hook?: string }): Promise<EntityResult> {
+  private async _save_entity(param_obj: Record<string, FieldValue>, role: string, options: { fields_key: keyof EntityMeta; before_hook: keyof MetaDefinition; main_hook: keyof MetaDefinition; after_hook: keyof MetaDefinition; id_for_hook?: string }): Promise<EntityResult> {
     const { fields_key, before_hook, main_hook, after_hook, id_for_hook } = options;
     const def = this.meta as unknown as MetaDefinition;
 
-    const fields = this.filter_fields_by_view(this.meta[fields_key] as FieldDefinition[], view);
+    const fields = filter_fields_by_role(this.meta[fields_key] as FieldDefinition[], role);
     const { obj, error_field_names } = convert_update_type(param_obj, fields);
     if (error_field_names.length > 0) {
       log_err("invalid fields", { fields: error_field_names });
@@ -338,16 +338,16 @@ export class Entity {
     return { code: SUCCESS };
   }
 
-  async create_entity(param_obj: Record<string, FieldValue>, view: string): Promise<EntityResult> {
-    return this._save_entity(param_obj, view, { fields_key: "create_fields", before_hook: "before_create", main_hook: "create", after_hook: "after_create" });
+  async create_entity(param_obj: Record<string, FieldValue>, role: string): Promise<EntityResult> {
+    return this._save_entity(param_obj, role, { fields_key: "create_fields", before_hook: "before_create", main_hook: "create", after_hook: "after_create" });
   }
 
-  async clone_entity(_id: string, param_obj: Record<string, FieldValue>, view: string): Promise<EntityResult> {
-    return this._save_entity(param_obj, view, { fields_key: "clone_fields", before_hook: "before_clone", main_hook: "clone", after_hook: "after_clone", id_for_hook: _id });
+  async clone_entity(_id: string, param_obj: Record<string, FieldValue>, role: string): Promise<EntityResult> {
+    return this._save_entity(param_obj, role, { fields_key: "clone_fields", before_hook: "before_clone", main_hook: "clone", after_hook: "after_clone", id_for_hook: _id });
   }
 
-  async update_entity(_id: string | null, param_obj: Record<string, FieldValue>, view: string): Promise<EntityResult> {
-    const fields = this.filter_fields_by_view(this.meta.update_fields, view);
+  async update_entity(_id: string | null, param_obj: Record<string, FieldValue>, role: string): Promise<EntityResult> {
+    const fields = filter_fields_by_role(this.meta.update_fields, role);
     const { obj, error_field_names } = convert_update_type(param_obj, fields);
     if (error_field_names.length > 0) {
       log_err("update_entity invalid fields", { fields: error_field_names });
@@ -385,8 +385,8 @@ export class Entity {
     return { code: SUCCESS };
   }
 
-  async batch_update_entity(_ids: string[], param_obj: Record<string, FieldValue>, view: string): Promise<EntityResult> {
-    const fields = this.filter_fields_by_view(this.meta.update_fields, view);
+  async batch_update_entity(_ids: string[], param_obj: Record<string, FieldValue>, role: string): Promise<EntityResult> {
+    const fields = filter_fields_by_role(this.meta.update_fields, role);
     const { obj, error_field_names } = convert_update_type(param_obj, fields);
     if (error_field_names.length > 0) {
       log_err("batch_update invalid fields", { fields: error_field_names });
@@ -461,24 +461,16 @@ export class Entity {
     return { code: SUCCESS };
   }
 
-  filter_fields_by_view(fields: FieldDefinition[], view: string): FieldDefinition[] {
-    if (!view || view === "*") return fields;
-    return fields.filter((field) => {
-      const fv = field.view;
-      if (Array.isArray(fv)) return fv.includes("*") || fv.some((v) => view.includes(v));
-      if (typeof fv === "string") return fv === "*" || view.includes(fv);
-      return true;
-    });
-  }
 
-  async read_property(_id: string, attr_names: string, view: string): Promise<EntityResult> {
+
+  async read_property(_id: string, attr_names: string, role: string): Promise<EntityResult> {
     const query = oid_query(_id);
     if (!query) {
       log_err("read_property invalid id", { _id });
       return { code: INVALID_PARAMS, err: ["_id"] };
     }
 
-    const property_fields = this.filter_fields_by_view(this.meta.property_fields, view);
+    const property_fields = filter_fields_by_role(this.meta.property_fields, role);
     const field_names = property_fields.map((f) => f.name);
     const attrs: Record<string, number> = { _id: 1 };
     attr_names.split(",").forEach((attr) => {
@@ -493,7 +485,7 @@ export class Entity {
     return { code: NOT_FOUND, err: ["_id"] };
   }
 
-  async read_entity(_id: string, attr_names: string, view: string): Promise<EntityResult> {
+  async read_entity(_id: string, attr_names: string, role: string): Promise<EntityResult> {
     const query = oid_query(_id);
     if (!query) {
       log_err("read_entity invalid id", { _id });
@@ -505,7 +497,7 @@ export class Entity {
       return { code: INVALID_PARAMS, err: ["attr_names"] };
     }
 
-    const property_fields = this.filter_fields_by_view(this.meta.property_fields, view);
+    const property_fields = filter_fields_by_role(this.meta.property_fields, role);
     const { attrs, ref_fields, link_fields } = extract_field_info(
       this.meta.fields_map,
       attr_names,
