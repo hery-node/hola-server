@@ -194,7 +194,38 @@ After construction, the `EntityMeta` instance provides these properties:
 - `roles` - Role definitions
 - `user_field` - User ownership field
 - `ref_label` - Reference label field
-- `ref_filter` - Reference filter object
+- `ref_filter` - Context-aware filter for reference queries (see below)
+
+### Reference Filtering with ref_filter
+
+The `ref_filter` property allows different filters to be applied when fetching reference labels, depending on which entity is requesting them.
+
+**Format:**
+```typescript
+ref_filter: {
+  "entity_name": { field: "value" },  // Filter when requested by specific entity
+  "*": { field: "value" }             // Default filter for all other entities
+}
+```
+
+**Example:**
+```typescript
+{
+  collection: "product",
+  ref_label: "name",
+  ref_filter: {
+    "order": { status: "active" },      // Orders only see active products
+    "inventory": { in_stock: true },    // Inventory only sees in-stock products
+    "*": {}                             // Other entities see all products
+  }
+}
+```
+
+**How it works:**
+1. Client calls `GET /ref?ref_by_entity=order` to get product reference labels
+2. Server looks up `ref_filter["order"]` → `{ status: "active" }`
+3. Query is filtered to only return active products
+4. Falls back to `ref_filter["*"]` if entity-specific filter not found
 
 **Operation Flags:**
 
@@ -1040,7 +1071,7 @@ After construction, the `EntityMeta` instance provides these properties:
 - `roles` - Role definitions
 - `user_field` - User ownership field
 - `ref_label` - Reference label field
-- `ref_filter` - Reference filter object
+- `ref_filter` - Context-aware filter for reference queries (see "Reference Filtering with ref_filter" section above)
 
 **Operation Flags:**
 
