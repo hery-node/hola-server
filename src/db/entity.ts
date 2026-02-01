@@ -8,7 +8,7 @@ import { SUCCESS, ERROR, NO_PARAMS, INVALID_PARAMS, DUPLICATE_UNIQUE, NOT_FOUND,
 import { validate_required_fields, has_value } from "../core/validate.js";
 
 import { convert_type, convert_update_type, get_type } from "../core/type.js";
-import { get_entity_meta, EntityMeta, DELETE_MODE, FieldDefinition, FieldValue, QueryValue } from "../core/meta.js";
+import { get_entity_meta, EntityMeta, MetaDefinition, DELETE_MODE, FieldDefinition, FieldValue, QueryValue } from "../core/meta.js";
 import { unique, map_array_to_obj } from "../core/array.js";
 import { LOG_ENTITY, get_db, oid_query, oid_queries, log_debug, log_error, bulk_update, DB } from "./db.js";
 
@@ -278,10 +278,11 @@ export class Entity {
     return { code: SUCCESS, total, data };
   }
 
-  private async _save_entity(param_obj: Record<string, FieldValue>, view: string, options: { fields_key: string; before_hook: string; main_hook: string; after_hook: string; id_for_hook?: string }): Promise<EntityResult> {
+  private async _save_entity(param_obj: Record<string, FieldValue>, view: string, options: { fields_key: keyof EntityMeta; before_hook: keyof MetaDefinition; main_hook: keyof MetaDefinition; after_hook: keyof MetaDefinition; id_for_hook?: string }): Promise<EntityResult> {
     const { fields_key, before_hook, main_hook, after_hook, id_for_hook } = options;
+    const def = this.meta as unknown as MetaDefinition;
 
-    const fields = this.filter_fields_by_view((this.meta as unknown as Record<string, FieldDefinition[]>)[fields_key], view);
+    const fields = this.filter_fields_by_view(this.meta[fields_key] as FieldDefinition[], view);
     const { obj, error_field_names } = convert_update_type(param_obj, fields);
     if (error_field_names.length > 0) {
       log_err("invalid fields", { fields: error_field_names });
@@ -292,15 +293,15 @@ export class Entity {
     if (param_obj._user) {
       obj._user = param_obj._user as FieldValue;
       // Auto-set user_field from session user (works even if field has create: false)
-      const user_field = (this.meta as any).user_field;
-      if (user_field && (param_obj._user as { sub?: string }).sub) {
-        obj[user_field] = (param_obj._user as { sub: string }).sub;
+      if (this.meta.user_field && (param_obj._user as { sub?: string }).sub) {
+        obj[this.meta.user_field] = (param_obj._user as { sub: string }).sub;
       }
     }
 
     // Build hook context based on whether we have an id (clone) or not (create)
     const hookCtx = id_for_hook ? { id: id_for_hook, entity: this, data: obj } : { entity: this, data: obj };
-    const before_err = await run_hook((this.meta as unknown as Record<string, unknown>)[before_hook] as any, before_hook, hookCtx);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const before_err = await run_hook(def[before_hook] as any, before_hook as string, hookCtx);
     if (before_err) return before_err;
 
     const missing = validate_required_fields(obj, this.meta.required_field_names);
@@ -316,8 +317,9 @@ export class Entity {
     const ref_err = await validate_refs(this, obj);
     if (ref_err) return ref_err;
 
-    if ((this.meta as unknown as Record<string, unknown>)[main_hook]) {
-      const main_err = await run_hook((this.meta as unknown as Record<string, unknown>)[main_hook] as any, main_hook, hookCtx);
+    if (def[main_hook]) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const main_err = await run_hook(def[main_hook] as any, main_hook as string, hookCtx);
       if (main_err) return main_err;
     } else {
       // Clean up _user context before saving to DB
@@ -329,7 +331,8 @@ export class Entity {
       }
     }
 
-    const after_err = await run_hook((this.meta as unknown as Record<string, unknown>)[after_hook] as any, after_hook, hookCtx);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const after_err = await run_hook(def[after_hook] as any, after_hook as string, hookCtx);
     if (after_err) return after_err;
 
     return { code: SUCCESS };

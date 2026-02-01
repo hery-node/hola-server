@@ -106,7 +106,7 @@ describe('Entity Query', function () {
         it('search user by name', async function () {
             await init_db();
 
-            const query = { "attr_names": "name,age,depart,people", page: "1", limit: "10", sort_by: "name", desc: "true" };
+            const query = { "attr_names": "name,age,depart,people", page: 1, limit: 10, sort_by: "name", desc: "true" };
             const params = { age: "20" };
 
             const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -141,7 +141,7 @@ describe('Entity Query', function () {
         it('search user test invisible attr', async function () {
             await init_db();
 
-            const query = { "attr_names": "name,age,pwd", page: "1", limit: "10", sort_by: "name", desc: "true" };
+            const query = { "attr_names": "name,age,pwd", page: 1, limit: 10, sort_by: "name", desc: "true" };
             const params = { age: "20" };
 
             const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -158,7 +158,7 @@ describe('Entity Query', function () {
         it('search user test age is 11 12 13', async function () {
             await init_db();
 
-            const query = { "attr_names": "name,age", page: "1", limit: "10", sort_by: "age", desc: "true" };
+            const query = { "attr_names": "name,age", page: 1, limit: 10, sort_by: "age", desc: "true" };
             const params = { age: "11,12,13" };
 
             const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -173,7 +173,7 @@ describe('Entity Query', function () {
         it('search user test age is 17,18,19 and depart is test and role is user', async function () {
             await init_db();
 
-            const query = { "attr_names": "name,age", page: "1", limit: "10", sort_by: "age", desc: "true" };
+            const query = { "attr_names": "name,age", page: 1, limit: 10, sort_by: "age", desc: "true" };
             const params = { age: "17,18,19", depart: "test", role: "user" };
 
             const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -188,7 +188,7 @@ describe('Entity Query', function () {
         it('search user test age is 17 and success ref_label', async function () {
             await init_db();
 
-            const query = { "attr_names": "name,age,role,depart", page: "1", limit: "10", sort_by: "age", desc: "true" };
+            const query = { "attr_names": "name,age,role,depart", page: 1, limit: 10, sort_by: "age", desc: "true" };
             const params = { age: "17" };
 
             const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -205,7 +205,7 @@ describe('Entity Query', function () {
         it('search user test age is 11 and ignore non searchable desc property', async function () {
             await init_db();
 
-            const query = { "attr_names": "name,age", page: "1", limit: "10", sort_by: "age", desc: "true" };
+            const query = { "attr_names": "name,age", page: 1, limit: 10, sort_by: "age", desc: "true" };
             const params = { age: "11", desc: "desc" };
 
             const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -221,7 +221,7 @@ describe('Entity Query', function () {
         it('search user age more than 15', async function () {
             await init_db();
 
-            const query = { "attr_names": "name,age", page: "1", limit: "5", sort_by: "age", desc: "false" };
+            const query = { "attr_names": "name,age", page: 1, limit: 5, sort_by: "age", desc: "false" };
             const params = { age: ">15" };
 
             const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -237,7 +237,7 @@ describe('Entity Query', function () {
         it('search user age more than 15 and status true', async function () {
             await init_db();
 
-            const query = { "attr_names": "name,age", page: "1", limit: "5", sort_by: "age", desc: "false" };
+            const query = { "attr_names": "name,age", page: 1, limit: 5, sort_by: "age", desc: "false" };
             const params = { age: "<15", status: "true" };
 
             const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -254,7 +254,7 @@ describe('Entity Query', function () {
     it('search user age more than 15, status is true and role is admin', async function () {
         await init_db();
 
-        const query = { "attr_names": "name,age", page: "1", limit: "5", sort_by: "name", desc: "false" };
+        const query = { "attr_names": "name,age", page: 1, limit: 5, sort_by: "name", desc: "false" };
         const params = { age: ">15", status: "true", role: "admin" };
 
         const { code, err, total, data } = await user_entity.list_entity(query, null, params);
@@ -270,7 +270,7 @@ describe('Entity Query', function () {
     it('search user age more than 15, status is true and role is admin and user', async function () {
         await init_db();
 
-        const query = { "attr_names": "name,age", page: "1", limit: "5", sort_by: "age", desc: "false" };
+        const query = { "attr_names": "name,age", page: 1, limit: 5, sort_by: "age", desc: "false" };
         const params = { age: "<15", status: "true", role: "user,admin" };
 
         const { code, err, total, data } = await user_entity.list_entity(query, null, params);
