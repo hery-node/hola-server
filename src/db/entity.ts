@@ -12,7 +12,6 @@ import { get_entity_meta, EntityMeta, MetaDefinition, DELETE_MODE, FieldDefiniti
 import { unique, map_array_to_obj } from "../core/array.js";
 import { LOG_ENTITY, get_db, oid_query, oid_queries, log_debug, log_error, bulk_update, DB } from "./db.js";
 
-
 // Comparison operator mapping for search queries
 const COMPARISON_OPERATORS = [
   { prefix: ">=", op: "$gte", len: 2 },
@@ -57,7 +56,7 @@ const has_search_value = (value: unknown, type_name: string): boolean => {
 /** Convert search value type, keeping original on error. */
 const convert_search_value = (type_name: string, search_value: QueryValue): QueryValue => {
   const { value, err } = get_type(type_name).convert(search_value);
-  return err ? search_value : value as QueryValue;
+  return err ? search_value : (value as QueryValue);
 };
 
 /** Create search object based on field type and value. */
@@ -218,6 +217,17 @@ export class Entity {
     const { search_fields } = this.meta;
     if (!search_fields?.length) return null;
 
+    // Warn about filter values for non-searchable fields (common mistake: search:false but expecting filter to work)
+    const searchable_names = new Set(search_fields.map((f) => f.name));
+    const all_field_names = new Set(this.meta.fields.map((f) => f.name));
+    for (const [key, value] of Object.entries(param_obj)) {
+      if (key.startsWith("_")) continue; // Skip system params like _id, _user
+      if (!all_field_names.has(key)) continue; // Skip unknown fields
+      if (!searchable_names.has(key) && has_value(value)) {
+        log_error(LOG_ENTITY, `Filter ignored: field '${key}' has search:false in entity '${this.meta.collection}'. Set search:true to enable filtering.`);
+      }
+    }
+
     const ref_names = this.meta.ref_fields.map((f) => f.name);
     const and_array: Record<string, QueryValue>[] = [];
 
@@ -260,7 +270,11 @@ export class Entity {
     const sort: Sort = sorts.reduce((s, field, i) => ({ ...s, [field]: descs[i] === "false" ? 1 : -1 }), {});
 
     const list_fields = filter_fields_by_role(this.meta.list_fields, role);
-    const { attrs, ref_fields, link_fields } = extract_field_info(this.meta.fields_map, attr_names, list_fields.map((f) => f.name));
+    const { attrs, ref_fields, link_fields } = extract_field_info(
+      this.meta.fields_map,
+      attr_names,
+      list_fields.map((f) => f.name),
+    );
 
     const search_query = await this.get_search_query(param_obj);
     if (search_query === null) {
@@ -460,8 +474,6 @@ export class Entity {
 
     return { code: SUCCESS };
   }
-
-
 
   async read_property(_id: string, attr_names: string, role: string): Promise<EntityResult> {
     const query = oid_query(_id);
