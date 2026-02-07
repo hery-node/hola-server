@@ -1,5 +1,7 @@
 # Hola Server
 
+[中文文档](./README_CN.md)
+
 A meta-programming framework for building RESTful APIs with **Bun + Elysia + MongoDB**. Define entity schemas declaratively and get fully-featured CRUD APIs with built-in authentication, role-based access control, file handling, and vector search — all out of the box.
 
 ## ✨ Features
