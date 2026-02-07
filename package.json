@@ -11,11 +11,20 @@
       "import": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "bun run src/index.ts",
     "test": "bun test --timeout 10000 test/**/*.ts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "bun run clean && bun run build",
+    "publish": "bun publish"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.2.0",
